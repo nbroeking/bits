@@ -4,10 +4,11 @@ BITS
 <!-- MarkdownTOC autolink="true" bracket="round" depth="2" indent="    " -->
 
 - [What is BITS?](#what-is-bits)
+- [Quickstart](#Quickstart)
 - [Modules](#modules)
     - [module.json](#modulejson)
     - [index.js](#indexjs)
-- [OMGs](#omgs)
+- [Optimized Module Groupings](#Optimzed Module Groupings)
 - [Scopes](#scopes)
 - [MessageCenter](#messagecenter)
     - [Server Side](#server-side)
@@ -44,25 +45,53 @@ BITS
 What is BITS?
 ===
 
-BITS (stands for Bits Integrated Technology System) BITS is designed to allow for rapid development of modules or apps that all share some base architecture design. This base is what we refer to as BITS.
+BITS (BITS Integrated Technology System) is designed to allow for the rapid development of modules that share base software. It is based on Google's polymer project and node.js. The goal is to reuse common components in multiple projects and harden these components through extensive use.
 
+BITS can run on enterprise or embedded applications and can help jumpstart a project with initial functionality. A basic BITS implementation provides the following initial capabilities:
+* User Authentication and Scopes
+* Dashboard homepage for widgets
+* Activity Log
+* Module management
+* OMG management
+* Centralized system logging
 ---
+
+Quickstart
+===
+It is always a good idea to make sure your host system is up to date. On Ubuntu systems it may prove useful to run apt-get upgrade before beginning.
+
+``` bash
+# Install Node.js v6.x python-crypto python-serial python-netifaces python-magic
+apt-get install python-crypto python-serial python-netifaces python-magic
+curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Setup development environment
+npm run build
+
+# Add Yarn
+node ./support/development/yarn-legacy-0.19.1.js add --dev <node-pkg-name>
+
+# Start BITS
+npm run dev
+```
+
+BITS should now be running and is accessible at https://localhost:9001
 
 Modules
 ===
+BITS is a framework built around modules. The base BITS framework is made useful with the creation and addition of module functionality. A module is run by BITS and provides a concrete and specific feature addition to the system. Examples of modules are GNSS (GPS), Networking, and MongoDB. Chances are you are interested in BITS as a means to build a module, or to use somebody else's module. Groups of modules that work together for a specific use case are Optimized Module Groupings (OMG).
 
-BITS is a framework built around modules. A module is a package run by BITS and should provide one specific feature to the system. Examples of modules are GPS, Networking, and MongoDB.
-
-Modules each run inside their own process and are installed to the base data directory in &lt;datadir&gt;/base/modules/modules.
+Every module runs inside their own process and are installed to the base data directory in &lt;datadir&gt;/base/modules/modules.
 
 ## package.json
-The package.json file specifies all the scripts and npm configurations for the bits module. Every package.json should have a scripts section with two scripts specified. bits:install and build. bits:install wil be run when an omg or a module is uploaded to the system. bits:install should run everything your module needs to run on the system. bits:build is what is used to do a comprehensive build. This should include lint checks as well as running the bits:install.
+The package.json file specifies all the scripts and npm configurations for the bits module. Every package.json should have a scripts section with two scripts specified. bits:install and build. bits:install will run when an OMG or a module is uploaded to the system. bits:install should run everything your module needs to run on the system. bits:build is what is used to do a comprehensive build. This should include lint checks as well as running bits:install.
 
 ## module.json
-BITS requires every module to have a module.json file. The module.json specifies information specific to that module such as its name, version, scopes, widgets, etc.
+BITS requires every module to have a module.json file. The module.json specifies information specific to that module including its name, version, scopes, and widgets.
 
 ## index.js
-To run code in a module an index.js needs to be specified. The index.js should export two functions, load and unload. These methods pass the messageCenter for communication to other modules. More on that below. The index.js should look like:
+An index.js needs to be specified to run module code. The index.js should export two functions, load and unload. These methods pass the messageCenter for communication to other modules. There are additional details in following sections. The index.js should look like:
 
 ```javascript
 (() => {
@@ -81,42 +110,34 @@ To run code in a module an index.js needs to be specified. The index.js should e
 
   module.exports = new MyModule();
 })();
-
 ```
-
 ---
 
-OMGs
+Optimized Module Groupings
 ===
 
 An Optimized Module Grouping (OMG) is a group of modules that make up a specific application.
 
 BITS uses OMGs to distribute groups of modules to the system. OMGs consist of a base version and a group of modules. When the OMG is loaded, the base will upgrade to the base in the OMG, install all the modules, and load them.
 
-*<u>TODO:</u> Expand on the loading process and base upgrade/downgrade rules*
-
 ---
 
 Scopes
 ===
-
-*<u>TODO:</u> Define scopes. They are referenced in MessageCenter, but never defined.*
+Scopes limit what users see and can interact with. An administrator on the system can restrict module access to specific user groups.
 
 ---
 
 MessageCenter
 ===
-
 The core infrastructure to BITS is based around a system called the message center. The message center acts as an Inter Process Communication (IPC). All modules can use the message center to communicate data between each other as well as to the UI. The underlying framework of registering/deregistering for events is handled by MessageCenter.
 
-*<u>TODO:</u> Define the event listeners and request listeners (what are they? example use case?)*
-
 ## Server Side
-The server side can add event listeners and request listerners by using a reference of the MessageCenter passed to the module during load. In order to do this you can call `messageCenter.addRequestListener(request, metadata, listener)` and `messageCenter.addEventListener(event, metadata, listener)`.
+The server side can add event listeners and request listeners by using a reference of the MessageCenter passed to the module during load. In order to do this you can call `messageCenter.addRequestListener(request, metadata, listener)` and `messageCenter.addEventListener(event, metadata, listener)`.
 
 Event listeners are a one-to-many call. Many actors can subscribe to a single event. Anytime that event is sent on the message center, each one of them will get it. No response is sent back from event emitters.
 
-Request listers are a many-to-one. Only one actor can add a request listener, however, any actor can send a request for that data. Send request returns a promise with the data from the request listener return statement.
+Request listeners are many-to-one. Only one actor can add a request listener, however, any actor can send a request for that data. Send request returns a promise with the data from the request listener return statement.
 
 In order to send an event and request from the server side, you can use `messageCenter.sendRequest(request, metadata)` and `messageCenter.sendEvent(event, metadata)`
 
@@ -237,7 +258,6 @@ return Promise.resolve()
 
 ## Others
 Base is constantly being developed and improved. The base has a file called bits-base.js where all of bases APIs are added to the global. Check here for all current helpers and APIs for your modules to use.
-
 ---
 
 Module APIs
@@ -260,14 +280,14 @@ BITS uses an access token based protocol for its authentication. When a user log
 1. Login `https://<device>/api/base/auth/signin` - must have data `{username: <username>, password: <password>}`
 1. Verify `https://<device>/api/base/auth/verify` - data `{token: <accessToken>}`
 
-*Note that from the client side code the management of the access token is managed by the message center for you. This only applies to accessing REST APIs.*
+*Client side management of the access token is managed by the message center for you. This only applies to accessing REST APIs.*
 
 ---
 
 Helper Classes
 ===
 
-Base provides several helper classes in addition to the APIs to allow modules the ability to easily perform tasks.
+Base provides several helper classes to enable modules to easily perform tasks.
 
 ## Base Server
 The base server provides a helper object that can interact with the base to set up routers. The base acts as a proxy to forward all web requests to the appropriate module.
@@ -286,13 +306,13 @@ return UtilFs.createSpawnPromise('ls', ['-alh'])
 ```
 
 ## CRUD API
-The CRUD API is an API helper that you can use to make calls to any other CRUD subsystem.
+The CRUD API is an API helper that can make calls to any other CRUD subsystem.
 
 ## CRUD Manager
-The CRUD manager is a super class that you can use to create a CRUD subsystem. See the CRUD Section.
+The CRUD manager is a super class that creates a CRUD subsystem. See the CRUD Section.
 
 ## CRUD Messenger
-The CRUD messenger is the helper object that the CRUD Manger uses to add its listener to the message center. Your messenger can be overloaded with the CRUD Messenger if you want to provide the basic CRUD API without having to implement the CRUD Manager. Or you can use it to extend the basic CRUD API.
+The CRUD messenger is the helper object that the CRUD Manager uses to add its listener to the message center. Your messenger can be overloaded with the CRUD Messenger if you want to provide the basic CRUD API without having to implement the CRUD Manager. Or you can use it to extend the basic CRUD API.
 
 ## Daemon
 The daemon class can be used to start daemons or long running scripts. The daemon class ensures restart functionality as well as exit handling in case BITS tries to shutdown.
@@ -314,7 +334,7 @@ daemon.shutdown();
 ```
 
 ## FS
-The fs helper provides a list of functions that allows modules to be able to intertact with the file system. The normal use case is writting a file to the modules data directory.
+The fs helper provides a list of functions that allows modules to be able to interact with the host file system. The normal use case is writing a file to the modules data directory.
 
 ```javascript
 this._modManApi.getDataDirectory('mod-name')
@@ -327,7 +347,7 @@ this._modManApi.getDataDirectory('mod-name')
 ```
 
 ## Lazy Load
-The Lazy load helper can be used to use another modules apis without a hard dependency on the module. If the target module loads the then lazy load will call `onModuleLoad` and `onModuleUnload` respectively.
+The lazy load helper uses another modules apis without a hard dependency on the module. If the target module loads the then lazy load will call `onModuleLoad` and `onModuleUnload` respectively.
 
 ## Messenger
 The messenger subclass provides a `requestListener` manager that allows for an easier api to add listeners to the message center. All messengers should inherit from this subclass.
@@ -401,13 +421,13 @@ This prevents modules from being deleted by unloading  modules. Any module that 
 
 Support
 ===
-To make changes to BITS please submit merge requests via gitlab. For feature requests/bug reporting send an email to artisanalBITS@gmail.com
+To make changes to BITS please submit pull requests via github. For feature requests/bug reporting send an email to artisanalbits@gmail.com
 
 ---
 
 Tutorials
 ===
-Example modules have been provided to allow developers a starting place. These can be found in the BITS repos in the Gitlab group, and should be worked in the order below.
+Example modules have been provided as a starting place. These can be found in the BITS repos on the github page, and should be worked in the order below.
 
 1. tutorials-bits-technologies
 2. tutorials-helloworld
