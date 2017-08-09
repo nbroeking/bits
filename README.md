@@ -115,6 +115,7 @@ An index.js needs to be specified to run module code. The index.js should export
 
   module.exports = new MyModule();
 })();
+
 ```
 
 ---
@@ -125,17 +126,75 @@ An Optimized Module Grouping (OMG) is a group of modules that make up a specific
 
 BITS uses OMGs to distribute groups of modules to the system. OMGs consist of a base version and a group of modules. When the OMG is loaded, the base will upgrade to the base in the OMG, install all the modules, and load them.
 
----
-
-#Scopes
-
-Scopes limit what users see and can interact with. An administrator on the system can restrict module access to specific user groups.
+*<u>TODO:</u> Expand on the loading process and base upgrade/downgrade rules*
 
 ---
 
-#MessageCenter
+# Scopes
+
+Bits uses an attribute based architecture for access control. Each user is assigned a set of scopes. The user is then only able to make requests or receive events that are tagged with the same scope as the request or event is tagged with. Normally, when a request or event listener is added the message center, the author specifies the scopes attribute in the second parameter.
+
+ex
+
+``` javascript
+
+this._messageCenter.addRequestListener('myEvent', {scopes: ['scope1', 'scope2']}, func);
+```
+
+In this example only users that have the attributes of scope1 or scope2 will successfully make the request.
+
+Note: if scopes is null that means that no user can make the request and only server side code has access to the api.
+
+---
+
+# MessageCenter
 
 The core infrastructure to BITS is based around a system called the message center. The message center acts as an Inter Process Communication (IPC). All modules can use the message center to communicate data between each other as well as to the UI. The underlying framework of registering/deregistering for events is handled by MessageCenter.
+
+#### Request Listeners
+
+Request listeners are used to return a value back to the original requester. If one module adds a listener like:
+
+``` javascript
+this._messageCenter.addRequestListener('myEvent', {scopes: null}, (name) => {
+  return 'Hello ' + name;
+})
+```
+
+Then a user on the server side can make a request to this api such as.
+
+``` javascript
+this._messageCenter.sendRequest('myEvent', {scopes: null}, 'Nic')
+.then((response) => {
+  console.log('The server said', response);
+});
+```
+
+The resulting output would be "The server said Hello Nic"
+
+Note: On the client side you do not need to specify the scopes object as the server side will attach the appropriate user scopes to the request.
+
+#### Event Listeners
+
+Event listeners are used if a module has a change of data that he needs to update all the other modules with.
+
+If client module adds a listener like:
+
+``` javascript
+this._messageCenter.addEventListener('myEvent', {scopes: null}, (name) => {
+  console.log('The server said Hello ', name);
+})
+```
+
+Then anytime the server sends the event with data the function will fire.
+
+``` javascript
+this._messageCenter.sendEvent('myEvent', {scopes: null}, 'Nic');
+```
+
+The output from this will be "The server said Hello Nic";
+
+Note: There are very few instances when you will have to directly access the message center normally you should use helper constructs or modules like settings, or crud;
 
 ## Server Side
 
@@ -237,7 +296,7 @@ Examples of these can all be seen in the base under each of the subsystems or by
 
 ---
 
-#Base APIs
+# Base APIs
 
 In the message center we showed you the API pattern. BITS base implements several APIs that you can use to interact with the system.
 
@@ -333,6 +392,7 @@ The CRUD messenger is the helper object that the CRUD Manager uses to add its li
 ## Daemon
 
 The daemon class can be used to start daemons or long running scripts. The daemon class ensures restart functionality as well as exit handling in case BITS tries to shutdown.
+
 
 ```javascript
 const Daemon = global.helper.Deamon;
