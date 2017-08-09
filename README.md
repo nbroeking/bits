@@ -4,12 +4,10 @@ BITS
 <!-- MarkdownTOC autolink="true" bracket="round" depth="2" indent="    " -->
 
 - [What is BITS?](#what-is-bits)
-- [Quickstart](#quickstart)
 - [Modules](#modules)
-    - [package.json](#packagejson)
     - [module.json](#modulejson)
     - [index.js](#indexjs)
-- [Optimized Module Groupings](#optimized-module-groupings)
+- [OMGs](#omgs)
 - [Scopes](#scopes)
 - [MessageCenter](#messagecenter)
     - [Server Side](#server-side)
@@ -115,6 +113,7 @@ An index.js needs to be specified to run module code. The index.js should export
 
   module.exports = new MyModule();
 })();
+
 ```
 
 ---
@@ -127,15 +126,71 @@ BITS uses OMGs to distribute groups of modules to the system. OMGs consist of a 
 
 ---
 
-#Scopes
+# Scopes
 
-Scopes limit what users see and can interact with. An administrator on the system can restrict module access to specific user groups.
+Bits uses an attribute based architecture for access control. Each user is assigned a set of scopes. The user is then only able to make requests or receive events that are tagged with the same scope as the request or event is tagged with. Normally, when a request or event listener is added the message center, the author specifies the scopes attribute in the second parameter.
+
+ex
+
+``` javascript
+
+this._messageCenter.addRequestListener('myEvent', {scopes: ['scope1', 'scope2']}, func);
+```
+
+In this example only users that have the attributes of scope1 or scope2 will successfully make the request.
+
+Note: if scopes is null that means that no user can make the request and only server side code has access to the api.
 
 ---
 
-#MessageCenter
+# MessageCenter
 
 The core infrastructure to BITS is based around a system called the message center. The message center acts as an Inter Process Communication (IPC). All modules can use the message center to communicate data between each other as well as to the UI. The underlying framework of registering/deregistering for events is handled by MessageCenter.
+
+#### Request Listeners
+
+Request listeners are used to return a value back to the original requester. If one module adds a listener like:
+
+``` javascript
+this._messageCenter.addRequestListener('myEvent', {scopes: null}, (name) => {
+  return 'Hello ' + name;
+})
+```
+
+Then a user on the server side can make a request to this api such as.
+
+``` javascript
+this._messageCenter.sendRequest('myEvent', {scopes: null}, 'Nic')
+.then((response) => {
+  console.log('The server said', response);
+});
+```
+
+The resulting output would be "The server said Hello Nic"
+
+Note: On the client side you do not need to specify the scopes object as the server side will attach the appropriate user scopes to the request.
+
+#### Event Listeners
+
+Event listeners are used if a module has a change of data that he needs to update all the other modules with.
+
+If client module adds a listener like:
+
+``` javascript
+this._messageCenter.addEventListener('myEvent', {scopes: null}, (name) => {
+  console.log('The server said Hello ', name);
+})
+```
+
+Then anytime the server sends the event with data the function will fire.
+
+``` javascript
+this._messageCenter.sendEvent('myEvent', {scopes: null}, 'Nic');
+```
+
+The output from this will be "The server said Hello Nic";
+
+Note: There are very few instances when you will have to directly access the message center normally you should use helper constructs or modules like settings, or crud;
 
 ## Server Side
 
@@ -176,9 +231,6 @@ For the rules, the requester is the actor calling sendRequest and the handler is
     1. If handler user is specified, then only that user can see the data.
     1. If handler user is not defined, but request user is, then default back to scopes rules.
     1. If handler user is specified and requester user is not, then default back to scopes rules.
-
-*<u>TODO:</u> Give example scenarios for each above, it's difficult to follow right now without any context.*
-*<u>FIXME:</u> #2.1 and #2.3 conflict. #2.1 seems to always override #2.3 unless there is another decision point that isn't listed for #2.1.[Should they be: 1. If handler user and requester user are specified and match, then only that user can see the data. 2. If either handler user or requester user are unspecified, fallback to scopes rules.]*
 
 ### Example
 
@@ -222,8 +274,6 @@ For the rules, the requester is the actor calling sendRequest and the handler is
 
 ```
 
-*<u>TODO:</u> An explanation is needed with this example. What is happening in the `constructor`? `unload` is confusing too, why is `messageCenter.removeRequestListener` calling an anonymous function and then taking two different arguments within itself? What is the structure of the `data` object in `_event`, is it the metadata? If so, maybe it makes sense to rename the parameter to `metadata`.*
-
 ### Recommended Pattern
 
 The above example is how one would directly add request listeners. However, this is not the recommended pattern. Instead we have developed a messenger pattern. Every subsystem should consist of 4 parts.
@@ -237,7 +287,7 @@ Examples of these can all be seen in the base under each of the subsystems or by
 
 ---
 
-#Base APIs
+# Base APIs
 
 In the message center we showed you the API pattern. BITS base implements several APIs that you can use to interact with the system.
 
@@ -333,6 +383,7 @@ The CRUD messenger is the helper object that the CRUD Manager uses to add its li
 ## Daemon
 
 The daemon class can be used to start daemons or long running scripts. The daemon class ensures restart functionality as well as exit handling in case BITS tries to shutdown.
+
 
 ```javascript
 const Daemon = global.helper.Deamon;
