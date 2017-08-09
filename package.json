@@ -14,7 +14,7 @@
     "lint": "eslint --fix --ext js,html .",
     "test": "mocha",
     "clean": "rm -rf node_modules/ app/bower_components/ data/ npm-error.log yarn-error.log",
-    "dev": "HTTP_PORT=9000 HTTPS_PORT=9001 node app.js -v -o ./data/"
+    "dev": "HTTP_PORT=9000 HTTPS_PORT=9001 node app.js -v"
   },
   "devDependencies": {
     "bower": "^1.8.0",
