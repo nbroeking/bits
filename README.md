@@ -4,12 +4,10 @@ BITS
 <!-- MarkdownTOC autolink="true" bracket="round" depth="2" indent="    " -->
 
 - [What is BITS?](#what-is-bits)
-- [Quickstart](#quickstart)
 - [Modules](#modules)
-    - [package.json](#packagejson)
     - [module.json](#modulejson)
     - [index.js](#indexjs)
-- [Optimized Module Groupings](#optimized-module-groupings)
+- [OMGs](#omgs)
 - [Scopes](#scopes)
 - [MessageCenter](#messagecenter)
     - [Server Side](#server-side)
@@ -126,8 +124,6 @@ An Optimized Module Grouping (OMG) is a group of modules that make up a specific
 
 BITS uses OMGs to distribute groups of modules to the system. OMGs consist of a base version and a group of modules. When the OMG is loaded, the base will upgrade to the base in the OMG, install all the modules, and load them.
 
-*<u>TODO:</u> Expand on the loading process and base upgrade/downgrade rules*
-
 ---
 
 # Scopes
@@ -236,9 +232,6 @@ For the rules, the requester is the actor calling sendRequest and the handler is
     1. If handler user is not defined, but request user is, then default back to scopes rules.
     1. If handler user is specified and requester user is not, then default back to scopes rules.
 
-*<u>TODO:</u> Give example scenarios for each above, it's difficult to follow right now without any context.*
-*<u>FIXME:</u> #2.1 and #2.3 conflict. #2.1 seems to always override #2.3 unless there is another decision point that isn't listed for #2.1.[Should they be: 1. If handler user and requester user are specified and match, then only that user can see the data. 2. If either handler user or requester user are unspecified, fallback to scopes rules.]*
-
 ### Example
 
 ```javascript
@@ -280,8 +273,6 @@ For the rules, the requester is the actor calling sendRequest and the handler is
 })();
 
 ```
-
-*<u>TODO:</u> An explanation is needed with this example. What is happening in the `constructor`? `unload` is confusing too, why is `messageCenter.removeRequestListener` calling an anonymous function and then taking two different arguments within itself? What is the structure of the `data` object in `_event`, is it the metadata? If so, maybe it makes sense to rename the parameter to `metadata`.*
 
 ### Recommended Pattern
 
