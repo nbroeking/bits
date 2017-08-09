@@ -4,10 +4,12 @@ BITS
 <!-- MarkdownTOC autolink="true" bracket="round" depth="2" indent="    " -->
 
 - [What is BITS?](#what-is-bits)
+- [Quickstart](#quickstart)
 - [Modules](#modules)
+    - [package.json](#packagejson)
     - [module.json](#modulejson)
     - [index.js](#indexjs)
-- [OMGs](#omgs)
+- [Optimized Module Groupings](#optimized-module-groupings)
 - [Scopes](#scopes)
 - [MessageCenter](#messagecenter)
     - [Server Side](#server-side)
@@ -56,7 +58,7 @@ BITS can run on enterprise or embedded applications and can help jumpstart a pro
 
 ---
 
-#Quickstart
+# Quickstart
 
 It is always a good idea to make sure your host system is up to date. On Ubuntu systems it may prove useful to run apt-get upgrade before beginning.
 
@@ -78,7 +80,7 @@ npm run dev
 
 BITS should now be running and is accessible at https://localhost:9001
 
-#Modules
+# Modules
 
 BITS is a framework built around modules. The base BITS framework is made useful with the creation and addition of module functionality. A module is run by BITS and provides a concrete and specific feature addition to the system. Examples of modules are GNSS (GPS), Networking, and MongoDB. Chances are you are interested in BITS as a means to build a module, or to use somebody else's module. Groups of modules that work together for a specific use case are Optimized Module Groupings (OMG).
 
