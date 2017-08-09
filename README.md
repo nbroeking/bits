@@ -9,7 +9,6 @@ BITS
     - [package.json](#packagejson)
     - [module.json](#modulejson)
     - [index.js](#indexjs)
-    - [```](#)
 - [Optimized Module Groupings](#optimized-module-groupings)
 - [Scopes](#scopes)
 - [MessageCenter](#messagecenter)
@@ -117,6 +116,7 @@ An index.js needs to be specified to run module code. The index.js should export
   module.exports = new MyModule();
 })();
 ```
+
 ---
 
 # Optimized Module Groupings
