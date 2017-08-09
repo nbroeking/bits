@@ -1,0 +1,35 @@
+#!/bin/bash
+
+#*************************************************************************
+ # COPYRIGHT (c) 2017 LGS INNOVATIONS - ALL RIGHTS RESERVED
+ # LGS INNOVATIONS PROPRIETARY - USE PURSUANT TO COMPANY INSTRUCTIONS
+#************************************************************************/
+
+# This script generates a openssl rsa keypair
+# The first command line argument is the name of the key
+
+command -v openssl >/dev/null 2>&1 || { echo >&2 "OpenSSL not installed.  Aborting."; exit 1; }
+
+if [ $# -eq 0 ];
+then
+  echo "need a name for the keypair"
+  exit 2
+fi
+
+private_rsa_key="../keys/"$1".pem"
+public_rsa_key="../keys/"$1".pub"
+
+# Check if key with that name exists
+if [ -f $private_rsa_key ];
+then
+  echo "key with that name already exists"
+  exit 3
+fi
+
+# Generate a 4096 bit RSA private key
+openssl genrsa -out "$private_rsa_key" 4096
+
+# Extract public key from private key
+openssl rsa -pubout -in "$private_rsa_key" -out "$public_rsa_key"
+
+exit 0

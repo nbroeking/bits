@@ -1,0 +1,90 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/vaadin-upload/vaadin-upload.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../bower_components/paper-progress/paper-progress.html">
+<link rel="import" href="../base-auth/base-auth.html">
+
+
+<dom-module id="base-omgs-upload">
+  <template>
+    <style>
+      :host {
+        --vaadin-upload-file-list: {
+          width: 300px;
+        };
+      }
+      paper-progress {
+        margin: 4px;
+      }
+    </style>
+
+    <base-auth id="auth"></base-auth>
+
+    <paper-dialog id="dialog" no-cancel-on-outside-click>
+      <h2>Add OMG Package(s)</h2>
+
+      <vaadin-upload
+          id="upload"
+          target="/api/base/omgs"
+          method="POST"
+          accept=".omg">
+      </vaadin-upload>
+
+      <div class="buttons">
+        <paper-button dialog-confirm>Close</paper-button>
+      </div>
+
+    </paper-dialog>
+
+  </template>
+  <script>
+  (() => {
+    'use strict';
+
+    Polymer({
+      is: 'base-omgs-upload',
+
+      listeners: {
+        'upload-before': '_onUploadBefore',
+        'upload-success': '_onUploadSuccess'
+      },
+
+      _onUploadBefore: function(event, detail) {
+        this.$.upload.headers.Authorization = `Bearer ${this.$.auth.accessToken}`;
+      },
+
+      _onUploadSuccess: function(event, detail) {
+        const file = detail.file;
+        const index = this.$.upload.files.indexOf(file);
+        if (-1 < index) {
+          this.$.upload.splice('files', index);
+        }
+        if (0 >= this.$.upload.files.length) {
+          this.$.dialog.close();
+        }
+      },
+
+      open: function() {
+        this.$.upload.files = [];
+        return this.$.dialog.open();
+      }
+    });
+  })();
+  </script>
+</dom-module>

@@ -1,0 +1,359 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../bower_components/iron-icons/communication-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/social-icons.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/paper-badge/paper-badge.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/paper-menu-button/paper-menu-button.html">
+<link rel="import" href="../../bower_components/paper-spinner/paper-spinner-lite.html">
+<link rel="import" href="../../bower_components/paper-styles/color.html">
+<link rel="import" href="../../bower_components/paper-styles/typography.html">
+<link rel="import" href="../base-activities/base-activities.html">
+<link rel="import" href="../base-notification/base-notification.html">
+<link rel="import" href="../base-shared-styles/base-shared-styles.html">
+<link rel="import" href="./base-toolbar-notification.html">
+
+<dom-module id="base-toolbar-notifications">
+  <template>
+    <style include="base-shared-styles">
+      :host {
+        display: block;
+
+        --paper-spinner-color: var(--accent-color);
+        --paper-spinner-stroke-width: 4px;
+        --paper-badge-margin-left: -10px;
+        --paper-badge-margin-bottom: -15px;
+      }
+
+      paper-menu-button {
+        --paper-menu-button-dropdown: {
+          border: solid 1px transparent;
+        };
+      }
+
+      .dropdown-container {
+        border: solid 1px transparent;
+      }
+
+      paper-menu-button .dropdown-section {
+        max-height: 500px;
+      }
+
+      paper-menu-button .dropdown-group-scroll {
+        max-height: 400px;
+      }
+
+      .dropdown-trigger {
+        position: relative;
+      }
+
+      .dropdown-trigger paper-spinner-lite {
+        position: absolute;
+        top: 6px;
+        left: 6px;
+      }
+
+      .action-btn {
+        color: var(--base-toolbar-notifications-icon-color);
+      }
+
+      .action-btn:hover {
+        color: var(--base-toolbar-notifications-icon-hover-color);
+      }
+
+      .buttertip-wrapper {
+        display: inline-block;
+      }
+
+      .notification-header {
+        background-color: var(--primary-background-color);
+        border-bottom: 1px solid;
+        border-bottom-color: var(--divider-color);
+        padding-top: 12px;
+        padding-bottom: 12px;
+        text-align: center;
+      }
+
+      .notification-header-label {
+        font-size: 16px;
+        opacity: 0.64;
+      }
+
+      .notification-header-label.dropdown-row:hover {
+        background-color: var(--primary-background-color);
+      }
+
+      .notification-section.dropdown-section {
+        -webkit-touch-callout: text;
+        -webkit-user-select: text;
+        user-select: text;
+        border-top: none;
+        margin-top: -8px;
+      }
+
+      .notification-empty {
+        height: 100px;
+        padding: 12px 8px 12px 8px;
+      }
+
+      .notification-row {
+        background-color: var(--primary-background-color);
+        border-bottom: 1px solid;
+        border-bottom-color: var(--divider-color);
+        display: inline-block;
+        padding: 12px 8px 12px 8px;
+        white-space: normal;
+        width: 100%;
+      }
+
+      .notification-row-higlight {
+        animation: highlight-fade linear 3s 1;
+      }
+
+      .notification-footer {
+        background-color: var(--primary-background-color);
+        border-top: 1px solid;
+        border-top-color: var(--divider-color);
+        margin-top: -8px;
+        opacity: 0.64;
+        padding-bottom: 0;
+        padding-top: 0;
+        text-align: right;
+      }
+
+      .notification-see-all-link {
+        text-transform: uppercase;
+      }
+
+      .notification-footer .dropdown-item {
+        padding-bottom: 12px;
+        padding-right: 20px;
+        padding-top: 12px;
+      }
+
+      .notification-footer paper-icon-button {
+        margin-right: 8px;
+        color: var(--primary-text-color);
+      }
+    </style>
+
+    <base-activities id="activities" no-items></base-activities>
+
+    <base-notification id="notification"></base-notification>
+
+    <paper-menu-button id="menu" opened="{{opened}}" on-tap="_notificationsButtonTap" horizontal-align="right" close-on-activate no-overlap no-animations>
+      <div class="dropdown-trigger">
+        <paper-spinner-lite active="[[hasOngoing]]"></paper-spinner-lite>
+        <paper-icon-button icon="social:notifications" class="action-btn"></paper-icon-button>
+        <paper-badge label="[[newNotifications]]" hidden$="[[_computeHideBadge(newNotifications)]]"></paper-badge>
+      </div>
+      <div class="dropdown-content dropdown-container">
+        <section class="notification-header dropdown-section" role="group">
+          <div class="dropdown-group-scroll">
+            <div class="dropdown-group">
+              <div class="notification-header-label dropdown-row" role="menuitem">
+                <span class="dropdown-item">
+                  <span>Notifications</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section class="notification-section dropdown-section" role="group">
+          <div class="dropdown-group-scroll">
+            <div class="dropdown-group">
+              <div class="notification-empty dropdown-row" role="menuitem">
+                <span class="dropdown-item">
+                  <span>No notifications</span>
+                </span>
+              </div>
+              <template is="dom-repeat" items="[[activities]]" as="activity">
+                <base-toolbar-notification
+                  activity="[[activity]]"
+                  visible="[[opened]]">
+                </base-toolbar-notification>
+              </template>
+            </div>
+          </div>
+        </section>
+        <section class="notification-footer" role="group">
+          <div class="dropdown-group-scroll">
+            <div class="dropdown-group">
+              <span class="buttertip-warpper">
+                <a class="notification-see-all-link dropdown-row" href="/home/activity">
+                  <span class="dropdown-item">
+                    <span>See all activity</span>
+                  </span>
+                </a>
+              </span>
+              <paper-icon-button icon="communication:clear-all" on-tap="dismissAll" disabled="[[!hasActivities]]"></paper-icon-button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </paper-menu-button>
+
+  </template>
+  <script>
+  (() => {
+    'use strict';
+
+    Polymer({
+      is: 'base-toolbar-notifications',
+
+      properties: {
+        newNotifications: {
+          type: Number,
+          value: 0
+        },
+        activities: {
+          type: Array
+        },
+        hasActivities: {
+          type: Boolean,
+          computed: '_computeHasActivities(activities.*)',
+          observer: '_hasActivitiesChanged'
+        },
+        hasOngoing: {
+          type: Boolean,
+          computed: '_computeHasOngoing(activities.*)'
+        },
+        opened: {
+          type: Boolean,
+          observer: '_openedChanged'
+        }
+      },
+
+      _computeHasActivities: function(changes) {
+        return Array.isArray(this.activities) && 0 < this.activities.length;
+      },
+
+      _hasActivitiesChanged: function(hasActivities) {
+        this.$$('.notification-empty').classList.toggle('hidden', hasActivities);
+      },
+
+      _computeHasOngoing: function(changes) {
+        return Array.isArray(this.activities) && this.activities.some((activity) => activity.ongoing);
+      },
+
+      _openedChanged: function(opened) {
+        if (opened) {
+          this._getItems();
+        }
+      },
+
+      listeners: {
+        'base-crud-item-created': '_newActivity',
+        'base-crud-item-updated': '_newActivity',
+        'base-toolbar-notifications-dismiss-activity': '_onBaseToolbarNotificationsDismissActivity',
+        'base-toolbar-notifications-close': '_onBaseToolbarNotificationsClose',
+        'paper-dropdown-open': '_menuOpened'
+      },
+
+      _menuOpened: function() {
+        this.async(() => {
+          this.$.menu.$.dropdown.notifyResize();
+        }, 200);
+      },
+
+      _newActivity: function(e, detail) {
+        const tag = detail.tag;
+        if (this.$.activities.tag === tag) {
+          const item = detail.item;
+          if (!item.dismissed) {
+            this.newNotifications++;
+          }
+        }
+        this.notification({
+          tag: detail.tag,
+          item: detail.item
+        });
+        this._getItems();
+      },
+
+      ready: function() {
+        this.$.notification.requestPermission();
+        this._getItems();
+      },
+
+      _getItems: function() {
+        this.debounce('getItems', () => {
+          if (this.opened) {
+            this.$.activities.list({
+              dismissed: false,
+              createdAt: {$gt: Date.now() - (24 * 60 * 60 * 1000)}
+            }, {sort: [{createdAt: 'desc'}], limit: 20})
+            .then((activities) => this.set('activities', activities));
+          }
+        }, 100);
+      },
+
+      _notificationsButtonTap: function(e, detail) {
+        this.set('newNotifications', 0);
+      },
+
+      _computeHideBadge: function(newNotifications) {
+        return newNotifications <= 0;
+      },
+
+      _reverse(changes) {
+        if (Array.isArray(this.activities)) {
+          return this.activities.reverse();
+        } else {
+          return [];
+        }
+      },
+
+      dismissAll: function() {
+        return this.$.activities.dismissAll();
+      },
+
+      notification: function({item={}, tag}={}) {
+        if (!tag || !item.title) return;
+
+        if (!item.dismissed && item.notify) {
+          this.$.notification.set('tag', tag);
+
+          if (!item.notifyOptions.body) {
+            item.notifyOptions.body = item.title;
+          }
+
+          this.$.notification.notify({
+            options: item.notifyOptions
+          });
+        }
+      },
+
+      _onBaseToolbarNotificationsDismissActivity: function(event, detail) {
+        const activity = detail.activity;
+
+        if (activity && activity._id) {
+          this.$.activities.update(activity._id, {dismissed: true});
+        }
+      },
+
+      _onBaseToolbarNotificationsClose: function(event, detail) {
+        this.set('opened', false);
+      }
+
+    });
+  })();
+  </script>
+</dom-module>

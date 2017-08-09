@@ -1,0 +1,130 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/paper-styles/default-theme.html">
+<link rel="import" href="../../bower_components/paper-styles/typography.html">
+<link rel="import" href="../../bower_components/paper-styles/color.html">
+
+<dom-module id="base-vaadin-grid-styles">
+  <template>
+    <style>
+      :host {
+        --vadin-grid-body-cell-base: {
+          height: 48px;
+          color: rgba(0, 0, 0, var(--dark-primary-opacity));
+          @apply --paper-font-caption;
+        }
+      }
+
+      vaadin-grid {
+        font-family: Roboto, sans-serif;
+        --divider-color: rgba(0, 0, 0, var(--dark-divider-opacity));
+
+        --vaadin-grid-cell: {
+          padding: 0;
+        };
+
+        --vaadin-grid-header-cell: {
+          height: 64px;
+          color: rgba(0, 0, 0, var(--dark-secondary-opacity));
+          @apply --paper-font-menu;
+        };
+
+        --vaadin-grid-body-cell: {
+          @apply --vadin-grid-body-cell-base;
+        };
+
+        --vaadin-grid-body-row-hover-cell: {
+          background-color: var(--paper-grey-200);
+        };
+
+        --vaadin-grid-body-row-active-cell: {
+          background-color: var(--paper-grey-200);
+        }
+
+        --vaadin-grid-body-row-details-cell: {
+          background-color: var(--paper-grey-200);
+        }
+
+        --vaadin-grid-body-row-selected-cell: {
+          background-color: var(--paper-grey-100);
+        };
+
+        --vaadin-grid-focused-cell: {
+          box-shadow: none;
+          font-weight: bold;
+        };
+      }
+
+      vaadin-grid[inverted] {
+        --vaadin-grid-body-cell: {
+          @apply --vadin-grid-body-cell-base;
+          background-color: var(--paper-grey-100);
+        };
+        --vaadin-grid-body-row-selected-cell: {
+          background-color: var(--primary-background-color);
+        };
+      }
+
+      vaadin-grid .cell {
+        @apply --paper-font-common-nowrap;
+        padding: 0 16px;
+      }
+
+      vaadin-grid .cell.numeric {
+        text-align: right;
+      }
+
+      vaadin-grid .select {
+        padding: 0 16px;
+      }
+
+      vaadin-grid vaadin-grid-sorter {
+        @apply --layout-horizontal;
+      }
+
+      /*vaadin-grid vaadin-grid-sorter:not([direction]) {
+
+      }*/
+
+      /*vaadin-grid vaadin-grid-sorter[direction] {
+
+      }*/
+
+      /*vaadin-grid vaadin-grid-sorter[direction=desc] {
+
+      }*/
+
+      vaadin-grid vaadin-grid-sorter .cell {
+        @apply --layout-flex;
+      }
+
+      vaadin-grid vaadin-grid-sorter {
+        --vaadin-grid-sorter-order: {
+          transform: none;
+        }
+
+        --vaadin-grid-sorter-arrow: {
+          padding: 0 12px;
+        }
+      }
+
+      vaadin-grid::shadow vaadin-grid-table::shadow .vaadin-grid-cell:not([detailscell]) {
+        overflow-x: hidden;
+      }
+    </style>
+  </template>
+</dom-module>

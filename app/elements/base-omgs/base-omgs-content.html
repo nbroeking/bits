@@ -1,0 +1,175 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/app-route/app-location.html">
+<link rel="import" href="../../bower_components/app-route/app-route.html">
+<link rel="import" href="../../bower_components/iron-resizable-behavior/iron-resizable-behavior.html">
+<link rel="import" href="../../bower_components/neon-animation/neon-animated-pages.html">
+<link rel="import" href="../../bower_components/neon-animation/neon-animations.html">
+<link rel="import" href="../base-shared-styles/base-shared-styles.html">
+<link rel="import" href="./base-omgs-list.html">
+<link rel="import" href="./base-omgs-package.html">
+<link rel="import" href="./base-omgs.html">
+
+<dom-module id="base-omgs-content">
+  <template>
+  <style include="base-shared-styles"></style>
+    <style>
+      :host {
+        display: block;
+        position: relative;
+        height: 100%;
+      }
+
+      #content {
+        height: 100%;
+        position: relative;
+      }
+    </style>
+
+    <app-location route="{{route}}"></app-location>
+    <app-route route="{{route}}" pattern="/home/omgs/:id" data="{{routeData}}"></app-route>
+    <base-omgs id="omgs" items="{{omgs}}" current-info="{{currentInfo}}"></base-omgs>
+
+    <neon-animated-pages
+        id="content"
+        selected="[[page]]"
+        attr-for-selected="data-route"
+        entry-animation="fade-in-animation"
+        exit-animation="fade-out-animation">
+      <base-omgs-list id="list" data-route="list" omgs="[[omgs]]" current-info="[[currentInfo]]"></base-omgs-list>
+      <base-omgs-package id="detail" data-route="detail" omg="[[omg]]" current-info="[[currentInfo]]"></base-omgs-package>
+    </neon-animated-pages>
+
+  </template>
+  <script>
+  (() => {
+    'use strict';
+
+    Polymer({
+      is: 'base-omgs-content',
+
+      behaviors: [
+        Polymer.IronResizableBehavior
+      ],
+
+      properties: {
+        route: {
+          type: Object
+        },
+        routeData: {
+          type: Object
+        },
+        omgs: {
+          type: Array
+        },
+        omgId: {
+          type: String,
+          observer: '_omgIdChanged'
+        },
+        page: {
+          type: String,
+          observer: '_pageChanged'
+        },
+        omg: {
+          type: Object,
+          notify: true,
+        }
+      },
+
+      _omgIdChanged: function(id) {
+        this.omg = null;
+        if (id === '' || id === null || id === undefined) {
+          this.page = 'list';
+        } else {
+          return this.$.omgs.get(id)
+          .then((omg) => {
+            if (omg) {
+              this.omg = omg;
+              this.page = 'detail';
+            } else {
+              this.page = 'list';
+              return Promise.reject(new Error('user/not-found'));
+            }
+          })
+          .catch(() => this.set('routeData.id', null));
+        }
+      },
+
+      _pageChanged: function(page) {
+      },
+
+      observers: [
+        '_routeDataOmgIdChanged(routeData.id)'
+      ],
+
+      _routeDataOmgIdChanged: function(id) {
+        this.omgId = id || null;
+      },
+
+      listeners: {
+        'base-crud-item-updated': '_onItemUpdated',
+        'base-crud-item-deleted': '_onItemDeleted',
+        'base-omgs-upload-add': '_onAdd',
+        'base-omgs-content-load': '_onLoadOmg',
+        'base-omgs-content-delete': '_onDeleteOmg'
+      },
+
+      _onItemUpdated: function(event, detail) {
+        const tag = detail.tag;
+        if (tag === this.$.omgs.tag) {
+          const omg = detail.item;
+          if (omg.id === this.omgId) {
+            this.omg = omg;
+          }
+        }
+      },
+
+      _onItemDeleted: function(event, detail) {
+        const tag = detail.tag;
+        if (tag === this.$.omgs.tag) {
+          const omg = detail.item;
+          if (omg.id === this.omgId) {
+            this.omgId = null;
+          }
+        }
+      },
+
+      _onAdd: function(event, detail) {
+        this.$.omgs.create(detail.file);
+      },
+
+      _onLoadOmg: function(event, detail) {
+        const omg = detail.omg;
+        Promise.resolve()
+        .then(() => this.$.omgs.load(omg.id))
+        .then(detail.resolve, detail.reject);
+      },
+
+      _onDeleteOmg: function(e, detail) {
+        const omg = detail.omg;
+        if (omg) {
+          const id = omg.id;
+          this.$.omgs.delete(id)
+          .catch((err) => this.fire('bits-base-error', {err: err}));
+        } else {
+          console.warn('No OMG package given');
+        }
+      }
+    });
+  })();
+  </script>
+</dom-module>

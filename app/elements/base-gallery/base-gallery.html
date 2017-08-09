@@ -1,0 +1,200 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/app-layout/app-toolbar/app-toolbar.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../base-auth/base-auth.html">
+<link rel="import" href="../base-gallery-items/base-gallery-items.html">
+<link rel="import" href="../base-shared-styles/base-shared-styles.html">
+<link rel="import" href="../base-system/base-system-power-control.html">
+<link rel="import" href="./base-gallery-category.html">
+
+<dom-module id="base-gallery">
+  <template>
+    <style include="base-shared-styles">
+      :host {
+        display: block;
+      }
+
+      .contentContainer {
+        height: 100%;
+        @apply(--layout-vertical);
+      }
+
+      .toolbar {
+        border-bottom: 1px solid;
+        border-bottom-color: var(--divider-color);
+        height: 48px;
+        background-color: #fff;;
+        color: var(--primary-text-color);
+      }
+      .toolbar.account {
+        border-bottom-width: 0px;
+        border-top-width: 1px;
+        border-top-style: solid;
+        border-top-color: var(--divider-color);
+      }
+      .toolbar.header iron-icon {
+        color: var(--dark-primary-color);
+      }
+      .toolbar .icon {
+        @apply(--layout-vertical);
+        @apply(--layout-center);
+        width: 64px;
+        margin-left: -16px;
+      }
+
+      .toolbar.header .icon iron-icon {
+        --iron-icon-width: 28px;
+        --iron-icon-height: 28px;
+      }
+
+      .categories-wrapper {
+        @apply(--layout-flex);
+        overflow-y: auto;
+      }
+
+      .category {
+        box-sizing: border-box;
+        padding: 12px 0px 12px 0px;
+        border-top: 1px solid;
+        border-top-color: var(--divider-color)
+      }
+      .category:first-child {
+        border-top-width: 0px;
+      }
+    </style>
+
+    <base-gallery-items items="{{galleryItems}}"></base-gallery-items>
+    <base-auth user="{{user}}"></base-auth>
+
+    <div class="contentContainer">
+      <app-toolbar class="toolbar header">
+        <div class="icon">
+          <iron-icon src="/images/manifest/icon-96x96.png"></iron-icon>
+        </div>
+        <div main-title>BITS</div>
+      </app-toolbar>
+
+      <div class="categories-wrapper">
+        <div class="categories">
+          <template is="dom-repeat" items="[[categories]]" as="category">
+            <base-gallery-category class="category" category="[[category]]"></base-gallery-category>
+          </template>
+        </div>
+      </div>
+
+      <app-toolbar class="toolbar account">
+        <div class="icon">
+          <iron-icon icon="[[_computeIcon(user)]]"></iron-icon>
+        </div>
+        <div main-title>[[_computeUsername(user)]]</div>
+        <template is="dom-if" if="[[narrow]]" restamp="true">
+          <base-system-power-control vertical-align="bottom"></base-system-power-control>
+        </template>
+      </app-toolbar>
+    </div>
+
+  </template>
+  <script>
+    (function() {
+      'use strict';
+
+      Polymer({
+        is: 'base-gallery',
+
+        properties: {
+
+          user: {
+            type: Object
+          },
+
+          galleryItems: {
+            type: Array,
+          },
+
+          categories: {
+            type: Array,
+            computed: '_computeCategories(galleryItems.*)'
+          },
+
+          narrow: Boolean
+        },
+
+        _computeGalleryItems(changes, user) {
+          const rawGalleryItems = this.rawGalleryItems;
+          return rawGalleryItems.filter((galleryItem) => {
+            let visable = false;
+            if (galleryItem.scopes) {
+              galleryItem.scopes.forEach((scope) => {
+                if (user && user.scopes) {
+                  visable = visable || user.scopes.some((val) => {
+                    return val.name === scope;
+                  });
+                } else {
+                  visable = false;
+                }
+              });
+            }
+            return visable;
+          });
+        },
+
+        _computeCategories: function(changes) {
+          if (Array.isArray(this.galleryItems)) {
+            return this.galleryItems.reduce((categories, galleryItem) => {
+              const categoryName = galleryItem.category;
+              let category = categories.find((category) => categoryName === category.name);
+              if (!category) {
+                category = {
+                  name: categoryName,
+                  items: []
+                };
+                categories.push(category);
+              }
+              category.items.push(galleryItem);
+              return categories;
+            }, []);
+          } else {
+            return [];
+          }
+        },
+
+        _computeIcon: function(user) {
+          if (!user) {
+            return 'icons:help';
+          } else if (user.isAnonymous) {
+            return 'icons:account-box';
+          } else {
+            return 'icons:account-circle';
+          }
+        },
+
+        _computeUsername: function(user) {
+          if (!user) {
+            return 'No user';
+          } else if (user.isAnonymous) {
+            return 'Anonymous';
+          } else {
+            return user.username;
+          }
+        }
+      });
+    })();
+  </script>
+</dom-module>

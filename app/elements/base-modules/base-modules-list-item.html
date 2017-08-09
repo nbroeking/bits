@@ -1,0 +1,224 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/iron-resizable-behavior/iron-resizable-behavior.html">
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item-body.html">
+<link rel="import" href="../../bower_components/paper-styles/typography.html">
+<link rel="import" href="../../bower_components/paper-tooltip/paper-tooltip.html">
+
+<dom-module id="base-modules-list-item">
+  <template>
+    <style>
+      :host {
+        --paper-tooltip-background: var(--primary-text-color);
+        --paper-tooltip-opacity: 1.0;
+        @apply(--layout-horizontal);
+        @apply(--layout-center);
+        @apply(--paper-font-subhead);
+        min-height: 48px;
+        padding: 0px 16px;
+        cursor: pointer;
+      }
+
+      [item-icon] {
+        @apply(--layout-horizontal);
+        @apply(--layout-center);
+        width: 56px;
+      }
+
+      .base {
+        color: var(--primary-color);
+      }
+
+      .hover {
+        display: none;
+      }
+
+      :host(:hover) .hover {
+        display: block;
+      }
+
+      paper-icon-item:before {
+        display: none !important;
+      }
+
+      .action {
+        color: var(--secondary-text-color);
+      }
+
+      #list {
+        max-height: 200px;
+      }
+
+      #upgrade[disabled] {
+        pointer-events: all !important;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+    </style>
+
+    <iron-icon id="display" icon="[[_calculateModuleIcon(module)]]" item-icon></iron-icon>
+    <paper-tooltip for="display" position="right" animation-delay="200" offset="-8">[[_calculateDisplayString(module)]]</paper-tooltip>
+
+    <paper-item-body two-line>
+      <div class$="[[_calculateModuleNameClassList(module)]]">[[_calculateModuleName(module)]]</div>
+      <div secondary>[[_calculateModuleStatus(module)]]</div>
+    </paper-item-body>
+
+    <paper-icon-button id="info" class="action hover" icon="info-outline" on-tap="onModuleInfo"></paper-icon-button>
+
+    <paper-icon-button
+          id="upgrade"
+          class="action hover"
+          icon="swap-horiz"
+          on-tap="onBaseUpgrade"
+          disabled="[[!_calculatePackageAvailable(module)]]">
+    </paper-icon-button>
+    <paper-tooltip for="upgrade" position="left" animation-delay="200" offset="0">Upgrade: [[_calculateUpgradeString(module)]]</paper-tooltip>
+
+    <paper-icon-button id="remove" class="action hover" icon="delete" on-tap="onOpen"></paper-icon-button>
+    <paper-tooltip for="remove" position="top" animation-delay="200" fit-to-visible-bounds>Remove Module Package</paper-tooltip>
+
+  </template>
+  <script>
+  (() => {
+    'use strict';
+
+    Polymer({
+      is: 'base-modules-list-item',
+
+      properties: {
+        module: {
+          type: Object,
+          observer: '_moduleChanged'
+        },
+      },
+
+      _moduleChanged: function(mod) {
+        Polymer.dom(this.$.upgrade).classList.toggle('hidden', !this._isBase(mod));
+        Polymer.dom(this.$.remove).classList.toggle('hidden', !this._calculatePackageAvailable(mod));
+      },
+
+      behaviors: [
+        Polymer.IronResizableBehavior
+      ],
+
+      _calculateModuleIcon: function(mod) {
+        if (!mod) {
+          return 'help';
+        } else if (mod.isLoaded) {
+          return 'assignment-turned-in';
+        } else if (mod.loadError != null) {
+          return 'error-outline';
+        } else if (mod.isInstalled) {
+          return 'check';
+        } else {
+          return 'archive';
+        }
+      },
+
+      _calculateDisplayString: function(mod) {
+        if (!mod) {
+          return 'Unkown Module';
+        } else if (mod.isLoaded) {
+          return 'Loaded';
+        } else if (mod.loadError != null) {
+          return 'Error';
+        } else if (mod.isInstalled) {
+          return 'Installed';
+        } else {
+          return 'Archived';
+        }
+      },
+
+      _calculateModuleNameClassList: function(mod) {
+        let classList = 'name';
+        if (mod && mod.isBase) {
+          classList += ' base';
+        }
+        return classList;
+      },
+
+      _calculateModuleName: function(mod) {
+        if (!mod) {
+          return 'N/A';
+        } else if (mod.isInstalled) {
+          return mod.displayName || mod.name;
+        } else {
+          return mod.name;
+        }
+      },
+
+      _calculateModuleStatus: function(mod) {
+        if (!mod) {
+          return 'N/A';
+        } else if (mod.isLoaded) {
+          return 'Loaded: ' + mod.installedVersion;
+        } else if (mod.loadError != null && typeof(mod.loadError.message) === 'string') {
+          return mod.loadError.message;
+        } else if (mod.isInstalled) {
+          return 'Installed: ' + mod.installedVersion;
+        } else {
+          return 'Available: ' + mod.packageVersions;
+        }
+      },
+
+      _calculateModuleDown: function(mod) {
+        return mod && mod.isInstalled;
+      },
+
+      _calculateModuleUp: function(mod) {
+        return mod && !mod.isLoaded;
+      },
+
+      _calculatePackageAvailable: function(mod) {
+        return mod && Array.isArray(mod.packageVersions) && 0 < mod.packageVersions.length;
+      },
+
+      _calculateUpgradeString: function(mod) {
+        return (mod && Array.isArray(mod.packageVersions) && 0 < mod.packageVersions.length) ? 'Available' : 'Unavailable';
+      },
+
+      _isBase: function(mod) {
+        return mod && mod.isBase;
+      },
+
+      onOpen: function(e) {
+        e.stopPropagation();
+        this.fire('module-package-version-remove', {module: this.module});
+      },
+
+      onModuleInfo: function(e) {
+        e.stopPropagation();
+        this.fire('module-info', this.module);
+      },
+
+      onBaseUpgrade: function(e) {
+        e.stopPropagation();
+        if (this._calculatePackageAvailable(this.module)) {
+          this.fire('base-upgrade', this.module);
+        }
+      }
+    });
+  })();
+  </script>
+</dom-module>

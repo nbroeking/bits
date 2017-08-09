@@ -1,0 +1,232 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<script type="text/javascript" src="../../bower_components/push.js/bin/push.min.js"></script>
+
+<dom-module id="base-notification">
+  <script>
+  (() => {
+    'use strict';
+
+    const DEFAULT_OPTIONS = {
+      title: 'BITS',
+      icon: {
+        x16: '/images/manifest/icon-16x16.png',
+        x32: '/images/manifest/icon-144x144.png'
+      },
+      data: {},
+      link: '',
+      requireInteraction: false,
+      tag: null,
+      timeout: 4000,
+      vibrate: [200, 100, 200, 100, 200, 100, 200],
+      silent: false
+    };
+
+    const MESSAGES = {
+      DENIED_REQUEST: 'User Denied Permission.',
+      PERMISSION_DENIED: 'User has denied permission to send push notifications.',
+      EMPTY_TAG: 'No tag set on base-notification element.'
+    };
+
+    class Util {
+      static notEmptyString(str) {
+        return typeof str === 'string' && String(str).trim().length > 0;
+      }
+
+      static notEmptyObject(obj) {
+        return typeof obj === 'object' && Object.keys(obj).length > 0;
+      }
+      static notEmptyArray(arr) {
+        return Array.isArray(arr) && arr.length > 0;
+      }
+
+      static isValidNumber(num) {
+        return !isNaN(Number(num));
+      }
+    };
+
+    Push.config({
+      serviceWorker: '/service-worker.js'
+    });
+
+    Polymer({
+      is: 'base-notification',
+
+      properties: {
+        icon: {
+          type: Object,
+          value: () => {
+            return Object.assign({}, DEFAULT_OPTIONS.icon);
+          }
+        },
+        link: {
+          type: String,
+          value: DEFAULT_OPTIONS.link
+        },
+        requireInteraction: {
+          type: Boolean,
+          value: DEFAULT_OPTIONS.requireInteraction,
+          observer: '_observeRequireInteraction'
+        },
+        tag: {
+          type: String,
+          value: DEFAULT_OPTIONS.tag
+        },
+        timeout: {
+          type: Number,
+          value: DEFAULT_OPTIONS.timeout
+        },
+        vibrate: {
+          type: Array,
+          value: () => {
+            return [].concat(DEFAULT_OPTIONS.vibrate);
+          }
+        },
+        silent: {
+          type: Boolean,
+          value: DEFAULT_OPTIONS.silent
+        }
+      },
+
+      _observeRequireInteraction: function(requireInteraction) {
+        if (!!requireInteraction === true) {
+          this.set('timeout', -1);
+        } else if (this.timeout < 0) {
+          this.set('timeout', DEFAULT_OPTIONS.timeout);
+        }
+      },
+
+      _calculateLocation: function(link) {
+        if (!Util.notEmptyString(link)) return link;
+
+        const el = document.createElement('a');
+        el.href = link;
+
+        if (el.hostname !== window.location.hostname) {
+          return link;
+        } else {
+          return `${el.pathname}${el.search}${el.hash}`.substring(1);
+        }
+      },
+
+      requestPermission: function() {
+        return new Promise((fulfill, reject) => {
+          Push.Permission.request(fulfill, reject);
+        })
+        .catch(() => Promise.reject(new Error(MESSAGES.DENIED_REQUEST)));
+      },
+
+      hasPermission: function() {
+        return Push.Permission.has();
+      },
+
+      clearAllNotifications: function() {
+        Push.clear();
+      },
+
+      setDefaults: function() {
+        this.set('icon', Object.assign({}, DEFAULT_OPTIONS.icon));
+        this.set('link', DEFAULT_OPTIONS.link);
+        this.set('requireInteraction', DEFAULT_OPTIONS.requireInteraction);
+        this.set('timeout', DEFAULT_OPTIONS.timeout);
+        this.set('vibrate', [].concat(DEFAULT_OPTIONS.vibrate));
+        this.set('silent', DEFAULT_OPTIONS.silent);
+      },
+
+      _options: function({body=DEFAULT_OPTIONS.body, data=DEFAULT_OPTIONS.data, notifyOptions={}}={}) {
+        let options = Object.assign({}, DEFAULT_OPTIONS, {
+          icon: this.icon,
+          data: data,
+          body: body,
+          link: this.link,
+          requireInteraction: this.requireInteraction,
+          tag: this.tag,
+          timeout: this.timeout,
+          vibrate: this.vibrate,
+          silent: this.silent
+        }, notifyOptions);
+
+        options.requireInteraction = !!options.requireInteraction;
+        options.silent = !!options.silent;
+
+        if (!(Util.notEmptyString(options.icon) || Util.notEmptyObject(options.icon))) {
+          delete options.icon;
+        }
+
+        if (!Util.notEmptyObject(options.data)) {
+          delete options.data;
+        }
+
+        if (!Util.notEmptyString(options.body)) {
+          delete options.body;
+        }
+
+        if (options.link) {
+          options.link = this._calculateLocation(options.link);
+
+          if (!Util.notEmptyString(options.link)) {
+            delete options.link;
+          }
+        }
+
+        if (!Util.notEmptyString(options.tag)) {
+          delete options.tag;
+        }
+
+        if (!(Util.isValidNumber(options.timeout) && options.timeout > -1) || options.requireInteraction) {
+          delete options.timeout;
+        }
+
+        if (!Util.notEmptyArray(options.vibrate)) {
+          delete options.vibrate;
+        }
+
+        if (!options.link) {
+          options.onClick = function() {
+            this.client.focus();
+          };
+        }
+
+        return options;
+      },
+
+      notify: function({title=DEFAULT_OPTIONS.title, body=DEFAULT_OPTIONS.body, data=DEFAULT_OPTIONS.data, options={}}={}) {
+        if (!this.hasPermission()) return Promise.reject(new Error(MESSAGES.PERMISSION_DENIED));
+        if (!(this.tag || options.tag)) return Promise.reject(new Error(MESSAGES.EMPTY_TAG));
+
+        const notifyOptions = this.getStaticOptions(options);
+
+        return Promise.resolve(this._options({body: body, data: data, notifyOptions: notifyOptions}))
+        .then((options) => Push.create(title, options));
+      },
+
+      getAllowedKeys: function() {
+        return Object.keys(DEFAULT_OPTIONS).concat(['body']);
+      },
+
+      getStaticOptions: function(options) {
+        if (typeof options !== 'object' && Object.keys(options).length < 1) return {};
+
+        const allowedKeys = this.getAllowedKeys();
+
+        return allowedKeys.filter((key) => options[key]).reduce((obj, key) => Object.assign(obj, {[key]: options[key]}), {});
+      }
+
+    });
+  })();
+  </script>
+</dom-module>

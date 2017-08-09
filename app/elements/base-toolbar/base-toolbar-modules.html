@@ -1,0 +1,136 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../bower_components/iron-icons/av-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/communication-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/device-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/editor-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/hardware-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/image-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/maps-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/notification-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/places-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/social-icons.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/paper-badge/paper-badge.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/paper-menu-button/paper-menu-button.html">
+<link rel="import" href="../../bower_components/paper-spinner/paper-spinner-lite.html">
+<link rel="import" href="../../bower_components/paper-styles/color.html">
+<link rel="import" href="../../bower_components/paper-styles/typography.html">
+<link rel="import" href="../../bower_components/paper-spinner/paper-spinner-lite.html">
+<link rel="import" href="../base-modules/base-modules.html">
+<link rel="import" href="../base-shared-styles/base-shared-styles.html">
+<link rel="import" href="../base-vendor/moment.html">
+
+<dom-module id="base-toolbar-modules">
+  <template>
+    <style include="base-shared-styles">
+      :host {
+        display: block;
+        --paper-spinner-color: var(--accent-color);
+        --paper-spinner-stroke-width: 4px;
+        --paper-spinner-color: var(--base-toolbar-notifications-icon-color);
+      }
+
+      .action-btn {
+        color: var(--base-toolbar-notifications-icon-color);
+      }
+
+      .action-btn:hover {
+        color: var(--base-toolbar-notifications-icon-hover-color);
+      }
+
+      .buttertip-wrapper {
+        display: inline-block;
+      }
+
+      .main {
+        position: relative;
+      }
+
+      .main paper-spinner-lite {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate3d(-50%, -50%, 0) scale3d(1.25, 1.25, 1);
+        z-index: 0;
+        margin-top: 1px;
+      }
+
+      .main paper-icon-button {
+        position: relative;
+        z-index: 1;
+      }
+    </style>
+
+    <base-modules
+      manager-state="{{managerState}}"
+      modules="{{modules}}"
+      current-module="{{currentModule}}"></base-modules>
+
+    <div hidden="[[!loading]]">
+    <div>
+      <a tabindex="-1" class="main" href="/home/modules">
+        <paper-spinner-lite active="[[loading]]"></paper-spinner-lite>
+        <paper-icon-button class="action-btn" icon="[[_calculateIcon(currentModule, modules.*)]]"></paper-icon-button>
+      </a>
+    </div>
+  </template>
+  <script>
+  (() => {
+    'use strict';
+
+    Polymer({
+      is: 'base-toolbar-modules',
+
+      properties: {
+        managerState: {
+          type: String,
+        },
+        loading: {
+          type: Boolean,
+          computed: '_computeLoading(managerState)'
+        }
+      },
+
+      _computeLoading(managerState) {
+        return (managerState === 'Loading' || managerState === 'Unloading');
+      },
+
+      _calculateIcon: function(currentModule) {
+        let icon = 'icons:view-module';
+
+        if (currentModule.toUpperCase() !== 'NONE' && Array.isArray(this.modules)) {
+          const currentModuleData = this.modules.filter((module) => {
+            return module.name === currentModule;
+          }).shift();
+
+          if (currentModuleData.icon) {
+            icon = currentModuleData.icon;
+          }
+        }
+
+        return icon;
+      }
+
+    });
+  })();
+  </script>
+</dom-module>

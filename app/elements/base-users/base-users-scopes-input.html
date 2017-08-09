@@ -1,0 +1,151 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/paper-checkbox/paper-checkbox.html">
+<link rel="import" href="../../bower_components/paper-styles/typography.html">
+
+<dom-module id="base-users-scopes-input">
+  <template>
+    <style>
+      :host {
+        display: block;
+        position: relative;
+        margin: 0px 0px 20px 0px;
+      }
+
+      .scopes {
+        @apply(--layout-vertical);
+      }
+
+      .scopes paper-checkbox {
+        box-sizing: border-box;
+        padding: 8px 0px 0px 0px;
+      }
+
+      #error {
+        @apply(--paper-font-body1);
+        color: var(--error-color);
+        position: absolute;
+        bottom: -20px;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+    </style>
+
+    <div class="scopes">
+      <template is="dom-repeat" items="[[scopes]]" as="scope">
+        <paper-checkbox
+            checked="[[_computeChecked(scope.name, selectedScopes.*)]]"
+            on-change="selectScope"
+            disabled="[[_computeDisabled(disabled, scope.name)]]">
+          <span>[[scope.displayName]]</span>
+        </paper-checkbox>
+      </template>
+    </div>
+
+    <div id="error">Select at least 1 scope.</div>
+
+  </template>
+  <script>
+  (() => {
+    'use strict';
+
+    const SCOPE_PUBLIC = {
+      name: 'public',
+      displayName: 'Public'
+    };
+
+    Polymer({
+      is: 'base-users-scopes-input',
+
+      properties: {
+        scopes: Array,
+        selectedScopes: {
+          type: Array,
+          notify: true
+        },
+        invalid: {
+          type: Boolean,
+          notify: true,
+          computed: '_computeInvalid(selectedScopes.*)',
+          observer: '_invalidChanged'
+        },
+        disabled: {
+          type: Boolean,
+          value: false
+        }
+      },
+
+      _computeInvalid: function(changes) {
+        return !Array.isArray(this.selectedScopes) || 0 >= this.selectedScopes.length;
+      },
+
+      _invalidChanged: function(invalid) {
+        Polymer.dom(this.$.error).classList.toggle('hidden', !invalid);
+      },
+
+      observers: [
+        '_scopesChanged(scopes.*)'
+      ],
+
+      _scopesChanged: function(changes) {
+        if (Array.isArray(this.scopes) && Array.isArray(this.selectedScopes)) {
+          const publicScope = this.scopes.find((scope) => SCOPE_PUBLIC.name === scope.name);
+          if (publicScope) {
+            const selectedPublicScope = this.selectedScopes.find((scope) => SCOPE_PUBLIC.name === scope.name);
+            if (selectedPublicScope) {
+              const index = this.scopes.indexOf(selectedPublicScope);
+              this.splice('selectedScopes', index, publicScope);
+            } else {
+              this.push('selectedScopes', publicScope);
+            }
+          } else {
+            this.push('scopes', SCOPE_PUBLIC);
+          }
+        }
+      },
+
+      _computeChecked: function(name, changes) {
+        if (SCOPE_PUBLIC.name === name) {
+          return true;
+        } else if (Array.isArray(this.selectedScopes)) {
+          return this.selectedScopes.some((s) => name === s.name);
+        } else {
+          return false;
+        }
+      },
+
+      _computeDisabled: function(disabled, name) {
+        return disabled || SCOPE_PUBLIC.name === name;
+      },
+
+      selectScope: function(event) {
+        const scope = event.model.scope;
+        const checked = event.srcElement.checked;
+        const index = this.selectedScopes.indexOf(scope);
+        if (checked && 0 > index) {
+          this.push('selectedScopes', scope);
+        } else if (!checked && -1 < index) {
+          this.splice('selectedScopes', index, 1);
+        }
+      }
+    });
+  })();
+  </script>
+</dom-module>

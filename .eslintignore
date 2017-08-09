@@ -1,0 +1,13 @@
+.gitignore
+
+# Nodejs
+node_packages/*
+yarn.lock
+
+# Bower
+app/bower_components
+
+# BITS
+support/
+test/fixtures/
+data/

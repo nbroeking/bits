@@ -1,0 +1,167 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/app-layout/app-toolbar/app-toolbar.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../../bower_components/paper-styles/typography.html">
+<link rel="import" href="../base-shared-styles/base-shared-styles.html">
+<link rel="import" href="./base-users-password-input.html">
+<link rel="import" href="./base-users-scopes-input.html">
+
+<dom-module id="base-users-create">
+  <template>
+    <style include="base-shared-styles"></style>
+    <style>
+      :host {
+        display: block;
+      }
+
+      app-toolbar {
+        color: var(--primary-text-color);
+        border-bottom: 1px solid;
+        border-bottom-color: var(--divider-color);
+      }
+
+      .icon {
+        @apply(--layout-vertical);
+        @apply(--layout-center);
+        width: 64px;
+        margin-left: -16px;
+      }
+      .icon paper-icon-button {
+        color: var(--primary-color);
+      }
+
+      paper-button {
+        @apply(--paper-font-body1);
+        color: var(--primary-color);
+      }
+
+      .content {
+        margin-left: 0px;
+        max-width: 480px;
+      }
+
+      a {
+        display: block;
+        text-decoration: none;
+        color: var(--primary-text-color);
+      }
+
+      base-users-scopes-input {
+        margin: 16px 0px 0px 0px;
+      }
+    </style>
+
+    <app-toolbar>
+      <div class="icon">
+        <a href="/home/users/" tabindex="-1">
+          <paper-icon-button icon="icons:arrow-back"></paper-icon-button>
+        </a>
+      </div>
+      <div main-title>Create User</div>
+      <paper-button disabled="[[invalid]]" on-tap="createUser">Create</paper-button>
+      <a href="/home/users/" tabindex="-1">
+        <paper-button>Cancel</paper-button>
+      </a>
+    </app-toolbar>
+
+    <div class="content">
+      <paper-input
+        id="username"
+        label="Username"
+        value="{{username}}"
+        invalid="{{invalidUsername}}"
+        auto-focus
+        auto-validate
+        required
+        error-message="Username is required."
+        tabindex="0">
+      </paper-input>
+
+      <base-users-password-input
+          id="password"
+          password="{{password}}"
+          invalid="{{invalidPassword}}">
+      </base-users-password-input>
+
+      <base-users-scopes-input
+          scopes="[[scopes]]"
+          selected-scopes="{{selectedScopes}}"
+          invalid="{{invalidScopes}}">
+      </base-users-scopes-input>
+    </div>
+
+  </template>
+  <script>
+    (() => {
+      'use strict';
+
+      Polymer({
+        is: 'base-users-create',
+
+        properties: {
+          username: String,
+          invalidUsername: Boolean,
+          password: String,
+          invalidPassword: Boolean,
+          scopes: Array,
+          selectedScopes: Array,
+          invalidScopes: Boolean,
+          invalid: {
+            type: Boolean,
+            computed: '_computeInvalid(invalidUsername, invalidPassword, invalidScopes)'
+          }
+        },
+
+        _computeInvalid: function(invalidUsername, invalidPassword, invalidSelectedScopes) {
+          return invalidUsername || invalidPassword || invalidSelectedScopes;
+        },
+
+        reset: function() {
+          this.username = null;
+          this.async(() => this.$.username.focus(), 25);
+          this.async(() => this.$.username.focus(), 75);
+          this.$.password.reset();
+          this.selectedScopes = [];
+        },
+
+        createUser: function() {
+          if (!this.$.username.validate()) {
+            console.warn('username is invalid.');
+            this.async(() => this.$.username.focus(), 50);
+          } else if (this.invalidPassword) {
+            console.warn('password is invalid.');
+            this.async(() => this.$.password.focus(), 50);
+          } else if (this.invalidScopes) {
+            console.warn('scopes is invalid.');
+          } else {
+            const user = {
+              username: this.username,
+              password: this.password,
+              scopes: this.selectedScopes
+            };
+            this.fire('base-users-create', {user: user});
+          }
+        }
+      });
+    })();
+  </script>
+</dom-module>

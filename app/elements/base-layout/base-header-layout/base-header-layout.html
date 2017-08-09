@@ -1,0 +1,136 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/app-layout/app-scroll-effects/app-scroll-effects.html">
+<link rel="import" href="../../../bower_components/app-layout/app-header/app-header.html">
+<link rel="import" href="../../../bower_components/app-layout/app-header-layout/app-header-layout.html">
+<link rel="import" href="../../../bower_components/app-layout/app-toolbar/app-toolbar.html">
+<link rel="import" href="../../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../../bower_components/iron-resizable-behavior/iron-resizable-behavior.html">
+<link rel="import" href="../../../bower_components/iron-scroll-target-behavior/iron-scroll-target-behavior.html">
+<link rel="import" href="../../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../base-shared-styles/base-shared-styles.html">
+
+<dom-module id="base-header-layout">
+  <template>
+    <style include="base-shared-styles"></style>
+    <style>
+      :host {
+        display: block;
+        position: relative;
+        height: 100%;
+      }
+
+      app-toolbar {
+        color: var(--primary-text-color);
+        border-bottom: 1px solid;
+        border-bottom-color: var(--divider-color);
+      }
+
+      .icon {
+        @apply(--layout-vertical);
+        @apply(--layout-center);
+        width: 64px;
+        margin-left: -16px;
+      }
+
+      :host([no-back]) .icon {
+        display: none;
+      }
+
+      .icon paper-icon-button {
+        color: var(--primary-color);
+      }
+
+      @media (max-width: 600px) {
+        .main-title[has-siblings] {
+          @apply(--paper-font-common-nowrap);
+          min-width: 20%;
+        }
+      }
+    </style>
+
+    <app-header-layout id="headerLayout" has-scrolling-region fullbleed>
+      <app-header fixed effects="waterfall">
+        <app-toolbar>
+          <div id="back" class="icon">
+            <a href="[[xBackHref]]" tabindex="-1" on-tap="goBack">
+              <paper-icon-button icon="icons:arrow-back"></paper-icon-button>
+            </a>
+          </div>
+          <div class="main-title" has-siblings$="[[hasSiblings]]" main-title>[[xTitle]]</div>
+          <content id="headerToolbar" select=".header-toolbar"></content>
+        </app-toolbar>
+      </app-header>
+      <content></content>
+    </app-header-layout>
+
+  </template>
+  <script>
+  (() => {
+    'use strict';
+
+    Polymer({
+      is: 'base-header-layout',
+
+      behaviors: [Polymer.IronResizableBehavior, Polymer.IronScrollTargetBehavior],
+
+      properties: {
+        xTitle: {
+          type: String
+        },
+        xBackHref: {
+          type: String
+        },
+        noBack: {
+          type: Boolean,
+          reflectToAttribute: true,
+          value: false
+        },
+        scrollTarget: {
+          notify: true
+        },
+        xHistoryBack: {
+          type: Boolean,
+          reflectToAttribute: true,
+          value: false
+        }
+      },
+
+      get _defaultScrollTarget() {
+        return this.$.headerLayout.$.contentContainer;
+      },
+
+      attached: function() {
+        const headerContentNodes = this.$.headerToolbar.getDistributedNodes();
+        const hasSiblings = (headerContentNodes.length > 0 && headerContentNodes[0].children.length > 0);
+        this.set('hasSiblings', hasSiblings);
+      },
+
+      goBack: function(event) {
+        if (!this.noBack) {
+          if (this.xHistoryBack) {
+            event.stopPropagation();
+            event.preventDefault();
+            window.history.back();
+          }
+        }
+      }
+    });
+  })();
+  </script>
+</dom-module>

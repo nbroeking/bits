@@ -1,0 +1,266 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../bower_components/iron-icons/communication-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/social-icons.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../base-shared-styles/base-shared-styles.html">
+<link rel="import" href="../base-vendor/moment.html">
+
+<dom-module id="base-toolbar-notification">
+  <template>
+    <style include="base-shared-styles">
+      :host {
+        display: block;
+      }
+
+      .icon {
+        margin-left: 4px;
+        margin-right: 8px;
+        vertical-align: top;
+      }
+
+      .icon iron-icon {
+        color: var(--primary-color);
+        --iron-icon-width: 16px;
+        --iron-icon-height: 16px;
+      }
+
+      .dropdown-row:hover {
+        cursor: default;
+        background-color: rgba(0, 0, 0, 0.00);
+      }
+
+      .dropdown-row.link-true:hover {
+        cursor: pointer;
+        background-color: rgba(0, 0, 0, 0.05);
+      }
+
+      .notification-row {
+        background-color: var(--primary-background-color);
+        border-bottom: 1px solid;
+        border-bottom-color: var(--divider-color);
+        display: inline-block;
+        padding: 12px 8px 12px 8px;
+        white-space: normal;
+        width: 100%;
+      }
+
+      .notification-row-contents {
+        display: inline-block;
+        width: 350px;
+      }
+
+      @media (max-device-width: 960px) {
+        .notification-row-contents {
+          width: 280px;
+        }
+      }
+
+      .notification-row-header {
+        @apply(--layout-horizontal);
+      }
+
+      .notification-title {
+        -webkit-flex: 1 1;
+        flex: 1 1;
+      }
+
+      .notification-timestamp {
+        flex: 0 0 37%;
+        color: var(--secondary-text-color);
+        display: inline-block;
+        font-size: 11px;
+        padding-left: 12px;
+        right: 8px;
+        text-align: right;
+        top: 12px;
+      }
+
+      .notification-section .notification-project {
+        color: var(--secondary-text-color);
+        font-size: 11px;
+        margin-top: 1px;
+      }
+
+      .notification-tail {
+        position: absolute;
+        top: 0px;
+        margin-top: 0px;
+        right: 0px;
+        margin-right: 0px;
+      }
+
+      .notification-tail:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+      }
+
+      .notification-tail iron-icon {
+        --iron-icon-height: 16px;
+        --iron-icon-width: 16px;
+      }
+
+    </style>
+
+    <div
+      class$="dropdown-row notification-row link-[[hasUrl]]"
+      on-tap="_onTapActivity">
+      <div class="icon icon-action">
+        <iron-icon icon="[[activity.icon]]"></iron-icon>
+      </div>
+      <div class="notification-row-contents">
+        <div class="notification-row-header">
+          <strong class="notification-title">
+            <span>[[activity.title]]</span>
+          </strong>
+          <div class="notification-timestamp">[[activityTimestamp]]</div>
+        </div>
+        <div class="notification-project">[[activity.projectName]]</div>
+        <div class="notification-project"></div>
+      </div>
+      <div class="notification-tail">
+        <iron-icon icon="icons:clear" on-tap="_onTapDismissActivity" hidden="[[activity.dismissed]]"></iron-icon>
+      </div>
+    </div>
+
+  </template>
+  <script>
+  (() => {
+    'use strict';
+
+    Polymer({
+      is: 'base-toolbar-notification',
+
+      properties: {
+        activityTimestamp: {
+          type: String
+        },
+        jobName: {
+          type: String
+        },
+        hasUrl: {
+          type: Boolean,
+          computed: '_computeHasUrl(activity.*)'
+        }
+      },
+
+      observers: [
+        '_observeVisible(visible)'
+      ],
+
+      _computeHasUrl: function() {
+        return !!this.activity.url;
+      },
+
+      _observeVisible: function(visible) {
+        if (visible) {
+          this.startTimestampLoop();
+        } else {
+          this.cancelTimestampLoop();
+        }
+      },
+
+      _onTapDismissActivity: function(event) {
+        this.fire('base-toolbar-notifications-dismiss-activity', {activity: this.activity});
+      },
+
+      _calculateTimestamp: function(createdAt) {
+        const duration = moment.duration(Date.now() - createdAt);
+        const days = duration.days();
+
+        if (0 < days) {
+          return `${days}d`;
+        }
+
+        const hours = duration.hours();
+
+        if (0 < hours) {
+          return `${hours}h`;
+        }
+
+        const minutes = duration.minutes();
+
+        if (0 < minutes) {
+          return `${minutes}m`;
+        }
+
+        const seconds = duration.seconds();
+        return `${seconds}s`;
+      },
+
+      _onTapActivity: function() {
+        if (this.hasUrl) {
+          this._goToUrl();
+        }
+      },
+
+      _goToUrl: function() {
+        const el = document.createElement('a');
+        el.href = this.activity.url;
+
+        if (el.hostname !== window.location.hostname) {
+          window.location = el.href;
+        } else {
+          window.history.pushState({}, null, `${el.pathname}${el.search}${el.hash}`);
+          window.dispatchEvent(new CustomEvent('location-changed'));
+          this.fire('base-toolbar-notifications-close');
+        }
+      },
+
+      startTimestampLoop: function() {
+        if (this.visible && this.jobName) {
+          let timestamp = this.activity.createdAt;
+          if (isNaN(timestamp)) {
+            timestamp = Date.parse(timestamp);
+          }
+
+          const elapsed = (Date.now() - timestamp) / 1000; // seconds passed
+
+          let debounceRate = 1 * 1000; // every second
+
+          const activityTimestamp = this._calculateTimestamp(timestamp);
+
+          if (elapsed > 60 && elapsed < 3600) {
+            debounceRate = 60 * 1000; // every minute
+          } else if (elapsed >= 3600) {
+            debounceRate = 60 * 1000 * 5; // every 5 minutes
+          }
+
+          this.set('activityTimestamp', activityTimestamp);
+          this.cancelTimestampLoop();
+          this.debounce(this.jobName, () => this.startTimestampLoop(), debounceRate);
+        }
+      },
+
+      cancelTimestampLoop: function() {
+        this.cancelDebouncer(this.jobName);
+      },
+
+      attached: function() {
+        this.set('jobName', `Base#ToolbarActivityNotificationId${this.activity._id}`);
+        this.startTimestampLoop();
+      },
+
+      detached: function() {
+        this.cancelTimestampLoop();
+      }
+
+    });
+  })();
+  </script>
+</dom-module>

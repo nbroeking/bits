@@ -1,0 +1,197 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/app-layout/app-toolbar/app-toolbar.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../../bower_components/paper-progress/paper-progress.html">
+<link rel="import" href="../../bower_components/paper-spinner/paper-spinner.html">
+<link rel="import" href="../../bower_components/paper-styles/color.html">
+<link rel="import" href="../../bower_components/paper-styles/shadow.html">
+<link rel="import" href="../../bower_components/paper-styles/typography.html">
+<link rel="import" href="../../bower_components/paper-toast/paper-toast.html">
+<link rel="import" href="../base-layout/base-header-layout/base-header-layout.html">
+<link rel="import" href="../base-shared-styles/base-shared-styles.html">
+<link rel="import" href="./base-omgs-current-info.html">
+
+<dom-module id="base-omgs-package">
+  <template>
+    <style include="base-shared-styles"></style>
+    <style>
+      :host {
+        display: block;
+      }
+
+      .header-toolbar {
+        @apply(--layout-horizontal);
+        @apply(--layout-center);
+      }
+
+      paper-card {
+        display: block;
+      }
+
+      .line {
+        color: var(--secondary-text-color);
+      }
+
+      .label {
+        @apply(--paper-font-body1);
+        min-width: 200px;
+      }
+
+      .value {
+        @apply(--paper-font-code1);
+        margin-left: 8px;
+      }
+    </style>
+
+    <base-header-layout
+      x-back-href="/home/omgs/"
+      x-title="[[omg.data.name]]">
+      <div class="header-toolbar">
+        <paper-spinner active="[[loading]]"></paper-spinner>
+        <base-omgs-current-info current-info="[[currentInfo]]"></base-omgs-current-info>
+      </div>
+      <div class="header-content">
+        <div class="content">
+          <paper-card>
+            <div class="card-content">
+              <div class="line">
+                <div class="label">Name</div>
+                <div class="value">[[omg.data.name]]</div>
+              </div>
+              <div class="line">
+                <div class="label">Branch</div>
+                <div class="value">[[omg.data.branch]]</div>
+              </div>
+              <div class="line">
+                <div class="label">Version</div>
+                <div class="value">[[omg.data.version]]</div>
+              </div>
+              <div class="line">
+                <div class="label">State</div>
+                <div class="value">[[omg.state]]</div>
+              </div>
+              <div class="line" hidden="[[!isUploading]]">
+                <span class="label">[[_convertToMebaBytes(omg.data.curr)]]MB / [[_convertToMebaBytes(omg.data.size)]]MB ([[_computePercentage(omg.data.curr, omg.data.size)]])</span>
+                <paper-progress class="value" value="[[omg.data.curr]]" max="[[omg.data.size]]"></paper-progress>
+              </div>
+            </div>
+            <div class="card-actions">
+              <paper-spinner id="spinner"></paper-spinner>
+              <paper-button id="loadBtn" class="primary-btn" raised on-tap="loadOmg" disabled="[[_computeLoadDisabled(omg, currentInfo)]]">Load</paper-button>
+              <paper-button class="primary-btn-light" on-tap="deleteOmg">Delete</paper-button>
+            </div>
+          </paper-card>
+        </div>
+      </div>
+    </base-header-layout>
+
+    <paper-toast id="toast"></paper-toast>
+
+  </template>
+  <script>
+    (() => {
+      'use strict';
+
+      Polymer({
+
+        is: 'base-omgs-package',
+
+        behaviors: [Polymer.IronResizableBehavior],
+
+        properties: {
+          omg: {
+            type: Object,
+            value: function() {
+              return null;
+            }
+          },
+          currentInfo: {
+            type: Object,
+            value: null
+          },
+          isUploading: {
+            type: Boolean,
+            computed: '_computeIsUploading(omg)'
+          }
+        },
+
+        _computeIsUploading: function(omg) {
+          return omg && ('Uploading' === omg.state || 'Stalled' === omg.state);
+        },
+
+        _convertToMebaBytes: function(size) {
+          if (Number.isInteger(size)) {
+            return (size / 1024 / 1024).toFixed(1);
+          } else {
+            return size;
+          }
+        },
+
+        _computePercentage: function(curr, size) {
+          if (Number.isInteger(curr) && Number.isInteger(size)) {
+            return (curr * 100 / size).toFixed(1) + '%';
+          } else {
+            return 'n/a';
+          }
+        },
+
+        loadOmg: function() {
+          this.$.spinner.active = true;
+          this.$.loadBtn.disabled = true;
+
+          const cleanup = () => {
+            this.$.spinner.active = false;
+            this.$.loadBtn.disabled = false;
+          };
+
+          const reject = (err) => {
+            cleanup();
+
+            let message = err.message;
+            if ('omg/incompatable-version' === message) {
+              message = 'Version is incompatable, cannot load.';
+            }
+            this.$.toast.text = message;
+            this.$.toast.show();
+          };
+
+          this.fire('base-omgs-content-load', {
+            omg: this.omg,
+            resolve: cleanup,
+            reject: reject
+          });
+        },
+
+        _computeLoadDisabled: function(omg, currentInfo) {
+          const isReady = omg && 'Ready' === omg.state;
+          return !isReady;
+        },
+
+        deleteOmg: function() {
+          this.fire('base-omgs-content-delete', {omg: this.omg});
+        }
+
+      });
+    })();
+  </script>
+</dom-module>

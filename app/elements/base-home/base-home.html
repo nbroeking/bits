@@ -1,0 +1,98 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../base-layout/base-drawer-layout/base-drawer-layout.html">
+<link rel="import" href="../base-shared-styles/base-shared-styles.html">
+
+<dom-module id="base-home">
+  <template>
+    <style>
+      :host {
+        display: block;
+        position: relative;
+        height: 100%;
+      }
+    </style>
+
+    <base-drawer-layout
+      id="layout"
+      m-name="home"
+      m-icon="icons:home"
+      m-display-name="Home",
+      pages="[[pages]]"
+      default-page-name="dashboard">
+    </base-drawer-layout>
+
+  </template>
+  <script>
+  (() => {
+    'use strict';
+
+    Polymer({
+      is: 'base-home',
+
+      properties: {
+        pages: {
+          type: Array,
+          value: function() {
+            return [{
+              name: 'dashboard',
+              element: 'base-dashboard',
+              import: '/elements/base-dashboard/base-dashboard.html',
+              displayName: 'Dashboard',
+              icon: 'icons:dashboard'
+            }, {
+              name: 'activity',
+              element: 'base-activity',
+              import: '/elements/base-activity/base-activity.html',
+              displayName: 'Activity',
+              icon: 'icons:list'
+            }, {
+              name: 'users',
+              element: 'base-users-content',
+              import: '/elements/base-users/base-users-content.html',
+              displayName: 'Users',
+              icon: 'social:people'
+            }, {
+              name: 'omgs',
+              element: 'base-omgs-content',
+              import: '/elements/base-omgs/base-omgs-content.html',
+              displayName: 'OMGs',
+              icon: 'icons:group-work'
+            }, {
+              name: 'modules',
+              element: 'base-modules-list',
+              import: '/elements/base-modules/base-modules-list.html',
+              displayName: 'Modules',
+              icon: 'icons:view-module'
+            }, {
+              name: 'logs',
+              element: 'base-logs-content',
+              import: '/elements/base-logs/base-logs-content.html',
+              displayName: 'Logs',
+              icon: 'icons:timeline'
+            }];
+          }
+        }
+      },
+
+      toggleSidenav: function() {
+        this.$.layout.toggleSidenav();
+      }
+    });
+  })();
+  </script>
+</dom-module>

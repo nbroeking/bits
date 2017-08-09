@@ -1,0 +1,203 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../base-message-center/base-message-center-behavior.html">
+
+<script>
+  ((global) => {
+    'use strict';
+
+    global.Bits = global.Bits || {};
+
+    /**
+     * @polymerBehavior
+     */
+    global.Bits.BaseCrudBehaviorImpl = {
+      created: function() {
+        this._boundCreated = this._created.bind(this);
+        this._boundUpdated = this._updated.bind(this);
+        this._boundDeleted = this._deleted.bind(this);
+      },
+
+      _compareItem: function(a, b) {
+        let aId = null;
+        if (a) {
+          aId = a.id;
+        }
+        let bId = null;
+        if (b) {
+          bId = b.id;
+        }
+        return aId === bId;
+      },
+
+      _created: function(item) {
+        if (!this.noItems) {
+          const currentItem = this.items.find((currentItem) => this._compareItem(item, currentItem));
+          if (currentItem) {
+            const index = this.items.indexOf(currentItem);
+            this.splice('items', index, 1, item);
+          } else {
+            this.push('items', item);
+          }
+        }
+        this.fire('base-crud-item-created', {tag: this.tag, item: item});
+      },
+
+      _updated: function(item) {
+        if (!this.noItems) {
+          const currentItem = this.items.find((currentItem) => this._compareItem(item, currentItem));
+          if (currentItem) {
+            const index = this.items.indexOf(currentItem);
+            this.splice('items', index, 1, item);
+          } else {
+            this.push('items', item);
+          }
+        }
+        this.fire('base-crud-item-updated', {tag: this.tag, item: item});
+      },
+
+      _deleted: function(item) {
+        if (!this.noItems) {
+          const currentItem = this.items.find((currentItem) => this._compareItem(item, currentItem));
+          if (currentItem) {
+            const index = this.items.indexOf(currentItem);
+            this.splice('items', index, 1);
+          }
+        }
+        this.fire('base-crud-item-deleted', {tag: this.tag, item: item});
+      },
+
+      properties: {
+        tag: {
+          type: String,
+          observer: '_tagChanged',
+          value: null
+        },
+        items: {
+          type: Array,
+          notify: true,
+          readOnly: true,
+          value: function() {
+            return [];
+          }
+        },
+        noItems: {
+          type: Boolean,
+          observer: '_noItemsChanged',
+          value: false
+        }
+      },
+
+      _tagChanged: function(tag, oldTag) {
+        if (oldTag) {
+          this.removeSocketEventListener(`${oldTag} created`, this._boundCreated);
+          this.removeSocketEventListener(`${oldTag} updated`, this._boundUpdated);
+          this.removeSocketEventListener(`${oldTag} deleted`, this._boundDeleted);
+        }
+        if (tag) {
+          this.addSocketEventListener(`${tag} created`, this._boundCreated);
+          this.addSocketEventListener(`${tag} updated`, this._boundUpdated);
+          this.addSocketEventListener(`${tag} deleted`, this._boundDeleted);
+        }
+      },
+
+      _noItemsChanged: function() {
+        this._initItems();
+      },
+
+      ready: function() {
+        this.addConnectRunnable(() => this._initItems());
+      },
+
+      _initItems: function() {
+        this._setItems([]);
+        if (!this.noItems) {
+          this.list()
+          .then((items) => this._setItems(items))
+          .catch((err) => {
+            let message = '';
+            if ('string' === typeof(err)) {
+              message = err;
+            } else if ('object' === typeof(err) && null !== err) {
+              if ('string' === typeof(err.message)) {
+                message = err.message;
+              } else {
+                message = err;
+              }
+            }
+            console.warn(`Failed to list on connect: ${message}.`);
+          });
+        }
+      },
+
+      create: function(item) {
+        if (this.tag) {
+          return this.sendRequest(`${this.tag} create`, item);
+        } else {
+          return Promise.reject(new Error('no tag defined.'));
+        }
+      },
+
+      count: function(query={}) {
+        if (this.tag) {
+          return this.sendRequest(`${this.tag} count`, query);
+        } else {
+          return Promise.reject(new Error('no tag defined.'));
+        }
+      },
+
+      list: function(query={}, options={}) {
+        if (this.tag) {
+          return this.sendRequest(`${this.tag} list`, query, options);
+        } else {
+          return Promise.reject(new Error('no tag defined.'));
+        }
+      },
+
+      get: function(id) {
+        if (this.tag) {
+          return this.sendRequest(`${this.tag} get`, id);
+        } else {
+          return Promise.reject(new Error('no tag defined.'));
+        }
+      },
+
+      update: function(id, update) {
+        if (this.tag) {
+          return this.sendRequest(`${this.tag} update`, id, update);
+        } else {
+          return Promise.reject(new Error('no tag defined.'));
+        }
+      },
+
+      delete: function(id) {
+        if (this.tag) {
+          return this.sendRequest(`${this.tag} delete`, id);
+        } else {
+          return Promise.reject(new Error('no tag defined.'));
+        }
+      }
+    };
+
+    /**
+      * @polymerBehavior
+      */
+    global.Bits.BaseCrudBehavior = [
+      global.Bits.BaseMessageCenterBehavior,
+      global.Bits.BaseCrudBehaviorImpl
+    ];
+  })(this);
+</script>

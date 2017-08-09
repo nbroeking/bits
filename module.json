@@ -1,0 +1,9 @@
+{
+    "isBase": true,
+    "version": "2.3.0",
+    "displayName": "BITS Base",
+    "name": "bits-base",
+    "upgrade-dependencies": {
+        "bits-base": "^2.0.0"
+    }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "bits-base",
+  "main": "index.html",
+  "dependencies": {
+    "iron-elements": "^1.0.10",
+    "paper-elements": "^1.0.7",
+    "neon-elements": "^1.0.0",
+    "gold-elements": "^1.0.1",
+    "platinum-elements": "^2.0.0",
+    "app-elements": "^0.10.1",
+    "lazy-imports": "^0.0.2",
+    "vaadin-core-elements": "^1.3.0",
+    "socket.io-client": "^1.7.2",
+    "masonry": "^4.1.1",
+    "roboto-fontface": "^0.6.0",
+    "ua-parser-js": "^0.7.12",
+    "cookies-js": "^1.2.3",
+    "moment": "^2.17.1",
+    "vaadin-grid": "^2.0.3",
+    "push.js": "^1.0.4"
+  }
+}

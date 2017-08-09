@@ -1,0 +1,190 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/app-route/app-location.html">
+<link rel="import" href="../../bower_components/app-route/app-route.html">
+<link rel="import" href="../../bower_components/iron-resizable-behavior/iron-resizable-behavior.html">
+<link rel="import" href="../../bower_components/neon-animation/neon-animated-pages.html">
+<link rel="import" href="../../bower_components/neon-animation/neon-animations.html">
+<link rel="import" href="../base-scopes/base-scopes.html">
+<link rel="import" href="./base-users-create.html">
+<link rel="import" href="./base-users-detail.html">
+<link rel="import" href="./base-users-list.html">
+<link rel="import" href="./base-users.html">
+
+<dom-module id="base-users-content">
+  <template>
+    <style>
+      :host {
+        display: block;
+        position: relative;
+        height: 100%;
+      }
+
+      #content {
+        height: 100%;
+        position: relative;
+      }
+    </style>
+
+    <app-location route="{{route}}"></app-location>
+    <app-route route="{{route}}" pattern="/home/users/:userId" data="{{routeData}}"></app-route>
+    <base-users id="users" items="{{users}}"></base-users>
+    <base-scopes scopes="{{scopes}}"></base-scopes>
+
+    <neon-animated-pages
+        id="content"
+        selected="[[page]]"
+        attr-for-selected="data-route"
+        entry-animation="fade-in-animation"
+        exit-animation="fade-out-animation">
+      <base-users-create id="create" data-route="create" scopes="[[scopes]]"></base-users-create>
+      <base-users-list id="list" data-route="users" users="[[users]]"></base-users-list>
+      <base-users-detail id="detail" data-route="detail" user="[[user]]" scopes="[[scopes]]"></base-users-detail>
+    </neon-animated-pages>
+
+  </template>
+  <script>
+  (() => {
+    'use strict';
+
+    Polymer({
+      is: 'base-users-content',
+
+      behaviors: [
+        Polymer.IronResizableBehavior
+      ],
+
+      properties: {
+        route: {
+          type: Object
+        },
+        routeData: {
+          type: Object
+        },
+        userId: {
+          type: String,
+          observer: '_userIdChanged'
+        },
+        user: {
+          type: Object
+        },
+        page: {
+          type: String,
+          observer: '_pageChanged'
+        },
+        users: {
+          type: Array
+        }
+      },
+
+      _userIdChanged: function(userId) {
+        if ('create' === userId) {
+          this.page = 'create';
+        } else if (null === userId) {
+          this.page = 'users';
+        } else {
+          this.user = null;
+          this.$.users.get(Number(userId))
+          .then((user) => {
+            if (user) {
+              this.user = user;
+              this.page = 'detail';
+            } else {
+              return Promise.reject(new Error('user/not-found'));
+            }
+          })
+          .catch(() => this.set('routeData.userId', null));
+        }
+      },
+
+      _pageChanged: function(page) {
+        if ('create' === page) {
+          this.$.create.reset();
+        }
+      },
+
+      observers: [
+        '_routeDataUserIdChanged(routeData.userId)'
+      ],
+
+      _routeDataUserIdChanged: function(userId) {
+        this.userId = userId || null;
+      },
+
+      listeners: {
+        'base-users-create': '_onCreateUser',
+        'base-users-update': '_onUpdateUser',
+        'base-users-delete': '_onDeleteUser',
+        'base-users-created': '_onUserCreated',
+        'base-users-updated': '_onUserUpdated',
+        'base-users-deleted': '_onUserDeleted'
+      },
+
+      _onCreateUser: function(event, detail) {
+        const user = detail.user;
+        if (user) {
+          this.$.users.create(user)
+          .then((user) => this.set('routeData.userId', user.id))
+          .catch((err) => {
+            console.warn(err);
+            this.$.create.reset();
+          });
+        }
+      },
+
+      _onUpdateUser: function(event, detail) {
+        const userId = detail.userId;
+        const update = detail.update;
+        if (userId && update) {
+          this.$.users.update(userId, update)
+          .catch((err) => console.warn(err));
+        }
+      },
+
+      _onDeleteUser: function(event, detail) {
+        const userId = detail.userId;
+        if (userId) {
+          this.$.users.delete(userId)
+          .then((user) => this.set('routeData.userId', ''))
+          .catch((err) => console.warn(err));
+        }
+      },
+
+      _onUserCreated: function(event, detail) {
+        const user = detail.user;
+        if (Number(this.userId) === user.id) {
+          this.user = user;
+        }
+      },
+
+      _onUserUpdated: function(event, detail) {
+        const user = detail.user;
+        if (Number(this.userId) === user.id) {
+          this.user = user;
+        }
+      },
+
+      _onUserDeleted: function(event, detail) {
+        const user = detail.user;
+        if (Number(this.userId) === user.id) {
+          this.set('routeData.userId', null);
+        }
+      }
+    });
+  })();
+  </script>
+</dom-module>

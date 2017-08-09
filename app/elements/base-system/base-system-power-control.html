@@ -1,0 +1,117 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/iron-selector/iron-selector.html">
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../../bower_components/paper-menu-button/paper-menu-button.html">
+<link rel="import" href="../base-auth/base-auth.html">
+<link rel="import" href="./base-system.html">
+
+<dom-module id="base-system-power-control">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+
+      #menu {
+        padding: 0px;
+        --paper-menu-button-dropdown: {
+          margin: 16px 0px 16px 0px;
+          background-color: var(--primary-background-color);
+          color: var(--primary-text-color);
+        };
+      }
+
+      .icon {
+        color: var(--base-system-power-control-icon-color, --primary-text-color);
+      }
+      .icon:hover {
+        color: var(--base-system-power-control-icon-hover-color, --primary-text-color);
+      }
+
+      @media (min-width: 1024px) {
+        .icon {
+          color: var(--base-system-power-control-icon-color, --secondary-text-color);
+        }
+      }
+    </style>
+
+    <base-auth id="auth"></base-auth>
+    <base-system id="system"></base-system>
+
+    <paper-menu-button
+        id="menu"
+        ignore-select
+        no-overlap
+        horizontal-align="right"
+        vertical-align="[[verticalAlign]]">
+      <paper-icon-button
+          icon="icons:power-settings-new"
+          class="dropdown-trigger icon">
+      </paper-icon-button>
+      <iron-selector
+          class="actions dropdown-content"
+          attr-for-selected="data-route"
+          selected="{{selectedAction}}">
+        <paper-item class="action" data-route="reboot">Reboot</paper-item>
+        <paper-item class="action" data-route="powerOff">Power off</paper-item>
+        <paper-item class="action" data-route="signOut">Sign out</paper-item>
+      </iron-selector>
+    </paper-menu-button>
+
+  </template>
+  <script>
+  (() => {
+    'use strict';
+
+    Polymer({
+      is: 'base-system-power-control',
+
+      properties: {
+        selectedAction: {
+          type: String,
+          observer: '_selectedActionChanged',
+          value: null
+        },
+        verticalAlign: {
+          type: String,
+          value: 'top'
+        }
+      },
+
+      _selectedActionChanged: function(selectedAction) {
+        if ('reboot' === selectedAction) {
+          this.$.menu.close();
+          this.$.system.restart()
+          .catch((err) => console.warn(err.message));
+        } else if ('powerOff' === selectedAction) {
+          this.$.menu.close();
+          this.$.system.shutdown()
+          .catch((err) => console.warn(err.message));
+        } else if ('signOut' === selectedAction) {
+          this.$.menu.close();
+          this.$.auth.signOut()
+          .catch((err) => console.warn(err.message));
+        }
+        this.selectedAction = null;
+      }
+    });
+  })();
+  </script>
+</dom-module>

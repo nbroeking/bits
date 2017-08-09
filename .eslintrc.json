@@ -1,0 +1,42 @@
+{
+  "extends": ["google"],
+  "env": {
+    "es6": true,
+    "node": true,
+    "mocha": true,
+    "browser": true
+  },
+  "plugins": [
+    "html"
+  ],
+  "rules": {
+    "arrow-parens": ["error", "always"],
+    "arrow-spacing": "error",
+    "comma-dangle": "off",
+    "eol-last": "error",
+    "indent": ["error", 2, {
+      "MemberExpression": 0
+      }],
+    "keyword-spacing": "error",
+    "linebreak-style": ["warn", "unix"],
+    "max-len": "off",
+    "max-nested-callbacks": "off",
+    "new-cap": ["error", {
+      "capIsNewExceptions": ["Polymer"]
+      }],
+    "no-trailing-spaces": "error",
+    "no-warning-comments": "warn",
+    "require-jsdoc": "off",
+    "space-before-blocks": "error",
+    "space-before-function-paren": ["error", {
+      "anonymous": "never",
+      "named": "never",
+      "asyncArrow": "never"
+      }],
+    "space-in-parens": "error",
+    "yoda": "off"
+  },
+  "globals": {
+    "Polymer": true
+  }
+}

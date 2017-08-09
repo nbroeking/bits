@@ -1,0 +1,101 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../base-message-center/base-message-center-behavior.html">
+
+<script>
+((global) => {
+  'use strict';
+
+  const EVENT_PREFIX = 'base#Scopes ';
+  const EVENT_CREATE = EVENT_PREFIX + 'create';
+  const EVENT_CREATED = EVENT_PREFIX + 'created';
+  const EVENT_LIST = EVENT_PREFIX + 'list';
+  const EVENT_GET = EVENT_PREFIX + 'get';
+  const EVENT_UPDATE = EVENT_PREFIX + 'update';
+  const EVENT_UPDATED = EVENT_PREFIX + 'updated';
+  const EVENT_DELETE = EVENT_PREFIX + 'delete';
+  const EVENT_DELETED = EVENT_PREFIX + 'deleted';
+
+  Polymer({
+    is: 'base-scopes',
+
+    behaviors: [
+      /** @polymerBehavior BaseMessageCenterBehavior */
+      global.Bits.BaseMessageCenterBehavior
+    ],
+
+    properties: {
+      scopes: {
+        type: Array,
+        readOnly: true,
+        notify: true
+      }
+    },
+
+    ready: function() {
+      this.addSocketEventListener(EVENT_CREATED, this._onUpdated.bind(this));
+      this.addSocketEventListener(EVENT_UPDATED, this._onUpdated.bind(this));
+      this.addSocketEventListener(EVENT_DELETED, this._onDeleted.bind(this));
+      this.addConnectRunnable(() => {
+        this.list()
+        .then((scopes) => this._setScopes(scopes))
+        .catch((err) => console.warn(err));
+      });
+    },
+
+    _onUpdated: function(scope) {
+      const scopeName = scope.name;
+      const currentScope = this.scopes.find((scope) => scope.name === scopeName);
+      if (currentScope) {
+        const index = this.scopes.indexOf(currentScope);
+        this.splice('scopes', index, 1, scope);
+      } else {
+        this.push('scopes', scope);
+      }
+    },
+
+    _onDeleted: function(scope) {
+      const scopeName = scope.name;
+      const currentScope = this.scopes.find((scope) => scope.name === scopeName);
+      if (currentScope) {
+        const index = this.scopes.indexOf(currentScope);
+        this.splice('scopes', index, 1);
+      }
+    },
+
+    create: function(...data) {
+      return this.sendRequest(EVENT_CREATE, ...data);
+    },
+
+    list: function(...data) {
+      return this.sendRequest(EVENT_LIST, ...data);
+    },
+
+    get: function(...data) {
+      return this.sendRequest(EVENT_GET, ...data);
+    },
+
+    update: function(...data) {
+      return this.sendRequest(EVENT_UPDATE, ...data);
+    },
+
+    delete: function(...data) {
+      return this.sendRequest(EVENT_DELETE, ...data);
+    }
+  });
+})(this);
+</script>

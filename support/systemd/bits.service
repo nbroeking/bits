@@ -1,0 +1,17 @@
+[Unit]
+Description=Bits
+After=multi-user.target
+
+[Service]
+User=root
+Type=simple
+PIDFile=/var/run/bits.pid
+WorkingDirectory=/opt/bits
+ExecStartPre=/bin/mkdir -p /var/bits/base/nodelogs
+ExecStart=/bin/bash -c "exec /usr/bin/nodejs /opt/bits/app.js -d /var/bits -v -o /var/bits/base/nodelogs > /dev/null 2>&1"
+Restart=always
+RestartSec=5
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target

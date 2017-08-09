@@ -1,0 +1,165 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/app-layout/app-layout.html">
+<link rel="import" href="../../bower_components/app-route/app-location.html">
+<link rel="import" href="../../bower_components/app-route/app-route.html">
+<link rel="import" href="../../bower_components/iron-media-query/iron-media-query.html">
+<link rel="import" href="../../bower_components/iron-resizable-behavior/iron-resizable-behavior.html">
+<link rel="import" href="../../bower_components/paper-spinner/paper-spinner.html">
+<link rel="import" href="../base-gallery/base-gallery.html">
+<link rel="import" href="../base-loading/base-loading.html">
+<link rel="import" href="../base-layout/base-lazy-content/base-lazy-content.html">
+<link rel="import" href="../base-message-center/base-message-center.html">
+<link rel="import" href="../base-page-items/base-page-items.html">
+<link rel="import" href="../base-toolbar/base-toolbar.html">
+
+<dom-module id="base-console">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+      base-gallery, app-header-layout, #content {
+        height: 100%;
+      }
+      #galleryDrawer {
+        --app-drawer-width: 320px;
+      }
+      base-gallery {
+        height: 100%;
+      }
+      #content {
+        height: 100%;
+        position: relative;
+      }
+    </style>
+
+    <app-location route="{{route}}"></app-location>
+    <app-route route="{{route}}" pattern="/:pageName" data="{{routeData}}"></app-route>
+    <base-page-items items="{{pageItems}}"></base-page-items>
+    <iron-media-query query="max-width: 1023px" query-matches="{{narrow}}"></iron-media-query>
+    <base-message-center connected="{{connected}}"></base-message-center>
+
+    <app-drawer-layout fullbleed force-narrow>
+      <app-drawer id="galleryDrawer" opened="{{galleryOpened}}">
+        <base-gallery narrow="[[narrow]]"></base-gallery>
+      </app-drawer>
+      <app-header-layout fullbleed>
+        <app-header shadow>
+          <base-toolbar id="toolbar" opened$="[[galleryOpened]]" no-sidenav-toggle="[[noSidenavToggle]]" narrow="[[narrow]]"></base-toolbar>
+        </app-header>
+        <base-lazy-content id="content" page="[[page]]" current-element="{{currentElement}}"></base-lazy-content>
+      </app-header-layout>
+    </app-drawer-layout>
+
+  </template>
+  <script>
+  (() => {
+    'use strict';
+
+    Polymer({
+      is: 'base-console',
+
+      behaviors: [
+        Polymer.IronResizableBehavior
+      ],
+
+      properties: {
+        route: {
+          type: Object
+        },
+        routeData: {
+          type: Object
+        },
+        pageItems: {
+          type: Array
+        },
+        pageName: {
+          type: String
+        },
+        connected: {
+          type: Boolean
+        },
+        page: {
+          type: Object,
+          computed: '_computePage(pageItems.*, pageName, connected)'
+        },
+        narrow: {
+          type: Boolean
+        },
+        noSidenavToggle: {
+          type: Boolean,
+          computed: '_computeNoSideNavToggle(currentElement)',
+          value: false
+        },
+        currentElement: {
+          type: Object,
+          observer: '_currentElementChanged'
+        }
+      },
+
+      _computePage: function(changes, pageName, connected) {
+        if (!connected) {
+          return null;
+        } else if (Array.isArray(this.pageItems)) {
+          const page = this.pageItems.find((item) => item.name === pageName);
+          return page || null;
+        } else {
+          return null;
+        }
+      },
+
+      _computeNoSideNavToggle: function(currentElement) {
+        return null === currentElement || 'function' !== typeof(currentElement.toggleSidenav);
+      },
+
+      _currentElementChanged: function() {
+        this.$.galleryDrawer.close();
+      },
+
+      observers: [
+        '_routeDataPageChanged(routeData.pageName)',
+      ],
+
+      _routeDataPageChanged: function(pageName) {
+        this.pageName = pageName || 'home';
+      },
+
+      listeners: {
+        'base-console-toggle-gallery': '_onToggleGallery',
+        'base-console-toggle-sidenav': '_onToggleSidenav',
+        'bits-base-error': '_onBaseError'
+      },
+
+      _onBaseError: function(event, detail) {
+        console.warn('Deprecication warning: Use BaseActivity instead.', detail);
+      },
+
+      _onToggleGallery: function() {
+        this.$.galleryDrawer.toggle();
+      },
+
+      _onToggleSidenav: function() {
+        const element = this.currentElement;
+        if (!this.noSidenavToggle) {
+          element.toggleSidenav();
+        }
+      }
+    });
+  })();
+  </script>
+</dom-module>

@@ -1,0 +1,277 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/app-layout/app-header/app-header.html">
+<link rel="import" href="../../bower_components/app-layout/app-header-layout/app-header-layout.html">
+<link rel="import" href="../../bower_components/app-layout/app-toolbar/app-toolbar.html">
+<link rel="import" href="../../bower_components/paper-spinner/paper-spinner-lite.html">
+<link rel="import" href="../../bower_components/paper-styles/typography.html">
+<link rel="import" href="../base-activities/base-activities.html">
+<link rel="import" href="../base-shared-styles/base-shared-styles.html">
+<link rel="import" href="../base-vendor/moment.html">
+
+
+<dom-module id="base-activity">
+  <template>
+    <style include="base-shared-styles"></style>
+    <style>
+      :host {
+        display: block;
+        height: 100%;
+
+        @apply(--paper-font-body1);
+        font-size: 12px;
+      }
+
+      #header {
+        position: absolute;
+      }
+
+      app-toolbar {
+        box-sizing: border-box;
+        border-bottom: 1px solid;
+        border-bottom-color: var(--divider-color);
+      }
+
+      .panel-content {
+        padding: 24px;
+        overflow: auto;
+      }
+
+      .activity-wrapper {
+        padding-bottom: 12px;
+      }
+
+      .activity-inner-wrapper {
+        margin-left: auto;
+        margin-right: auto;
+        max-width: 1012px;
+        min-width: 544px;
+        padding-left: 12px;
+        padding-right: 20px;
+      }
+
+      .activity-content {
+        position: relative;
+      }
+      .activity-stream {
+        -webkit-flex: 1 1 auto;
+        flex: 1 1 auto;
+        padding-left: 0;
+        padding-right: 0;
+        padding-top: .1px;
+      }
+      .activity-group {
+        margin-bottom: 8px;
+        max-width: 100%;
+        position: relative;
+      }
+      .activity-day {
+        margin: 0;
+        padding-top: 14px;
+        padding-left: 8px;
+      }
+      .activity-timestamp {
+        -webkit-flex: 0 0 60px;
+        flex: 0 0 60px;
+        -webkit-box-ordinal-group: 1;
+        -webkit-order: 1;
+        order: 1;
+        color: var(--secondary-text-color);
+      }
+      .activity-icon {
+        -webkit-flex: 0 0 18px;
+        flex: 0 0 18px;
+        -webkit-box-ordinal-group: 2;
+        -webkit-order: 2;
+        order: 2;
+        padding-left: 0;
+      }
+      .activity-icon .icon {
+        position: relative;
+        bottom: 1px;
+      }
+      .activity-icon iron-icon {
+        color: var(--primary-color);
+        --iron-icon-height: 16px;
+        --iron-icon-width: 16px;
+      }
+      .activity-ongoing {
+        position: relative;
+        -webkit-flex: 0 0 18px;
+        flex: 0 0 18px;
+        -webkit-box-ordinal-group: 2;
+        -webkit-order: 2;
+        order: 2;
+        padding-left: 0;
+      }
+      .activity-ongoing paper-spinner-lite {
+        transform: scale(0.571);
+        position: absolute;
+        top: -4px;
+        left: 0px;
+      }
+      .activity-summary {
+        @apply(--layout-vertical);
+        -webkit-flex: 1 1 auto;
+        flex: 1 1 auto;
+        -webkit-box-ordinal-group: 3;
+        -webkit-order: 3;
+        order: 3;
+        min-width: 0;
+      }
+      .activity-text-overflow {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .activity-title {
+        -webkit-flex: 1 1;
+        flex: 1 1;
+        color: var(--primary-text-color);
+        padding-left: 4px;
+      }
+      .activity-details {
+        -webkit-flex: 1 1;
+        flex: 1 1;
+        color: var(--secondary-text-color);
+        padding-left: 4px;
+        padding-right: 4px;
+      }
+
+      @media (min-width: 600px) {
+        .activity-stream {
+          padding-left: 0px;
+          padding-right: 0px;
+        }
+        .activity-icon {
+          -webkit-flex: 0 0 26px;
+          flex: 0 0 26px;
+          padding-left: 8px;
+        }
+        .activity-ongoing {
+          -webkit-flex: 0 0 26px;
+          flex: 0 0 26px;
+          padding-left: 8px;
+        }
+        .activity-summary {
+          @apply(--layout-horizontal);
+        }
+        .activity-title {
+          -webkit-flex: 0 0 152px;
+          flex: 0 0 152px;
+          padding-left: 8px;
+        }
+        .activity-details {
+          padding-left: 20px;
+          padding-right: 20px;
+        }
+      }
+
+    </style>
+
+    <base-activities id="activities" no-items></base-activities>
+    <app-header-layout has-scrolling-region fullbleed>
+      <app-header id="header">
+        <app-toolbar>
+          <div main-title>Activity</div>
+        </app-toolbar>
+      </app-header>
+      <div class="panel-content">
+        <div class="activity-wrapper full-width">
+          <div class="activity-inner-wrapper">
+            <div class="activity-content">
+              <ol class="activity-stream">
+                <li class="activity-group">
+                  <div>
+                    <!-- <div class="expanding-row activity-day">
+                      <h3 class="activity-day-label">Yesterday</h3>
+                    </div> -->
+                    <ol>
+                      <template id="repeat" is="dom-repeat" items="[[activities]]" as="activity">
+                        <li>
+                          <div class="expanding-row">
+                            <div class="expanding-row-summary">
+                              <div class="activity-timestamp">[[_computeTimestamp(activity.createdAt)]]</div>
+                              <div class="activity-icon" hidden="[[activity.ongoing]]">
+                                <div class="icon">
+                                  <iron-icon icon="[[activity.icon]]"></iron-icon>
+                                </div>
+                              </div>
+                              <div class="activity-ongoing" hidden="[[!activity.ongoing]]">
+                                <paper-spinner-lite active></paper-spinner-lite>
+                              </div>
+                              <div class="activity-summary">
+                                <div class="activity-title activity-text-overflow">
+                                  <span>[[activity.projectName]]</span>
+                                </div>
+                                <div class="activity-details activity-text-overflow">
+                                  <span>[[activity.title]]</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </li>
+                      </template>
+                    </ol>
+                  </div>
+                </li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+    </app-header-layout>
+
+  </template>
+  <script>
+  (() => {
+    'use strict';
+
+    Polymer({
+      is: 'base-activity',
+
+      properties: {
+        activities: {
+          type: Array
+        }
+      },
+
+      listeners: {
+        'base-crud-item-created': '_getItems',
+        'base-crud-item-updated': '_getItems',
+        'base-crud-item-deleted': '_getItems'
+      },
+
+      ready: function() {
+        this._getItems();
+      },
+
+      _getItems: function() {
+        this.debounce('getItems', () => {
+          this.$.activities.list({}, {sort: [{createdAt: 'desc'}]})
+          .then((activities) => this.set('activities', activities));
+        }, 100);
+      },
+
+      _computeTimestamp: function(createdAt) {
+        const m = moment(createdAt);
+        return m.format('h:mm A');
+      }
+    });
+  })();
+  </script>
+</dom-module>

@@ -1,0 +1,174 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/app-storage/app-localstorage/app-localstorage-document.html">
+<link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
+
+<dom-module id="base-auth">
+  <template>
+    <app-localstorage-document
+        id="accessToken"
+        session-only
+        key="base#accessToken"
+        data="{{accessToken}}">
+    </app-localstorage-document>
+
+    <iron-ajax
+      id="signin"
+      url="/api/base/auth/signin"
+      method="POST"
+      content-type="application/json"
+      handle-as="json">
+    </iron-ajax>
+
+    <iron-ajax
+      id="verify"
+      url="/api/base/auth/verify"
+      method="POST"
+      content-type="application/json"
+      handle-as="json">
+    </iron-ajax>
+
+  </template>
+  <script>
+  (() => {
+    'use strict';
+
+    let sVerifyToken = null;
+    let sVerifyPromise = Promise.resolve();
+
+    Polymer({
+      is: 'base-auth',
+
+      properties: {
+
+        accessToken: {
+          type: String,
+          observer: '_accessTokenChanged',
+          notify: true
+        },
+
+        user: {
+          type: Object,
+          readOnly: true,
+          notify: true
+        },
+
+        signedIn: {
+          type: Boolean,
+          computed: '_computeSignedIn(user)',
+          notify: true
+        }
+
+      },
+
+      _accessTokenChanged: function(accessToken) {
+        if (accessToken) {
+          if (sVerifyToken !== accessToken) {
+            sVerifyToken = accessToken;
+            sVerifyPromise = sVerifyPromise.then(() => this._verifyAccessToken(accessToken))
+            .catch(() => null);
+          }
+          sVerifyPromise.then((accessToken) => {
+            if (null === accessToken) {
+              return this.signOut();
+            } else {
+              this._setUser(accessToken.user);
+            }
+          });
+        } else {
+          sVerifyToken = null;
+          sVerifyPromise = Promise.resolve();
+          this._setUser(null);
+        }
+      },
+
+      _computeSignedIn: function(user) {
+        if (user) {
+          return true;
+        } else {
+          return false;
+        }
+      },
+
+      ready: function() {
+        this.$.accessToken.transactionsComplete.then(() => {
+          if (this.$.accessToken.valueIsEmpty(this.accessToken)) {
+            this.accessToken = null;
+          }
+        });
+      },
+
+      _verifyAccessToken: function(accessToken) {
+        this.$.verify.body = {token: accessToken};
+        return this.$.verify.generateRequest().completes
+        .then((request) => request.response);
+      },
+
+      signInAnonymously: function() {
+        return Promise.resolve()
+        .then(() => {
+          if (this.signedIn) {
+            return this.signOut();
+          }
+        })
+        .then(() => {
+          this.$.signin.body = {type: 'anonymous'};
+          return this.$.signin.generateRequest().completes
+          .then((request) => request.response);
+        })
+        .then((res) => {
+          this.accessToken = res.token;
+          this._setUser(res.user);
+          return this.user;
+        });
+      },
+
+      signInWithUsernameAndPassword: function(username, password) {
+        return Promise.resolve()
+        .then(() => {
+          if (this.signedIn) {
+            return this.signOut();
+          }
+        })
+        .then(() => {
+          this.$.signin.body = {
+            type: 'username',
+            username: username,
+            password: password
+          };
+          return this.$.signin.generateRequest().completes
+          .then((request) => request.response)
+          .catch((err) => {
+            const response = this.$.signin.lastError.response;
+            return Promise.reject(new Error(response.error.message));
+          });
+        })
+        .then((res) => {
+          this.accessToken = res.token;
+          this._setUser(res.user);
+          return this.user;
+        });
+      },
+
+      signOut: function() {
+        this.accessToken = null;
+        return this.$.accessToken.transactionsComplete;
+      }
+    });
+  })();
+  </script>
+</dom-module>

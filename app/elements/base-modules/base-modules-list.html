@@ -1,0 +1,1096 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/app-layout/app-toolbar/app-toolbar.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/iron-selector/iron-selector.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/paper-item/paper-icon-item.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item-body.html">
+<link rel="import" href="../../bower_components/paper-progress/paper-progress.html">
+<link rel="import" href="../../bower_components/paper-styles/typography.html">
+<link rel="import" href="../../bower_components/paper-tooltip/paper-tooltip.html">
+<link rel="import" href="../../bower_components/vaadin-upload/vaadin-upload.html">
+<link rel="import" href="./base-modules.html">
+<link rel="import" href="./base-modules-list-item.html">
+<link rel="import" href="../base-auth/base-auth.html">
+
+<dom-module id="base-modules-list">
+  <template>
+    <style is="custom-style" include="iron-flex iron-flex-alignment"></style>
+    <style>
+      :host {
+        height: 100%;
+        @apply(--layout-vertical);
+        --paper-dialog: {
+          min-width: 320px;
+        }
+        --paper-dialog-background-color: #fff;
+        --paper-progress-active-color: var(--primary-color);
+      }
+
+      app-toolbar {
+        color: var(--primary-text-color);
+        box-sizing: border-box;
+        border-bottom: 1px solid;
+        border-bottom-color: var(--divider-color);
+      }
+
+      app-toolbar .label {
+        @apply(--paper-font-body1);
+      }
+
+      .base {
+        box-sizing: border-box;
+        border-bottom: 1.1px solid rgba(0, 0, 0, 0.05);
+      }
+
+      .toolbar {
+        min-height: 48px;
+        padding: 0px 16px;
+      }
+
+      .toolbar .title {
+        @apply(--layout-flex);
+        @apply(--paper-font-title);
+      }
+
+      #list {
+        @apply(--layout-flex);
+        overflow-y: auto;
+      }
+
+      .item, .item .icon, .info, .toolbar {
+        @apply(--layout-horizontal);
+        @apply(--layout-center);
+      }
+
+      .item {
+        @apply(--paper-font-subhead);
+        padding: 0px 16px;
+        min-height: 48px;
+        transition: background-color 0.3s ease;
+      }
+      .item .icon {
+        width: 56px;
+      }
+      .item:hover {
+        background-color: var(--paper-grey-200);
+      }
+      .item.iron-selected {
+        background-color: var(--light-accent-color);
+      }
+
+      .label {
+        @apply(--layout-flex);
+        font-weight: bold;
+        font-size: 14px;
+      }
+
+      .value {
+        font-size: 12px;
+        color: var(--secondary-text-color);
+      }
+
+      .check {
+        display: none;
+      }
+
+      .item.iron-selected .check {
+        display: block;
+      }
+
+      .dialog-content {
+        overflow: auto;
+        max-height: 320px;
+      }
+
+      .installed-version {
+        @apply(--layout-flex);
+      }
+
+      .required-version {
+        color: var(--paper-red-500);
+      }
+
+      #packageVersionList {
+        max-height: 200px;
+      }
+
+      .package-version-name {
+        @apply(--paper-font-subhead);
+      }
+
+      .package-version-version {
+        @apply(--paper-font-code1);
+        color: var(--secondary-text-color);
+      }
+
+      .wrapper {
+        max-height: 50vh;
+        overflow-y: auto;
+      }
+
+      .canvasCard {
+        @apply(--layout-horizontal);
+        @apply(--layout-center);
+        @apply(--layout-center-justified);
+        @apply(--shadow-elevation-2dp);
+
+        background-color: #fff;
+        color: rgba(0, 0, 0, 0.54);
+
+        margin: 48px auto;
+
+        box-sizing: border-box;
+        padding: 48px 12px;
+
+        width: 100%;
+        max-width: 960px;
+      }
+
+      .canvasCard .header {
+        @apply(--paper-font-subhead);
+        margin-left: 8px;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      .module-progress {
+        width: 300px;
+        margin-right: 24px;
+      }
+
+      .module-progress paper-progress {
+        width: 100%;
+        margin-bottom: 4px;
+      }
+
+      .module-progress .summary {
+        @apply(--layout-horizontal);
+        @apply(--paper-font-code1);
+        color: var(--secondary-text-color);
+        text-align: right;
+      }
+
+      .module-progress .status {
+        @apply(--layout-flex);
+        @apply(--paper-font-common-nowrap);
+        text-align: left;
+      }
+
+      @media (max-width: 720px) {
+        .module-progress {
+          display: none;
+        }
+      }
+    </style>
+
+    <base-modules
+      id="modules"
+      modules="{{modules}}"
+      manager-state="{{managerState}}"
+      module-status="{{moduleStatus}}"
+      current-module="{{currentModule}}">
+    </base-modules>
+
+    <app-toolbar>
+      <div main-title>Modules</div>
+
+
+      <div class="module-progress" hidden="[[!loadingState]]">
+        <paper-progress
+          value="[[loadedModuleCount]]"
+          indeterminate="[[_calculateIndeterminate(loadedModuleCount)]]"
+          disabled="[[_calculateDisabledProgress(loadedModuleCount, moduleTotalCount)]]"
+          min="0"
+          max="[[moduleTotalCount]]"
+          disabled="[[isStopped]]">
+        </paper-progress>
+        <div class="summary">
+          <span class="status">[[_computeStatus(moduleStatus, currentModule, managerState)]]</span>
+          <span class="count">[[loadedModuleCount]]/[[moduleTotalCount]]</span>
+        </div>
+      </div>
+
+      <paper-icon-button id="modules-select-all" icon="select-all" on-tap="onSelectAll" disabled="[[_computeSelectAllDisabled(modules.*, selectedModules.*)]]"></paper-icon-button>
+      <paper-tooltip for="modules-select-all">Select All</paper-tooltip>
+
+      <paper-icon-button id="modules-select-clear" icon="clear" on-tap="onClearSelection" disabled="[[!hasSelectedModules]]"></paper-icon-button>
+      <paper-tooltip for="modules-select-clear">Clear</paper-tooltip>
+
+      <paper-icon-button id="modules-select-uninstall" icon="file-download" on-tap="onUninstallModules" disabled="[[!hasSelectedModules]]"></paper-icon-button>
+      <paper-tooltip for="modules-select-uninstall">Uninstall</paper-tooltip>
+
+      <paper-icon-button id="modules-select-load" icon="file-upload" on-tap="onInstallModules" disabled="[[!hasSelectedModules]]"></paper-icon-button>
+      <paper-tooltip for="modules-select-load">Load</paper-tooltip>
+
+      <paper-icon-button id="modules-upload" icon="cloud-upload" on-tap="onImportModulePackage"></paper-icon-button>
+      <paper-tooltip for="modules-upload">Upload</paper-tooltip>
+    </app-toolbar>
+
+    <base-modules-list-item class="base item" module="[[baseModule]]" on-module-info="onModuleInfo"></base-modules-list-item>
+
+    <div id="noModules" class="canvasCard">
+      <iron-icon icon="icons:pets"></iron-icon>
+      <span class="header">No Modules</span>
+    </div>
+
+    <iron-selector id="list" attr-for-selected="module" multi selected-values="{{selectedModules}}">
+      <template is="dom-repeat" items="[[filteredModules]]" as="module">
+        <base-modules-list-item class="item" module="[[module]]" on-module-info="onModuleInfo" selected$="[[selected]]"></base-modules-list-item>
+      </template>
+  </iron-selector>
+
+  <paper-dialog id="info-dialog" no-cancel-on-esc-key>
+    <h2>Module Info</h2>
+    <div class="dialog-content">
+      <div class="layout vertical">
+        <div class="info">
+          <div class="label">Name</div>
+          <div class="value">{{moduleInfo.name}}</div>
+        </div>
+        <div class="info">
+          <div class="label">Packages</div>
+          <div class="value">{{moduleInfo.packageVersions}}</div>
+        </div>
+        <div class="info">
+          <div class="label">Installed</div>
+          <div class="value">{{moduleInfo.isInstalled}}</div>
+        </div>
+        <div class="info" hidden$="{{!moduleInfo.isInstalled}}">
+          <div class="label">Installed Display Name</div>
+          <div class="value">{{moduleInfo.installedDisplayName}}</div>
+        </div>
+        <div class="info" hidden$="{{!moduleInfo.isInstalled}}">
+          <div class="label">Installed Version</div>
+          <div class="value">{{moduleInfo.installedVersion}}</div>
+        </div>
+        <div class="info" hidden$="{{!moduleInfo.isInstalled}}">
+          <div class="label">Installed Content Import</div>
+          <div class="value">{{moduleInfo.installedContentImport}}</div>
+        </div>
+        <div class="info" hidden$="{{!moduleInfo.isInstalled}}">
+          <div class="label">Installed Content Element</div>
+          <div class="value">{{moduleInfo.installedContentElement}}</div>
+        </div>
+        <div class="info" hidden$="{{!moduleInfo.isInstalled}}">
+          <div class="label">Loaded</div>
+          <div class="value">{{moduleInfo.isLoaded}}</div>
+        </div>
+        <div class="info" hidden$="{{!moduleInfo.isInstalled}}">
+          <div class="label">Git Short Hash</div>
+          <div class="value">{{moduleInfo.installedGitShortHash}}</div>
+        </div>
+      </div>
+    </div>
+    <div class="buttons">
+      <paper-button dialog-confirm>OK</paper-button>
+    </div>
+  </paper-dialog>
+
+  <paper-dialog id="packageVersionDialog">
+    <h2>[[packageVersionDialogHeading]]</h2>
+
+    <iron-selector id="packageVersionList" attr-for-selected="package-version" multi="[[packageVersionMultiSelection]]" selected="{{selectedPackageVersion}}" selected-values="{{selectedPackageVersions}}">
+      <template is="dom-repeat" items="[[packageVersions]]" as="packageVersion">
+          <div class="item" package-version="[[packageVersion]]">
+
+            <div class="icon">
+              <iron-icon class="check" icon="check" item-icon></iron-icon>
+            </div>
+
+            <div>
+              <span class="package-version-name">[[packageVersion.name]]</span>
+              <span class="package-version-version">[[packageVersion.version]]</span>
+            </div>
+
+          </div>
+        </template>
+    </iron-selector>
+
+    <div class="buttons">
+      <paper-button dialog-dismiss>Cancel</paper-button>
+      <paper-button dialog-confirm disabled="[[_computePackageVersionOkDisabled(packageVersionMultiSelection, selectedPackageVersion, selectedPackageVersions.*)]]">Ok</paper-button>
+    </div>
+  </paper-dialog>
+
+  <paper-dialog id="base-version-dialog" no-cancel-on-esc-key>
+    <h2>Choose Base Version</h2>
+    <div class="dialog-content">
+      <iron-selector attr-for-selected="name" selected="{{selectedBaseVersion}}">
+        <template is="dom-repeat" items="[[baseVersions]]">
+            <paper-icon-item class="item" name="[[item]]">
+              <iron-icon class="check" icon="check" item-icon></iron-icon>
+              <div>[[item]]</div>
+            </paper-icon-item>
+          </template>
+      </iron-selector>
+    </div>
+    <div class="buttons">
+      <paper-button dialog-dismiss>Cancel</paper-button>
+      <paper-button dialog-confirm disabled$="[[_calculateInstallDisabled(selectedBaseVersion)]]">Install</paper-button>
+    </div>
+  </paper-dialog>
+
+  <paper-dialog id="load-dialog" no-cancel-on-esc-key>
+    <h2>[[loadHeading]]</h2>
+    <div class="dialog-content">
+      <template is="dom-repeat" items="{{moduleDependencies}}">
+          <paper-icon-item>
+            <iron-icon icon="[[_calculateDependencyIcon(item.isVersionSatisified)]]" item-icon></iron-icon>
+            <paper-item-body two-line>
+              <div>[[toDisplayName(item)]]</div>
+              <div class="layout horizontal center" secondary>
+                <div class="installed-version">[[item.installedVersion]]</div>
+                <div class="required-version" hidden$="[[item.isVersionSatisified]]">[[item.requiredVersion]]</div>
+              </div>
+            </paper-item-body>
+          </paper-icon-item>
+        </template>
+    </div>
+    <div class="buttons">
+      <paper-button dialog-dismiss>Cancel</paper-button>
+      <paper-button dialog-confirm on-tap="onLoadModule" disabled$="[[!moduleDependenciesSatisfied]]">Load</paper-button>
+    </div>
+  </paper-dialog>
+
+  <paper-dialog id="confirm-dialog" no-cancel-on-esc-key>
+    <h2>[[confirmHeading]]</h2>
+    <div>Are you sure?</div>
+    <div class="buttons">
+      <paper-button dialog-dismiss>Cancel</paper-button>
+      <paper-button dialog-confirm>Yes</paper-button>
+    </div>
+  </paper-dialog>
+
+  <paper-dialog id="progress-dialog" no-cancel-on-esc-key>
+    <h2>[[progressHeading]]</h2>
+    <paper-progress indeterminate></paper-progress>
+    <div class="buttons">
+      <paper-button dialog-dismiss>Cancel</paper-button>
+    </div>
+  </paper-dialog>
+
+  <paper-dialog id="upload-dialog">
+    <h2>Upload Module Package(s)</h2>
+
+    <div class="wrapper">
+      <vaadin-upload id="upload" method="POST" target="/api/base/modules" accept=".mod"></vaadin-upload>
+    </div>
+
+    <div class="buttons">
+      <paper-button dialog-dismiss>Cancel</paper-button>
+      <paper-button dialog-confirm>Done</paper-button>
+    </div>
+  </paper-dialog>
+
+  <base-auth id="auth"></base-auth>
+
+  </template>
+  <script>
+    (() => {
+      'use strict';
+
+      Polymer({
+        is: 'base-modules-list',
+
+        properties: {
+          modules: {
+            type: Array
+          },
+
+          hasModules: {
+            type: Boolean,
+            computed: '_computeHasModules(filteredModules)'
+          },
+
+          filteredModules: {
+            type: Array,
+            computed: '_computeFilteredModules(modules)',
+            observer: '_observeFilteredModules',
+          },
+          baseModule: {
+            type: Object,
+            computed: '_computeBaseModule(modules)'
+          },
+          baseVersions: {
+            type: Array,
+          },
+          moduleDependencies: {
+            type: Array,
+          },
+          moduleDependenciesSatisfied: {
+            type: Boolean,
+          },
+          loadHeading: {
+            type: String,
+          },
+          confirmHeading: {
+            type: String,
+          },
+          progressHeading: {
+            type: String,
+          },
+          selectedModules: {
+            type: Array,
+            value: function() {
+              return [];
+            }
+          },
+          hasSelectedModules: {
+            type: Boolean,
+            computed: '_computeHasSelectedModules(selectedModules.*)'
+          },
+          packageVersions: {
+            type: Array,
+          },
+          packageVersionDialogHeading: {
+            type: String
+          },
+          packageVersionMultiSelection: {
+            type: Boolean,
+          },
+          selectedPackageVersion: {
+            type: Object,
+          },
+          selectedPackageVersions: {
+            type: Array
+          },
+          moduleTotalCount: {
+            type: Number,
+            computed: '_computeModuleTotalCount(modules.*)'
+          },
+          loadedModuleCount: {
+            type: Number,
+            computed: '_computeLoadedModuleCount(modules.*)'
+          },
+          loadingState: {
+            type: Boolean,
+            value: true
+          }
+        },
+
+        _computeHasModules: function(modules) {
+          return Array.isArray(modules) && 0 < modules.length;
+        },
+
+        _computeHasSelectedModules: function(changes) {
+          return Array.isArray(this.selectedModules) && 0 < this.selectedModules.length;
+        },
+
+        _computeStatus(moduleStatus, currentModule, managerState) {
+          if (managerState === 'Idle') {
+            return 'Status: Loaded';
+          } else {
+            return `${moduleStatus}: ${currentModule}`;
+          }
+        },
+
+        _computeLoadedModuleCount: function() {
+          let loadedModuleCount = 0;
+
+          if (Array.isArray(this.modules)) {
+            loadedModuleCount = this.modules.filter((module) => {
+              return module.name !== 'bits-base' && (module.isLoaded || module.loadError !== null);
+            }).length;
+          }
+
+          return loadedModuleCount;
+        },
+
+        _computeLoadingState(managerState) {
+          this.debounce('BaseModules#LoadingState', () => {
+            this.set('loadingState', (managerState === 'Loading' || managerState === 'Unloading'));
+          }, 1000);
+        },
+
+        _computeModuleTotalCount() {
+          return Array.isArray(this.modules) ? (this.modules.length - 1) : 0;
+        },
+
+        behaviors: [
+          Polymer.IronResizableBehavior
+        ],
+
+        observers: [
+          '_onSelectedModulesChanged(selectedModules.splices)',
+          '_emptyStates(hasModules)',
+          '_computeLoadingState(managerState)'
+        ],
+
+        _emptyStates: function(hasModules) {
+          Polymer.dom(this.$.noModules).classList.toggle('hidden', hasModules);
+        },
+
+        listeners: {
+          'module-package-version-remove': '_onRemoveModulePackageVersion',
+          'base-upgrade': 'onBaseUpgrade',
+          'iron-overlay-opened': 'onIronOverlayOpened',
+          'upload-before': '_onUploadBefore',
+          'upload-request': '_onUploadRequest',
+          'upload-response': '_onUploadResponse'
+        },
+
+        _onUploadBefore: function() {
+          this.$['upload-dialog'].notifyResize();
+
+          this.$.upload.headers.Authorization = `Bearer ${this.$.auth.accessToken}`;
+          this.$.upload.headers.Accept = 'application/json';
+        },
+
+        _onUploadRequest: function(event, detail) {
+          const formData = detail.formData;
+          formData.delete('file');
+          formData.append('module-package', detail.file);
+        },
+
+        _onUploadResponse: function(event, detail) {
+          const xhr = detail.xhr;
+          const response = JSON.parse(xhr.response);
+
+          const filenames = Object.keys(response.operations);
+          filenames.forEach((filename) => {
+            const operation = response.operations[filename];
+            if (!operation.success) {
+              operation.errors.forEach((error) => {
+                error.name = filename;
+                this.fire('bits-base-error', {
+                  err: error
+                });
+              });
+            }
+          });
+        },
+
+        _computeFilteredModules: function(modules) {
+          if (Array.isArray(modules)) {
+            return modules.filter(function(mod) {
+              if (!mod) {
+                return false;
+              } else if (mod.isBase) {
+                return false;
+              } else {
+                return 'module-manager' !== mod.name;
+              }
+            });
+          } else {
+            return [];
+          }
+        },
+
+        _computeBaseModule: function(modules) {
+          if (Array.isArray(modules)) {
+            let matches = modules.filter(function(mod) {
+              if (mod) {
+                return mod.isBase;
+              } else {
+                return false;
+              }
+            });
+
+            if (0 < matches.length) {
+              let baseModule = matches[0];
+              return baseModule;
+            } else {
+              return null;
+            }
+          } else {
+            return null;
+          }
+        },
+
+        // https://github.com/PolymerElements/paper-dialog/issues/7
+        patchOverlay: function(e) {
+          if (e.target.withBackdrop) {
+            e.target.parentNode.insertBefore(e.target._backdrop, e.target);
+          }
+        },
+
+        _computePackageVersionOkDisabled: function(packageVersionMultiSelection, selectedPackageVersion, selectedPackageVersionsChanges) {
+          if (packageVersionMultiSelection) {
+            return !Array.isArray(this.selectedPackageVersions) || 0 >= this.selectedPackageVersions.length;
+          } else {
+            return !selectedPackageVersion;
+          }
+        },
+
+        _calculateDependencyIcon: function(isVersionSatisified) {
+          if (isVersionSatisified) {
+            return 'check-circle';
+          } else {
+            return 'cancel';
+          }
+        },
+
+        _calculateInstallDisabled: function(selectedInstallPackageVersion) {
+          return !selectedInstallPackageVersion;
+        },
+
+        _calculateUploadDisabled: function(files) {
+          return !(files && 0 < files.length);
+        },
+
+        _calculateIndeterminate: function(loadedModuleCount) {
+          return parseInt(loadedModuleCount, 10) === 0;
+        },
+
+        _calculateDisabledProgress: function(loadedModuleCount, moduleTotalCount) {
+          return loadedModuleCount === moduleTotalCount;
+        },
+
+        _observeFilteredModules: function(filteredModules) {
+          // Iron list is buggy and doesn't display items on initial load of page refresh
+          this.async(this.notifyResize, 3000);
+        },
+
+        _onRemoveModulePackageVersion: function(e, detail) {
+          let _this = this;
+
+          let mod = detail.module;
+
+          return this._getModulePackageVersion(mod, {
+            multi: true
+          })
+          .then((packageVersions) => {
+            if (!Array.isArray(packageVersions) || 0 >= packageVersions.length) {
+              return Promise.reject(new Error('No package versions to remove'));
+            }
+
+            _this._openProgressDialog('Removing package versions');
+
+            return packageVersions.reduce((promise, packageVersion) => {
+              return promise.then(() => {
+                return _this.$.modules.remove(packageVersion.name, packageVersion.version);
+              });
+            }, Promise.resolve());
+          })
+          .then((result) => {
+            _this._closeProgressDialog();
+            return result;
+          }, (err) => {
+            console.warn(err.toString());
+            _this._closeProgressDialog();
+            return Promise.reject(err);
+          });
+        },
+
+        onIronOverlayOpened: function(e) {
+          e.target.notifyResize();
+        },
+
+        _onSelectedModulesChanged: function() {
+          let selectedLength = this.selectedModules.length;
+          let modulesLength = (this.filteredModules ? this.filteredModules.length : -1);
+
+          this.$['modules-select-clear'].hidden = (0 === selectedLength);
+          this.$['modules-select-all'].hidden = (modulesLength === selectedLength);
+          this.$['modules-select-load'].hidden = (0 === selectedLength);
+          this.$['modules-select-uninstall'].hidden = (0 === selectedLength);
+        },
+
+        onBaseUpgrade: function(e, detail) {
+          let mod = detail;
+          let self = this;
+
+          if (!mod.packageVersions) {
+            console.err('onBaseUpgrade: No packages available');
+            return {};
+          }
+
+          return self._openBaseVersionSelectDialog(mod.packageVersions)
+          .then(function(version) {
+            // Show the progress dialog while upgrading the base
+            self._openProgressDialog('Upgrading the base to version ' + version);
+
+            // Install the base version
+            return self.$.modules.upgradeBase(mod.name, version);
+          })
+          .then(null, function(err) {
+            console.warn(err);
+          })
+          .then(function() {
+            // Close the progess dialog
+            self._closeProgressDialog();
+          });
+        },
+
+        onModuleInfo: function(e, detail) {
+          this.moduleInfo = detail;
+          this.$['info-dialog'].open();
+        },
+
+        onClearSelection: function() {
+          this.selectedModules = [];
+        },
+
+        onSelectAll: function() {
+          this.onClearSelection();
+          this.filteredModules.forEach(function(mod, index) {
+            this.$.list.selectIndex(index);
+          }, this);
+        },
+
+        onInstallModules: function() {
+          return this.selectedModules.reduce((promise, selectedModule) => {
+            return promise.then((modules) => {
+              return this._installModuleDialog(selectedModule)
+              .then((mod) => modules.concat([mod]));
+            });
+          }, Promise.resolve([]))
+          .catch((err) => this.fire('bits-base-error', {
+            err: err
+          }))
+          .then((modules) => this.$.modules.installModules(modules))
+          .then(() => this._closeProgressDialog())
+          .then(() => this.onClearSelection());
+        },
+
+        onUninstallModules: function(e, detail) {
+          this._openProgressDialog('Uninstalling modules.');
+          this.$.modules.uninstallModules(this.selectedModules.map((mod) => mod.name))
+          .catch((err) => this.fire('bits-base-error', {
+            err: err
+          }))
+          .then((result) => {
+            this._closeProgressDialog();
+            this.onClearSelection();
+          });
+        },
+
+        onLoadModule: function() {
+          let self = this;
+
+          // Close the load confirm dialog
+          self.$['load-dialog'].close();
+
+          self._openProgressDialog('Loading module');
+
+          self.$.modules.loadModule(self._loadModuleName)
+          .then(function() {
+            self._closeProgressDialog();
+          }, function(err) {
+            self._closeProgressDialog();
+          })
+          .then(() => this.onClearSelection());
+        },
+
+        onImportModulePackage: function(e, deatil) {
+          this.$.upload.files = [];
+          this.$['upload-dialog'].open();
+        },
+
+        _openProgressDialog: function(heading) {
+          this.progressHeading = heading || 'Loading...';
+          this.$['progress-dialog'].open();
+        },
+
+        _openConfirmDialog: function(heading) {
+          let self = this;
+          return new Promise(function(fulfill, reject) {
+            self.confirmHeading = heading || 'Loading...';
+
+            self._onIronOverlayClosed = function(e, detail) {
+              let closingReason = self.$['confirm-dialog'].closingReason;
+              self.unlisten(self.$['confirm-dialog'], 'iron-overlay-closed', '_onIronOverlayClosed');
+              if (closingReason.confirmed) {
+                fulfill(closingReason);
+              } else {
+                reject(new Error('User did not confirm'));
+              }
+            };
+
+            self.listen(self.$['confirm-dialog'], 'iron-overlay-closed', '_onIronOverlayClosed');
+            self.$['confirm-dialog'].open();
+          });
+        },
+
+        _openPackageVersionSelectDialog: function(packageVersions, options) {
+          let _this = this;
+
+          return new Promise(function(resolve, reject) {
+            _this.packageVersions = packageVersions;
+
+            _this.selectedPackageVersion = null;
+            _this.selectedPackageVersions = [];
+
+            options = options || {};
+
+            let multi = options.multi || false;
+
+            let defaultHeading = 'Choose Package Version';
+            if (multi) {
+              defaultHeading += 's';
+            }
+
+            _this.packageVersionMultiSelection = multi;
+            _this.packageVersionDialogHeading = options.heading || defaultHeading;
+
+            _this._packageVersionDialogClosed = function() {
+              let closingReason = _this.$.packageVersionDialog.closingReason;
+
+              _this.unlisten(_this.$.packageVersionDialog, 'iron-overlay-closed', '_packageVersionDialogClosed');
+
+              if (closingReason.confirmed) {
+                if (multi) {
+                  resolve(_this.selectedPackageVersions);
+                } else {
+                  resolve(_this.selectedPackageVersion);
+                }
+              } else {
+                reject(new Error('User did not confirm'));
+              }
+            };
+
+            _this.listen(_this.$.packageVersionDialog, 'iron-overlay-closed', '_packageVersionDialogClosed');
+            _this.$.packageVersionDialog.open();
+          });
+        },
+
+        _openBaseVersionSelectDialog: function(baseVersions) {
+          let self = this;
+
+          return new Promise(function(fulfill, reject) {
+            // Set the package version items in the selector
+            self.baseVersions = baseVersions;
+            // Clear any previous selection
+            self.selectedBaseVersion = null;
+
+            // Open the dialog
+            self._onIronOverlayClosed = function(e, detail) {
+              let closingReason = self.$['base-version-dialog'].closingReason;
+              self.unlisten(self.$['base-version-dialog'], 'iron-overlay-closed', '_onIronOverlayClosed');
+              if (closingReason.confirmed) {
+                fulfill(self.selectedBaseVersion);
+              } else {
+                reject(new Error('User did not confirm'));
+              }
+            };
+
+            self.listen(self.$['base-version-dialog'], 'iron-overlay-closed', '_onIronOverlayClosed');
+            self.$['base-version-dialog'].open();
+          });
+        },
+
+        _closeProgressDialog: function() {
+          this.$['progress-dialog'].close();
+        },
+
+        _closeConfirmDialog: function() {
+          this.$['confirm-dialog'].close();
+        },
+
+        _installModuleDialog: function(mod) {
+          return this._getModulePackageVersion(mod, {
+            multi: false
+          })
+          .then((packageVersion) => {
+            let name = packageVersion.name;
+            let version = packageVersion.version;
+
+            this._openProgressDialog('Installing ' + name + ' version ' + version);
+
+            return Promise.resolve({
+              name: name,
+              version: version
+            });
+          })
+          .then((result) => {
+            this._closeProgressDialog();
+            return result;
+          }, (err) => {
+            console.warn(err.toString());
+            this._closeProgressDialog();
+            return Promise.reject(err);
+          });
+        },
+
+        _uninstallModuleDialog: function(mod) {
+          let self = this;
+
+          return self._openConfirmDialog('Uninstall ' + mod.installedDisplayName)
+          .then(function() {
+            return self._uninstallModule(mod);
+          });
+        },
+
+        _uninstallModule: function(mod) {
+          let self = this;
+
+          // Open the progress dialog while unloading the module
+          self._openProgressDialog('Uninstalling Module');
+
+          // Unload the module
+          self.$.modules.uninstallModule(mod.name)
+          .then(function() {
+            // Close the progress dialog
+            self._closeProgressDialog();
+          }, function(err) {
+            // Close the progress dialog
+            self._closeProgressDialog();
+          });
+        },
+
+        _loadModuleDialog: function(mod) {
+          let self = this;
+
+          // Show the progress dialog while getting the dependencies
+          self._openProgressDialog('Getting Dependencies');
+
+          // Check the dependencies for this module
+          return self.$.modules.getModuleDependencyList(mod.name)
+          .then(function(dependencies) {
+            // Add any dependencies to the unload list
+            if (Array.isArray(dependencies)) {
+              self.moduleDependencies = dependencies;
+            } else {
+              console.warn('Did not get an array back from getModuleDependencyList');
+              self.moduleDependencies = [];
+            }
+
+            self.moduleDependenciesSatisfied = !self.moduleDependencies.some(function(dep) {
+              return !dep.isVersionSatisified;
+            });
+
+            // Close the progess dialog
+            self._closeProgressDialog();
+
+            // Save the name ofthe module to load
+            self._loadModuleName = mod.name;
+
+            // Show the load module dialog
+            self.loadHeading = 'Load ' + self.toDisplayName(mod);
+            self.$['load-dialog'].open();
+          }, function(err) {
+            // Close the progess dialog
+            self._closeProgressDialog();
+          });
+        },
+
+        _unloadModuleDialog: function(mod) {
+          let self = this;
+
+          // Show the progress dialog while getting the dependencies
+          self._openProgressDialog('Getting Dependents');
+
+          // Get the dependency list for this module
+          self.$.modules.getModuleDependentList(mod.name)
+          .then(function(dependencies) {
+            // Add any dependencies to the unload list
+            if (dependencies) {
+              self.dependentModules = dependencies;
+            } else {
+              self.dependentModules = [];
+            }
+
+            // Add the module itself to the list of unloads
+            self.dependentModules.push(mod);
+
+            // Close the progess dialog
+            self._closeProgressDialog();
+
+            // Show the unload confirm dialog
+            return self._openConfirmDialog('Unload ' + mod.installedDisplayName);
+          }, function(err) {
+            // Close the progess dialog
+            self._closeProgressDialog();
+          })
+          .then(function() {
+            return self._unloadModule(mod);
+          }, function(err) {
+            console.error(err);
+          });
+        },
+
+        _unloadModule: function(mod) {
+          // Close the unload confirm dialog
+          this._closeConfirmDialog();
+
+          // Open the progress dialog while unloading the module
+          this._openProgressDialog('Unloading Module');
+
+          // Unload the module
+          let self = this;
+          return self.$.modules.unloadModule(mod.name)
+          .then(function() {
+            // Close the progress dialog
+            self._closeProgressDialog();
+          }, function(err) {
+            // Close the progress dialog
+            self._closeProgressDialog();
+          })
+          .then(() => this.onClearSelection());
+        },
+
+        _getModulePackageVersion: function(mod, options) {
+          let packageVersions = mod.packageVersions;
+
+          options = options || {};
+
+          let multi = options.multi || false;
+
+          let N = packageVersions.length;
+          if (1 > N) {
+            let packageVersion = {
+              name: mod.name,
+              version: null
+            };
+            return Promise.resolve(packageVersion);
+          } else if (1 === N) {
+            let packageVersion = {
+              name: mod.name,
+              version: packageVersions[0]
+            };
+            if (multi) {
+              return Promise.resolve([packageVersion]);
+            } else {
+              return Promise.resolve(packageVersion);
+            }
+          } else {
+            return this._openPackageVersionSelectDialog(packageVersions.map(function(packageVersion) {
+              return {
+                name: mod.name,
+                version: packageVersion
+              };
+            }), options);
+          }
+        },
+
+        toDisplayName: function(mod) {
+          if (!mod) {
+            return '';
+          } else if (typeof mod.installedDisplayName === 'string') {
+            return mod.installedDisplayName;
+          } else {
+            return mod.name;
+          }
+        },
+
+        _computeSelectAllDisabled: function(modules, selectedModules) {
+          return !Array.isArray(this.filteredModules) || 0 >= this.filteredModules.length ||
+            (Array.isArray(this.selectedModules) && this.filteredModules.length === this.selectedModules.length);
+        }
+      });
+    })();
+  </script>
+</dom-module>

@@ -1,0 +1,287 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<script src="../../bower_components/socket.io-client/dist/socket.io.min.js"></script>
+<link rel="import" href="../base-auth/base-auth.html">
+
+<script>
+  ((global) => {
+    'use strict';
+
+    let requestId = 0;
+    function getNextRequestId() {
+      return String(requestId++);
+    }
+
+    const EVENT_SOCKET_CHANGED = 'bits#base#socket-changed';
+
+    let socket = null;
+    function getSocket() {
+      return socket;
+    }
+
+    const authElement = document.createElement('base-auth');
+
+    function onSignedInChanged(event) {
+      const signedIn = event.detail.value;
+      if (signedIn) {
+        const accessToken = authElement.accessToken;
+        const options = {
+          query: 'accessToken=' + accessToken
+        };
+        socket = io(options);
+      } else {
+        socket = null;
+      }
+      const detail = {
+        value: socket
+      };
+      const customEvent = new CustomEvent(EVENT_SOCKET_CHANGED, {detail: detail});
+      window.dispatchEvent(customEvent);
+    }
+
+    authElement.addEventListener('signed-in-changed', onSignedInChanged);
+    document.body.appendChild(authElement);
+
+    global.Bits = global.Bits || {};
+
+    /**
+     * @polymerBehavior
+     */
+    global.Bits.BaseMessageCenterBehaviorImpl = {
+      created: function() {
+        this._loadingCount = 0;
+        this._eventInfos = [];
+        this._connectRunnables = [];
+
+        this._boundOnConnect = this._onConnect.bind(this);
+        this._boundOnDisconnect = this._onDisconnect.bind(this);
+        this._boundOnError = this._onError.bind(this);
+      },
+
+      properties: {
+        socket: {
+          type: Object,
+          readOnly: true,
+          observer: '_socketChanged',
+          notify: true
+        },
+        connected: {
+          type: Boolean,
+          readOnly: true,
+          observer: '_connectedChanged',
+          notify: true,
+          value: false
+        },
+        loading: {
+          type: Boolean,
+          notify: true,
+          readOnly: true
+        }
+      },
+
+      _socketChanged: function(socket, oldSocket) {
+        if (oldSocket) {
+          oldSocket.removeEventListener('connect', this._boundOnConnect);
+          oldSocket.removeEventListener('disconnect', this._boundOnDisconnect);
+          oldSocket.removeEventListener('error', this._boundOnError);
+          this._eventInfos.forEach((info) => {
+            oldSocket.removeEventListener('event', info.socketListener);
+            if (oldSocket.connected) {
+              const meta = {
+                event: info.event
+              };
+              oldSocket.emit('removeEventListener', meta);
+            }
+          });
+        }
+        if (socket) {
+          this._eventInfos.forEach((info) => socket.on('event', info.socketListener));
+          this._setConnected(socket.connected);
+          socket.on('connect', this._boundOnConnect);
+          socket.on('disconnect', this._boundOnDisconnect);
+          socket.on('error', this._boundOnError);
+        } else {
+          this._setConnected(false);
+        }
+      },
+
+      _connectedChanged: function(connected) {
+        if (connected) {
+          this._eventInfos.forEach((info) => {
+            const meta = {
+              event: info.event
+            };
+            socket.emit('addEventListener', meta);
+          });
+          this._connectRunnables.forEach((runnable) => runnable(this));
+        }
+      },
+
+      _onConnect: function() {
+        this._setConnected(true);
+      },
+
+      _onDisconnect: function() {
+        this._setConnected(false);
+      },
+
+      _onError: function(err) {
+        console.warn(`An error occurred in the socket.io socket: ${err.message}`);
+      },
+
+      attached: function() {
+        this._setSocket(getSocket());
+        this.listen(window, EVENT_SOCKET_CHANGED, '_onSocketChanged');
+      },
+
+      detached: function() {
+        this.unlisten(window, EVENT_SOCKET_CHANGED, '_onSocketChanged');
+        this._setSocket(null);
+      },
+
+      _onSocketChanged: function(event, detail) {
+        const socket = detail.value;
+        this._setSocket(socket);
+      },
+
+      _startLoading: function() {
+        this._loadingCount++;
+        this._setLoading(0 < this._loadingCount);
+      },
+
+      _stopLoading: function() {
+        this._loadingCount--;
+        if (0 > this._loadingCount) {
+          this._loadingCount = 0;
+        }
+        this._setLoading(0 < this._loadingCount);
+      },
+
+      _waitUntilConnected: function() {
+        if (this.connected) {
+          return Promise.resolve(this);
+        } else {
+          return new Promise((resolve, reject) => {
+            const onConnectedChanged = (event) => {
+              if (this.connected) {
+                this.removeEventListener('connected-changed', onConnectedChanged);
+                resolve(this);
+              }
+            };
+            this.addEventListener('connected-changed', onConnectedChanged);
+          });
+        }
+      },
+
+      sendRequest: function(event, ...data) {
+        this._startLoading();
+        return this._waitUntilConnected()
+        .then(() => {
+          const socket = this.socket;
+          return new Promise((resolve, reject) => {
+            const requestId = getNextRequestId();
+            const onResponse = (meta, err, data) => {
+              if (event === meta.event && requestId === meta.responseId) {
+                socket.removeEventListener('response', onResponse);
+                this._stopLoading();
+                if (err) {
+                  if (meta && meta.reason) {
+                    this.fire('bits-base-error', {error: err, data: meta.data});
+                  }
+                  reject(err);
+                } else {
+                  resolve(data);
+                }
+              }
+            };
+            socket.on('response', onResponse);
+            const meta = {
+              event: event,
+              requestId: requestId
+            };
+            socket.emit('sendRequest', meta, ...data);
+          });
+        });
+      },
+
+      addSocketEventListener: function(event, listener) {
+        const info = {
+          event: event,
+          listener: listener,
+          socketListener: (meta, ...data) => {
+            if (event === meta.event) {
+              listener(...data);
+            }
+          }
+        };
+        this._eventInfos.push(info);
+
+        if (this.socket) {
+          this.socket.on('event', info.socketListener);
+          if (this.connected) {
+            const meta = {
+              event: event
+            };
+            this.socket.emit('addEventListener', meta);
+          }
+        }
+        return Promise.resolve();
+      },
+
+      removeSocketEventListener: function(event, listener) {
+        const info = this._eventInfos.find((info) => {
+          return event === info.event && listener === info.listener;
+        });
+        if (info) {
+          const index = this._eventInfos.indexOf(info);
+          this._eventInfos.splice(index, 1);
+
+          if (this.socket) {
+            this.socket.removeEventListener('event', info.socketListener);
+            if (this.connected) {
+              const meta = {
+                event: event
+              };
+              this.socket.emit('removeEventListener', meta);
+            }
+          }
+        } else {
+          console.warn('did not find event/listener to remove.');
+        }
+        return Promise.resolve();
+      },
+
+      addConnectRunnable: function(runnable) {
+        if ('function' === typeof(runnable)) {
+          this._connectRunnables.push(runnable);
+          if (this.connected) {
+            runnable();
+          }
+        } else {
+          console.warn('runnable must be a function.');
+        }
+        return Promise.resolve(this);
+      }
+    };
+
+    /**
+      * @polymerBehavior
+      */
+    global.Bits.BaseMessageCenterBehavior = [
+      global.Bits.BaseMessageCenterBehaviorImpl
+    ];
+  })(this);
+</script>

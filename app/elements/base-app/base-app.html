@@ -1,0 +1,127 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-resizable-behavior/iron-resizable-behavior.html">
+<link rel="import" href="../../bower_components/paper-styles/color.html">
+<link rel="import" href="../../bower_components/paper-styles/default-theme.html">
+<link rel="import" href="../base-auth/base-auth.html">
+<link rel="import" href="../base-splash/base-splash.html">
+
+<dom-module id="base-app">
+  <template>
+    <style>
+      :root {
+        --primary-color: var(--paper-blue-500);
+        --light-primary-color: var(--paper-blue-100);
+        --dark-primary-color: var(--paper-blue-700);
+        --accent-color: var(--paper-deep-orange-a200);
+        --light-accent-color: var(--paper-deep-orange-a100);
+        --dark-accent-color: var(--paper-deep-orange-a400);
+      }
+
+      :host {
+        display: block;
+      }
+
+      #content {
+        box-sizing: border-box;
+        height: 100vh;
+      }
+    </style>
+
+    <base-auth id="auth" signed-in="{{signedIn}}"></base-auth>
+
+    <div id="content"></div>
+
+  </template>
+
+  <script>
+  ((global) => {
+    'use strict';
+
+    Polymer({
+
+      is: 'base-app',
+
+      behaviors: [
+        Polymer.IronResizableBehavior
+      ],
+
+      created: function() {
+        this.currentElement = null;
+      },
+
+      ready: function() {
+        this._showSplash();
+      },
+
+      properties: {
+        signedIn: {
+          type: Boolean,
+          observer: '_signedInChanged'
+        }
+      },
+
+      _signedInChanged: function(signedIn) {
+        if (signedIn) {
+          this._showConsole();
+        } else {
+          this.$.auth.signInAnonymously()
+          .catch(() => this._showLogin());
+        }
+      },
+
+      _showSplash: function() {
+        return this._showElement('base-splash');
+      },
+
+      _showLogin: function() {
+        return this._showElement('base-login');
+      },
+
+      _showConsole: function() {
+        return this._showElement('base-console');
+      },
+
+      _showElement: function(tagName) {
+        return Promise.resolve()
+        .then(() => {
+          const element = this.create(tagName);
+          if (Polymer.isInstance(element)) {
+            return element;
+          } else {
+            return this._showSplash()
+            .then(() => {
+              return new Promise((resolve, reject) => {
+                this.importHref(`/elements/${tagName}/${tagName}.html`, resolve, reject, true);
+              });
+            })
+            .then(() => element);
+          }
+        })
+        .then((element) => {
+          while (this.$.content.firstChild) {
+            this.$.content.removeChild(this.$.content.firstChild);
+          }
+          this.$.content.appendChild(element);
+          return element;
+        });
+      }
+
+    });
+  })(this);
+  </script>
+</dom-module>

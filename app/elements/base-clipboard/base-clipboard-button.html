@@ -1,0 +1,150 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../bower_components/iron-icons/av-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/communication-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/device-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/editor-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/hardware-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/image-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/maps-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/notification-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/places-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/social-icons.html">
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../base-shared-styles/base-shared-styles.html">
+
+
+<dom-module id="base-clipboard-button">
+  <template>
+    <style include="base-shared-styles">
+      :host {
+        display: block;
+      }
+    </style>
+
+    <paper-button
+      class="primary-btn-light"
+      on-tap="_onTapCopyToClipboard"
+      raised="[[raised]]"
+      hidden="[[!isText]]">
+        <iron-icon icon="[[icon]]" hidden="[[!hasIcon]]"></iron-icon>
+        <span>[[text]]</span>
+    </paper-button>
+
+    <paper-icon-button
+      on-tap="_onTapCopyToClipboard"
+      icon="[[icon]]"
+      raised="[[raised]]"
+      hidden="[[isText]]">
+    </paper-icon-button>
+
+  </template>
+  <script>
+  (() => {
+    'use strict';
+
+    Polymer({
+      is: 'base-clipboard-button',
+
+      properties: {
+        text: {
+          type: String,
+          value: ''
+        },
+        icon: {
+          type: String,
+          value: ''
+        },
+        isText: {
+          type: Boolean,
+          computed: '_computeIsText(text)'
+        },
+        hasIcon: {
+          type: Boolean,
+          compute: '_computeHasIcon(icon)'
+        }
+      },
+
+      _computeIsText: function(text) {
+        return text && text.length > 0;
+      },
+
+      _computeHasIcon: function(icon) {
+        return icon && icon.length > 0;
+      },
+
+      _onTapCopyToClipboard: function(event, detail) {
+        this._copyToClipboard();
+      },
+
+      copyToClipboard: function() {
+        this.debounce('base-clipboard-button#CopyToClipboard', () => this._copyToClipboard(), 200);
+      },
+
+      _copyToClipboard: function() {
+        if (!this.clipboardData) console.warn('No clipboard-data attribute set.');
+
+        const selection = window.getSelection();
+        const body = document.querySelector('body');
+        const range = document.createRange();
+        const data = document.createElement('pre');
+        let error = null;
+
+        data.appendChild(document.createTextNode(this.clipboardData));
+        data.cssText = 'width:0; height:0; overflow:hidden; max-width:0; max-height:0; min-width:0; min-height:0; opacity: 0;';
+        body.appendChild(data);
+
+        range.selectNode(data);
+        selection.removeAllRanges();
+        selection.addRange(range);
+
+        try {
+          const success = document.execCommand('copy');
+
+          if (!success) {
+            error = new Error('Failed to copy content to clipboard.');
+          }
+        } catch (err) {
+          error = err;
+        }
+
+        if (!error) {
+          this.fire('base-clipboard-button-success', {
+            message: 'Contents Copied to Clipboard',
+            data: this.clipboardData,
+            tag: this.tag
+          });
+        } else {
+          this.fire('base-clipboard-button-error', error);
+        }
+
+        if (selection.removeRange) {
+          selection.removeRange(range);
+        } else {
+          selection.removeAllRanges();
+        }
+
+        body.removeChild(data);
+      }
+
+    });
+  })();
+  </script>
+</dom-module>

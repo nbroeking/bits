@@ -1,0 +1,47 @@
+{
+  "name": "bits",
+  "version": "2.3.0",
+  "description": "Bits Integrated Technology System",
+  "author": "LGS Innovations",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/LGSInnovations/bits/issues"
+  },
+  "homepage": "https://github.com/LGSInnovations/bits#readme",
+  "scripts": {
+    "build": "yarn && bower install && npm run lint && npm run test",
+    "bits:install": "yarn --prod",
+    "lint": "eslint --fix --ext js,html .",
+    "test": "mocha",
+    "clean": "rm -rf node_modules/ app/bower_components/ data/ npm-error.log yarn-error.log",
+    "dev": "HTTP_PORT=9000 HTTPS_PORT=9001 node app.js -v -o ./data/"
+  },
+  "devDependencies": {
+    "bower": "^1.8.0",
+    "chai": "^3.5.0",
+    "chai-as-promised": "^6.0.0",
+    "eslint": "^3.12.0",
+    "eslint-config-google": "^0.7.1",
+    "eslint-plugin-html": "^1.7.0",
+    "mocha": "^3.2.0"
+  },
+  "dependencies": {
+    "body-parser": "^1.15.2",
+    "compression": "^1.6.2",
+    "express": "^4.14.0",
+    "helmet": "^3.1.0",
+    "http-proxy": "^1.16.2",
+    "level": "^1.6.0",
+    "minimist": "^1.2.0",
+    "morgan": "^1.7.0",
+    "multer": "^1.2.1",
+    "passport": "^0.3.2",
+    "passport-http-bearer": "^1.0.1",
+    "pem": "^1.9.4",
+    "pouchdb": "^6.2.0",
+    "pouchdb-find": "^6.2.0",
+    "semver": "^5.3.0",
+    "socket.io": "^1.7.1",
+    "winston": "^2.3.0"
+  }
+}

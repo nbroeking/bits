@@ -1,0 +1,264 @@
+#!/bin/bash
+
+#*************************************************************************
+ # COPYRIGHT (c) 2017 LGS INNOVATIONS - ALL RIGHTS RESERVED
+ # LGS INNOVATIONS PROPRIETARY - USE PURSUANT TO COMPANY INSTRUCTIONS
+#************************************************************************/
+
+# This script upgrades the base. This  script lives in a specific place.
+# Leave it there.  ./bits/Linux/bits-files/bits-base/scripts
+#
+# -h,--help       display this help and exit.
+# -t,--target     the target base file to upgrade to
+# -P              bits base directory
+#
+# exit code 1: incorrect arguments supplied, files incorrect, or key not private
+# exit code 2: upgrade failed
+# exit code 4: upgrade suceeded with partial failures error log should be presented to user
+# exit code 8: upgrade succeded with yarn errors, error log should be presented to user
+
+# Static items
+DATE="$(date +%Y%m%d-%H%M%S)"
+TARGET=""
+DATA_DIR="/var/bits"
+LOG="/tmp/bits-upgrade-log-${DATE}"
+YARN_INSTALL_ERROR=0
+YARN_CACHE_FOLDER="${DATA_DIR}/yarn-cache"
+
+GETOPTS="$(which getopt)"
+
+function print-usage {
+  cat << EOF
+Usage: ${0##*/} [-h][--help] [-t][--target][-P]
+Upgrade the Base software stack [BITS OS]
+ -h,--help       display this help and exit.
+ -t,--target     the target base file to upgrade to
+ -P,--base       bits base directory
+ -d,--data       bits data directory
+EOF
+  exit 1
+}
+
+# Execute old getopt to have long options support
+ARGS=$($GETOPTS -o ht:P:d:i -l "help,target:,base:,data:" -n "${0##*/}" -- "$@");
+#Bad arguments
+if [ $? -ne 0 ]; then print-usage ; fi;
+eval set -- "$ARGS";
+
+while true; do
+        case "$1" in
+                -h|--help) shift; print-usage;;
+                -t|--target) TARGET=$2; shift 2;;
+                -P|--base) BASE_DIR=$2; shift 2;;
+                --) shift; break;;
+                -d|--data) DATA_DIR=$2; shift 2;;
+                *) shift; break;;
+        esac
+done
+
+if [ "${BASE_DIR}" = "" ]; then
+    echo "Error no base dir specified" >> "${LOG}" 2>&1
+    exit 1
+fi
+
+# Trap any exit and cleanup
+function finish {
+  echo "$(date +%H:%M:%S) * INFO Finishing Script" >> "${LOG}" 2>&1
+  if [ -e "${LOG}" ];
+  then
+    echo "$(date +%H:%M:%S) * INFO Copying Upgrade Log to data directory as $(basename "${LOG}")" >> "${LOG}" 2>&1
+    mkdir -p "${DATA_DIR}/upgrade" >> "${LOG}" 2>&1
+    cp -v "${LOG}" "${DATA_DIR}/upgrade/"
+    rm "${DATA_DIR}/upgrade/latest"
+    ln -s "${DATA_DIR}/upgrade/$(basename "${LOG}")" "${DATA_DIR}/upgrade/latest"
+  fi
+  #cleanup backup
+  echo "* INFO cleaning up ${BACKUP_DIR}" >> "${LOG}" 2>&1
+  rm -rf "${BACKUP_DIR}" >> "${LOG}" 2>&1
+}
+
+function abort {
+  echo "$(date +%H:%M:%S) * INFO Aborting Script" >> "${LOG}" 2>&1
+  cp -r "${BACKUP_DIR}/backup" "${BASE_DIR}" >> "${LOG}" 2>&1
+  exit 2
+}
+
+function run_install {
+  CWD="${PWD}"
+  INSTALL_DIR="${1}"
+  export HOME="/root"
+  cd "${INSTALL_DIR}"
+
+  echo "Running install for ${INSTALL_DIR}" >> "${LOG}" 2>&1
+
+  if [ -f "package.json" ] && grep -q "\"bits:install\" *:" "package.json";
+  then
+    if [ -d "${INSTALL_DIR}/support/yarn-cache" ];
+    then
+      rsync -a "${INSTALL_DIR}/support/yarn-cache/" "${YARN_CACHE_FOLDER}" >> "${LOG}" 2>&1
+    fi
+    npm run bits:install >> "${LOG}" 2>&1
+    RET=$?
+    echo "Install status = ${RET}" >> "${LOG}" 2>&1
+  else
+    echo "No package.json or no bits:install script command in ${INSTALL_DIR}" >> "${LOG}" 2>&1
+  fi
+
+  cd "${CWD}"
+  return "${RET}"
+}
+
+trap finish EXIT
+shopt -s dotglob
+
+RELEASE="$(lsb_release -c -s)"
+DISTRIBUTOR="$(lsb_release -i -s | tr '[:upper:]' '[:lower:]')"
+ARCH="$(uname -m)"
+echo "$(date +%H:%M:%S) * INFO Upgrading bits-base with: ${TARGET}|||" > "${LOG}" 2>&1
+if [ ! -f "${TARGET}" ];
+then
+  echo "$(date +%H:%M:%S) * ERROR need to supply new base tgz as parameter" >> "${LOG}" 2>&1
+  exit 1
+else
+  echo "$(date +%H:%M:%S) * We can see the new base tgz" >> "${LOG}" 2>&1
+fi
+
+echo "$(date +%H:%M:%S) * Attempting to stop the old base" >> "${LOG}" 2>&1
+#STOPPING THE BITS PROCESS
+if [ "$(whoami)" == 'root' ]; then
+  if [ "${RELEASE}" == "xenial" ]; then
+    echo "$(date +%H:%M:%S) * Stopping the systemctl bits process" >> "${LOG}" 2>&1
+    systemctl stop bits >> "${LOG}" 2>&1
+    echo "Report: $?" >> "${LOG}" 2>&1
+  elif [ "${RELEASE}" == "trusty" ]; then
+    echo "$(date +%H:%M:%S) * Stopping the upstart bits process" >> "${LOG}" 2>&1
+    service bits stop >> "${LOG}" 2>&1
+  else
+    echo "$(date +%H:%M:%S) * ${PLATFORM} not supported" >> "${LOG}" 2>&1
+    abort
+  fi
+else
+    echo "$(date +%H:%M:%S) * Not stopping the bits process" >> "${LOG}" 2>&1
+fi
+
+echo "$(date +%H:%M:%S) * Creating the backup directory" >> "${LOG}" 2>&1
+BACKUP_DIR="${BASE_DIR}/upgrade-$(date +%Y%m%d-%H%M%S)"
+mkdir -p "${BACKUP_DIR}"
+
+#-----------------------
+echo "$(date +%H:%M:%S) * Unpacking the new base" >> "${LOG}" 2>&1
+
+# Unpack the new base in target directory
+TARGET_EXTRACT="${BACKUP_DIR}/extract"
+mkdir -p "${TARGET_EXTRACT}"
+echo " ${TARGET} -C ${TARGET_EXTRACT}" >> "${LOG}" 2>&1
+tar -xzf "${TARGET}" -C "${TARGET_EXTRACT}" >> "${LOG}" 2>&1
+if [ $? -ne 0 ];
+then
+  echo "* ERROR Failed to untar $1" >> "${LOG}" 2>&1
+  echo "* Original Target: ${TARGET}" >> "${LOG}" 2>&1
+  exit 2
+fi
+
+echo "$(date +%H:%M:%S) * INFO extracted the new bits" >> "${LOG}" 2>&1
+# Clear out the bits directory
+mkdir -p "${BACKUP_DIR}/backup/"
+mv "${BASE_DIR}"/* "${BACKUP_DIR}/backup/" >> "${LOG}" 2>&1
+if [ "$(ls "${BASE_DIR}" | wc -l)" -ne 1 ];
+then
+  echo "* ERROR Failed to clear $BASE_DIR" >> "${LOG}" 2>&1
+  ls "${BASE_DIR}" >> "${LOG}" 2>&1
+  abort
+fi
+
+# Move target extraction to bits directory
+echo "$(date +%H:%M:%S) * INFO moving the new bits" >> "${LOG}" 2>&1
+mv "${TARGET_EXTRACT}"/* "${BASE_DIR}/" >> "${LOG}" 2>&1
+if [ $? -ne 0 ];
+then
+  echo "$(date +%H:%M:%S) * ERROR Failed to install ${TARGET_EXTRACT}" >> "${LOG}" 2>&1
+  abort
+else
+  echo "$(date +%H:%M:%S) * INFO moved bits into place" >> "${LOG}" 2>&1
+fi
+
+#if this is a romg then we must handle moving modules and data to
+#the appropriate spot
+if [ -d "${BASE_DIR}/data/base/modules/modules" ]; then
+  echo "$(date +%H:%M:%S) * INFO copying omg modules" >> "${LOG}" 2>&1
+  mkdir -p "${DATA_DIR}/base/modules/modules"
+  #clean up old modules
+  rm -rf "${DATA_DIR}/base/modules/modules"/*
+  #install new modules
+  mv -v "${BASE_DIR}/data/base/modules/modules"/* "${DATA_DIR}/base/modules/modules/" >> "${LOG}" 2>&1
+
+  for MODULE_DATA_DIR in "${BASE_DIR}/data"/*; do
+    if [ "${MODULE_DATA_DIR}" !=  "${BASE_DIR}/data/base" ]; then
+      echo "$(date +%H:%M:%S) * INFO copying prepopulated module data for $(basename "${MODULE_DATA_DIR}")" >> "${LOG}" 2>&1
+      #copy prepopulated data to data dir
+      cp -v -a "${MODULE_DATA_DIR}" "${DATA_DIR}/" >> "${LOG}" 2>&1
+    fi
+  done
+fi
+#cleanup data dir from the romg
+if [ "${BASE_DIR}/data"  != "${DATA_DIR}" ]; then
+  rm -rf "${BASE_DIR}/data"
+fi
+
+# Set the yarn cache folder
+rm -rf "${YARN_CACHE_FOLDER}" >> "${LOG}" 2>&1
+mkdir -p "${YARN_CACHE_FOLDER}" >> "${LOG}" 2>&1
+yarn config set cache-folder "${YARN_CACHE_FOLDER}" >> "${LOG}" 2>&1
+yarn config list >> "${LOG}" 2>&1
+
+#run the yarn install on base
+run_install "${BASE_DIR}"
+if [ $? -ne 0 ]; then
+  echo "$(date +%H:%M:%S) * ERROR yarn install error" >> "${LOG}" 2>&1
+  YARN_INSTALL_ERROR=8
+fi
+
+#run yarn install for modules
+for MODULE_DIR in "${DATA_DIR}/base/modules/modules"/*; do
+  run_install "${MODULE_DIR}"
+  if [ $? -ne 0 ]; then
+    echo "$(date +%H:%M:%S) * ERROR yarn module install error" >> "${LOG}" 2>&1
+    YARN_INSTALL_ERROR=8
+  fi
+done
+
+echo "$(date +%H:%M:%S) * INFO updating bits and data dir permissions" >> "${LOG}" 2>&1
+#Secure /opt/bits OD
+chown -R root:root "${BASE_DIR}" >> "${LOG}" 2>&1
+chmod -R g-w,g-x,g-r,o-w,o-x,o-r "${BASE_DIR}" >> "${LOG}" 2>&1
+#Secure /var/bits OD
+chown -R root:root "${DATA_DIR}" >> "${LOG}" 2>&1
+chmod -R g-w,g-x,g-r,o-w,o-x,o-r "${DATA_DIR}" >> "${LOG}" 2>&1
+
+
+if [ "${RELEASE}" == "xenial" -a "$(whoami)" == "root" ]; then
+    echo "Installing ubuntu 16 init scripts" >> "${LOG}" 2>&1
+
+    cp -v "${BASE_DIR}/support/systemd/bits.service" "/lib/systemd/system/bits.service" >> "${LOG}" 2>&1
+    chmod 644 /lib/systemd/system/bits.service >> "${LOG}" 2>&1
+
+    #Enable the system
+    systemctl disable bits.service >> "${LOG}" 2>&1
+    systemctl daemon-reload >> "${LOG}" 2>&1
+    systemctl enable bits.service >> "${LOG}" 2>&1
+    systemctl daemon-reload >> "${LOG}" 2>&1
+    #start bits upgrade finished
+    systemctl start bits >> "${LOG}" 2>&1
+elif [ "${RELEASE}" == "trusty" -a "$(whoami)" == "root" ]; then
+    echo "Installing ubuntu 14 init scripts" >> "${LOG}" 2>&1
+
+    cp -v "${BASE_DIR}/support/upstart/bits.conf" "/etc/init/bits.conf" >> "${LOG}" 2>&1
+    chmod 644 /etc/init/bits.conf >> "${LOG}" 2>&1
+    #start bits upgrade finished
+    service bits start >> "${LOG}" 2>&1
+fi
+
+if [ "${YARN_INSTALL_ERROR}" -gt 0 ]; then
+  exit ${YARN_INSTALL_ERROR}
+fi
+exit 0

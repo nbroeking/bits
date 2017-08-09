@@ -1,0 +1,148 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="./base-vaadin-grid-core-behavior.html">
+
+<script>
+  ((global) => {
+    'use strict';
+
+    global.Bits = global.Bits || {};
+
+    global.Bits.BaseVaadinGridMultiSelectBehaviorImpl = {
+
+      properties: {
+        inverted: {
+          type: Boolean,
+          value: false,
+          observer: '_observeInverted'
+        },
+        indeterminate: {
+          type: Boolean,
+          value: false
+        },
+        selectedItems: {
+          type: Array,
+          readOnly: true,
+          notify: true,
+          value: () => {
+            return [];
+          }
+        },
+        hasSelectedItems: {
+          type: Boolean,
+          computed: '_computeHasSelectedItems(selectedItems.*)'
+        }
+      },
+
+      computeSelectedItems: function() {
+        this.debounce(`${this._jobNamePrefix}-#ComputeSelectedItems`, () => this._computeSelectedItems(), 100);
+      },
+
+      _computeSelectedItems: function() {
+        const grid = this.$.grid;
+        if (!grid) return;
+
+        let selectedItems = [];
+        const selectedGridItems = grid.selectedItems;
+
+        if (this.inverted) {
+          let items = [];
+
+          if (Array.isArray(grid.items) && grid.items.length > 0) {
+            items = [].concat(grid.items);
+          } else {
+            items = [].concat(...Object.values(grid._cache));
+          }
+
+          if (this.indeterminate) {
+            selectedItems = items.filter((item) => !selectedGridItems.includes(item));
+          } else {
+            selectedItems = items;
+          }
+        } else if (this.indeterminate) {
+          selectedItems = [].concat(selectedGridItems);
+        }
+
+        this._setSelectedItems(selectedItems);
+      },
+
+      _computeHasSelectedItems: function() {
+        return Array.isArray(this.selectedItems) && this.selectedItems.length > 0;
+      },
+
+      _computeIndeterminate: function() {
+        const gridHasSelection = this._gridHasSelection();
+        this.set('indeterminate', gridHasSelection);
+        this.computeSelectedItems(gridHasSelection);
+      },
+
+      _observeInverted: function(inverted) {
+        this.$.grid.set('selectedItems', []);
+        this.updateStyles();
+        this.set('indeterminate', false);
+      },
+
+      _onChangeSelectItem: function(event) {
+        const checked = event.target.checked;
+        const item = event.model.item;
+
+        if (item) {
+          if (checked === this.inverted) {
+            this.$.grid.deselectItem(item);
+          } else {
+            this.$.grid.selectItem(item);
+          }
+          this._computeIndeterminate();
+        }
+      },
+
+      _onTapInvert: function() {
+        this.set('inverted', !this.inverted);
+        this._computeIndeterminate();
+      },
+
+      _calculateIsSelected: function(inverted, selected) {
+        return inverted !== selected;
+      },
+
+      _calculateIsChecked: function(inverted, indeterminate) {
+        return indeterminate || inverted;
+      },
+
+      _gridHasSelection: function() {
+        const selectedItems = this.$.grid.selectedItems;
+        return Array.isArray(selectedItems) && selectedItems.length > 0;
+      },
+
+      _refreshItems: function() {
+        this.$.grid.clearCache();
+        this._computeIndeterminate();
+      },
+
+      clearSelection: function() {
+        this.set('indeterminate', false);
+        this.set('inverted', false);
+        this.$.grid.set('selectedItems', []);
+      }
+
+    };
+
+    global.Bits.BaseVaadinGridMultiSelectBehavior = [
+      global.Bits.BaseVaadinGridCoreBehavior,
+      global.Bits.BaseVaadinGridMultiSelectBehaviorImpl
+    ];
+  })(this);
+</script>

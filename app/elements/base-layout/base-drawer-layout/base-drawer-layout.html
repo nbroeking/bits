@@ -1,0 +1,251 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/app-route/app-location.html">
+<link rel="import" href="../../../bower_components/app-route/app-route.html">
+<link rel="import" href="../../../bower_components/app-layout/app-layout.html">
+<link rel="import" href="../../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../../bower_components/iron-selector/iron-selector.html">
+<link rel="import" href="../../../bower_components/iron-resizable-behavior/iron-resizable-behavior.html">
+<link rel="import" href="../../../bower_components/paper-styles/color.html">
+<link rel="import" href="../../../bower_components/paper-styles/default-theme.html">
+<link rel="import" href="../../../bower_components/paper-styles/typography.html">
+<link rel="import" href="../../base-loading/base-loading.html">
+<link rel="import" href="../../base-shared-styles/base-shared-styles.html">
+<link rel="import" href="../base-lazy-content/base-lazy-content.html">
+
+<dom-module id="base-drawer-layout">
+  <template>
+    <style include="base-shared-styles"></style>
+    <style>
+      :host {
+        display: block;
+        position: relative;
+        height: 100%;
+      }
+
+      app-drawer {
+        --app-drawer-scrim-background: rgba(0, 0, 0, 0);
+        --app-drawer-content-container: {
+          margin-top: 48px;
+          box-sizing: border-box;
+          border-right: 1px solid;
+          border-right-color: var(--divider-color);
+        };
+      }
+
+      .toolbar.drawer {
+        border-bottom: 1px solid;
+        border-bottom-color: var(--divider-color);
+      }
+
+      .toolbar.drawer .icon {
+        @apply(--layout-vertical);
+        @apply(--layout-center);
+        width: 64px;
+        margin-left: -8px;
+      }
+      .toolbar.drawer iron-icon {
+        --iron-icon-height: 32px;
+        --iron-icon-width: 32px;
+        color: var(--secondary-text-color);
+      }
+
+      .item {
+        @apply(--layout-horizontal);
+        @apply(--layout-center);
+        @apply(--layout-relative);
+        height: 36px;
+        padding: 0px 8px 0px 8px;
+        color: var(--secondary-text-color);
+        background-color: transparent;
+        transition: background-color 0.2s ease;
+      }
+      .item:hover {
+        background-color: var(--paper-grey-200);
+      }
+
+      .item .highlight {
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        width: 100%;
+        height: 100%;
+        opacity: 0.2;
+        /*z-index: -1;*/
+        background-color: transparent;
+      }
+      .item.iron-selected .highlight {
+        background-color: var(--dark-primary-color);
+      }
+
+      .item .icon {
+        @apply(--layout-vertical);
+        @apply(--layout-center);
+        width: 64px;
+      }
+      .item .icon iron-icon {
+        --iron-icon-height: 18px;
+        --iron-icon-width: 18px;
+      }
+
+      .item .title {
+        @apply(--paper-font-body1);
+        font-size: 13px;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+
+      #content {
+        height: 100%;
+        position: relative;
+      }
+
+    </style>
+
+    <app-location route="{{route}}"></app-location>
+    <app-route route="{{route}}" pattern="/[[mName]]/:pageName" data="{{routeData}}"></app-route>
+
+    <app-drawer-layout fullbleed responsive-width="1023px">
+      <app-drawer id="sidenav">
+        <div class="drawerContent">
+          <app-toolbar class="toolbar drawer">
+            <div class="highlight"></div>
+            <div class="icon">
+              <iron-icon icon="[[mIcon]]" item-icon></iron-icon>
+            </div>
+            <div class="title" main-title>[[mDisplayName]]</div>
+          </app-toolbar>
+          <iron-selector selected="[[pageName]]" attr-for-selected="data-route">
+            <template is="dom-repeat" items="[[navItems]]" as="page">
+              <a class="item" href="/[[mName]]/[[page.name]]" tabindex="-1" data-route="[[page.name]]" hidden$="[[_hidePage(page)]]">
+                <div class="highlight"></div>
+                <div class="icon">
+                  <iron-icon icon="[[page.icon]]"></iron-icon>
+                </div>
+                <div class="title">[[page.displayName]]</div>
+              </a>
+            </template>
+          </iron-selector>
+        </div>
+      </app-drawer>
+      <base-lazy-content id="content" page="[[page]]" current-element="{{currentElement}}"></base-lazy-content>
+    </app-drawer-layout>
+
+  </template>
+  <script>
+    (() => {
+      'use strict';
+
+      Polymer({
+        is: 'base-drawer-layout',
+
+        behaviors: [Polymer.IronResizableBehavior],
+
+        properties: {
+          route: {
+            type: Object
+          },
+          routeData: {
+            type: Object,
+            notify: true
+          },
+          mName: {
+            type: String
+          },
+          mIcon: {
+            type: String,
+            value: 'icons:help'
+          },
+          mDisplayName: {
+            type: String,
+            value: 'Change Me!'
+          },
+          pageName: {
+            type: String,
+            notify: true
+          },
+          pages: {
+            type: Array
+          },
+          page: {
+            type: Object,
+            notify: true
+          },
+          currentElement: {
+            type: Object,
+            notify: true
+          },
+          defaultPageName: {
+            type: String,
+            value: null
+          },
+          navItems: {
+            type: Array,
+            computed: '_computeNavItems(pages.*)'
+          }
+        },
+
+        _computeNavItems: function(changes) {
+          if (Array.isArray(this.pages)) {
+            return this.pages.filter((page) => !(false === page.visible));
+          } else {
+            return [];
+          }
+        },
+
+        observers: [
+          '_routeDataPageNameChanged(routeData.pageName)',
+          '_determinePageChanged(pages.*, pageName, defaultPageName)'
+        ],
+
+        _routeDataPageNameChanged: function(pageName) {
+          this.pageName = pageName || null;
+        },
+
+        _determinePageChanged: function(changes, pageName, defaultPageName) {
+          let page = null;
+          if (Array.isArray(this.pages)) {
+            page = this.pages.find((page) => pageName === page.name);
+          } else {
+            page = null;
+          }
+          if (page) {
+            this.page = page;
+          } else {
+            if ('string' === typeof(defaultPageName)) {
+              page = defaultPageName;
+            } else {
+              page = '';
+            }
+            this.set('routeData.pageName', page);
+          }
+        },
+        _hidePage: function(page) {
+          if (page.visible === undefined || page.visible === null) {
+            return false;
+          }
+          return !page.visible;
+        },
+
+        toggleSidenav: function() {
+          this.$.sidenav.toggle();
+        }
+      });
+    })();
+  </script>
+</dom-module>

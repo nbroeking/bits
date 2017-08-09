@@ -1,0 +1,67 @@
+# This is an example gitlab ci build script to check the syntax you can use the
+
+stages:
+    # https://docs.gitlab.com/ee/ci/yaml/README.html#stages
+    - build
+    - test
+    - trigger
+    - omg
+
+cache:
+    paths:
+        - .build-ids/
+        - .test-branch
+
+
+build-dev:
+    image: $BUILD_IMAGE
+    stage: build
+    tags:
+        - bits
+        - docker
+    script:
+        - printenv
+        - export PROJECT_BUILD_ID=$(/opt/bits-tools/ci-tools/tools/get-build-id.sh)
+        - /opt/bits-tools/build-tools/package-module.py -m ./ --git-branch "${CI_COMMIT_REF_NAME}" -b "${PROJECT_BUILD_ID}" -d
+        - echo -n "dev" > .test-branch
+        - /opt/bits-tools/ci-tools/tools/get-build-id.sh -u
+    artifacts:
+        # https://docs.gitlab.com/ee/ci/yaml/README.html#artifacts
+        when: on_success
+        expire_in: 1 weeks
+        paths:
+            - "*.tgz"
+    except:
+        - master
+        - /^[0-9]{6}-(.*-)?release$/
+
+build-release:
+    image: $BUILD_IMAGE
+    stage: build
+    tags:
+        - bits
+        - docker
+    script:
+        - export PROJECT_BUILD_ID=$(/opt/bits-tools/ci-tools/tools/get-build-id.sh)
+        - /opt/bits-tools/build-tools/package-module.py -m ./ --git-branch "${CI_COMMIT_REF_NAME}" -b "${PROJECT_BUILD_ID}"
+        - echo -n "${CI_COMMIT_REF_NAME}" > .test-branch
+        - /opt/bits-tools/ci-tools/tools/get-build-id.sh -u
+    artifacts:
+        # https://docs.gitlab.com/ee/ci/yaml/README.html#artifacts
+        when: on_success
+        paths:
+            - "*.tgz"
+    only:
+        - master
+        - /^[0-9]{6}-(.*-)?release$/
+
+trigger-omg:
+    stage: omg
+    tags:
+        - bits
+        - shell
+    when: on_success
+    script:
+        - printenv
+        # - /opt/bits-tools/ci-tools/tools/trigger-omgs.py -m ./ -b "${CI_COMMIT_REF_NAME}" -o /opt/bits-build/omg-lists
+        # - curl --request POST --form token="${TRIGGER_TOKEN}" --form ref="${CI_COMMIT_REF_NAME}" ${TRIGGER_URL}

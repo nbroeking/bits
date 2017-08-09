@@ -1,0 +1,16 @@
+# bits
+data/
+node*.log
+
+# Nodejs and NPM
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Bower
+app/bower_components/
+
+# polymer-cli
+build/
+
+*.swp

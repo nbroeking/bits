@@ -1,0 +1,312 @@
+
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/app-layout/app-toolbar/app-toolbar.html">
+<link rel="import" href="../../bower_components/iron-collapse/iron-collapse.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../../bower_components/paper-styles/shadow.html">
+<link rel="import" href="../../bower_components/paper-styles/typography.html">
+<link rel="import" href="../base-shared-styles/base-shared-styles.html">
+<link rel="import" href="./base-users-password-input.html">
+<link rel="import" href="./base-users-scopes-input.html">
+
+<dom-module id="base-users-detail">
+  <template>
+    <style include="base-shared-styles">
+      :host {
+        @apply(--layout-vertical);
+
+        --label: {
+          @apply(--paper-font-body1);
+          color: var(--primary-text-color);
+        };
+
+        --base-users-scopes-input-label: {
+          @apply(--label);
+        }
+      }
+
+      app-toolbar {
+        color: var(--primary-text-color);
+        box-sizing: border-box;
+        border-bottom: 1px solid;
+        border-bottom-color: var(--divider-color);
+      }
+
+      .icon {
+        @apply(--layout-vertical);
+        @apply(--layout-center);
+        width: 64px;
+        margin-left: -16px;
+      }
+      .icon paper-icon-button {
+        color: var(--primary-color);
+      }
+
+      .wrapper {
+        @apply(--layout-flex);
+        overflow-y: auto;
+      }
+
+      .content {
+        margin-left: 0px;
+        max-width: 480px;
+      }
+
+      .card {
+        @apply(--paper-font-body1);
+        color: var(--primary-text-color);
+        max-width: 480px;
+      }
+
+      .line {
+        @apply(--layout-horizontal);
+        @apply(--layout-center);
+        height: 36px;
+      }
+      .line .label {
+        @apply(--label);
+        min-width: 124px;
+      }
+      .line .value {
+        @apply(--paper-font-body2);
+        color: var(--secondary-text-color);
+        margin-left: 8px;
+      }
+
+      .line.actions {
+        padding-top: 16px;
+      }
+
+      paper-button {
+        @apply(--paper-font-body1);
+      }
+      app-toolbar paper-button, paper-dialog .actions {
+        color: var(--primary-color);
+      }
+      paper-button.invert {
+        background-color: var(--primary-color);
+        color: #fff;
+      }
+      paper-button[disabled].invert {
+        background-color: var(--paper-grey-200);
+        color: var(--disabled-text-color);
+      }
+
+      .space {
+        @apply(--layout-flex);
+      }
+    </style>
+
+    <app-toolbar>
+      <div class="icon">
+        <a href="/home/users/" tabindex="-1">
+          <paper-icon-button icon="icons:arrow-back"></paper-icon-button>
+        </a>
+      </div>
+      <div main-title>[[_computeUsername(user)]]</div>
+      <paper-button on-tap="deleteUser">Delete</paper-button>
+    </app-toolbar>
+
+    <div class="wrapper">
+      <div class="content">
+        <div class="card">
+
+          <div class="line">
+            <div class="label">Password</div>
+            <paper-button on-tap="toggleEditPassword" disabled="[[editPassword]]">Edit</paper-button>
+          </div>
+
+          <iron-collapse opened="[[editPassword]]">
+            <base-users-password-input
+                id="password"
+                password="{{password}}"
+                invalid="{{invalidPassword}}">
+            </base-users-password-input>
+
+            <div class="line actions">
+              <div class="space"></div>
+              <paper-button on-tap="toggleEditPassword">Cancel</paper-button>
+              <paper-button class="invert" on-tap="savePassword" raised disabled="[[invalidPassword]]">Save</paper-button>
+            </div>
+          </iron-collapse>
+
+          <div class="line">
+            <div class="label">Scopes</div>
+            <paper-button on-tap="toggleEditScopes" disabled="[[editScopes]]">Edit</paper-button>
+          </div>
+
+          <base-users-scopes-input
+            scopes="[[scopes]]"
+            selected-scopes="{{selectedScopes}}"
+            invalid="{{invalidScopes}}"
+            disabled="[[!editScopes]]">
+          </base-users-scopes-input>
+
+          <iron-collapse opened="[[editScopes]]">
+            <div class="line actions">
+              <div class="space"></div>
+              <paper-button on-tap="toggleEditScopes">Cancel</paper-button>
+              <paper-button class="invert" on-tap="saveScopes" raised disabled="[[invalidScopes]]">Save</paper-button>
+            </div>
+          </iron-collapse>
+
+          <div class="line">
+            <div class="label">Created</div>
+            <div class="value">[[_toUTCString(user.createdAt)]]</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <paper-dialog id="dialog">
+      <h2>Delete User</h2>
+      <div class="message">Are you sure you want to delete User "[[_computeUsername(user)]]"?</div>
+      <div class="actions">
+        <paper-button dialog-dismiss>Cancel</paper-button>
+        <paper-button dialog-confirm>delete</paper-button>
+      </div>
+    </paper-dialog>
+
+  </template>
+  <script>
+  (() => {
+    'use strict';
+
+    Polymer({
+      is: 'base-users-detail',
+
+      properties: {
+        user: {
+          type: Object,
+          observer: '_userChanged'
+        },
+        password: String,
+        invalidPassword: Boolean,
+        editPassword: {
+          type: Boolean,
+          observer: '_editPasswordChanged',
+          value: false
+        },
+        editScopes: {
+          type: Boolean,
+          value: false
+        },
+        invalidScopes: {
+          type: Boolean,
+          value: false
+        },
+        scopes: Array,
+        selectedScopes: Array
+      },
+
+      _userChanged: function(user) {
+        this.editPassword = false;
+        this.editScopes = false;
+      },
+
+      _editPasswordChanged: function(editPassword) {
+        this.$.password.reset();
+      },
+
+      observers: [
+        '_computeSelectedScopes(user.scopes, scopes.*)'
+      ],
+
+      _computeSelectedScopes: function(userScopes, changes) {
+        let selectedScopes = null;
+        if (Array.isArray(userScopes) && Array.isArray(this.scopes)) {
+          selectedScopes = userScopes.reduce((scopes, userScope) => {
+            const scope = this.scopes.find((scope) => userScope.name === scope.name);
+            if (scope) {
+              scopes.push(scope);
+            }
+            return scopes;
+          }, []);
+        } else {
+          selectedScopes = [];
+        }
+        this.selectedScopes = selectedScopes;
+      },
+
+      listeners: {
+        'iron-overlay-closed': '_onDeleteConfirmClosed'
+      },
+
+      _onDeleteConfirmClosed: function(event, detail) {
+        if (detail.confirmed) {
+          this.fire('base-users-delete', {userId: this.user.id});
+        }
+      },
+
+      toggleEditPassword: function() {
+        this.editScopes = false;
+        this.editPassword = !this.editPassword;
+      },
+
+      toggleEditScopes: function() {
+        this.editPassword = false;
+        this.editScopes = !this.editScopes;
+        if (!this.editScopes) {
+          this._computeSelectedScopes(this.user.scopes);
+        }
+      },
+
+      savePassword: function() {
+        if (this.invalidPassword) {
+          console.warn('Password is invalid.');
+        } else {
+          const update = {$set: {password: this.password}};
+          this.fire('base-users-update', {userId: this.user.id, update: update});
+          this.editPassword = false;
+        }
+      },
+
+      saveScopes: function() {
+        if (this.invalidScopes) {
+          console.warn('Scopes are invalid.');
+        } else {
+          const update = {$set: {scopes: this.selectedScopes}};
+          this.fire('base-users-update', {userId: this.user.id, update: update});
+          this.editScopes = false;
+        }
+      },
+
+      _computeUsername: function(user) {
+        if (!user || user.isAnonymous) {
+          return 'Anonymous';
+        } else {
+          return user.username;
+        }
+      },
+
+      _toUTCString: function(createdAt) {
+        return (new Date(createdAt)).toUTCString();
+      },
+
+      deleteUser: function() {
+        this.$.dialog.open();
+      }
+    });
+  })();
+  </script>
+</dom-module>

@@ -1,0 +1,158 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/app-layout/app-toolbar/app-toolbar.html">
+<link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/iron-image/iron-image.html">
+<link rel="import" href="../../bower_components/iron-list/iron-list.html">
+<link rel="import" href="../../bower_components/paper-fab/paper-fab.html">
+<link rel="import" href="../base-shared-styles/base-shared-styles.html">
+<link rel="import" href="./base-omgs-current-info.html">
+<link rel="import" href="./base-omgs-list-item.html">
+<link rel="import" href="./base-omgs-upload.html">
+
+<dom-module id="base-omgs-list">
+  <template>
+    <style is="custom-style" include="iron-flex iron-flex-alignment"></style>
+    <style include="base-shared-styles"></style>
+    <style>
+    :host {
+      @apply(--layout-flex);
+      @apply(--layout-vertical);
+      height: 100%;
+    }
+
+    app-toolbar {
+      color: var(--primary-text-color);
+      box-sizing: border-box;
+      border-bottom: 1px solid;
+      border-bottom-color: var(--divider-color);
+    }
+
+    #list {
+      @apply(--layout-flex);
+    }
+
+    .item:hover {
+      background-color: var(--hover-background-color);
+    }
+
+    .item[selected] {
+      background-color: var(--selected-background-color);
+    }
+
+    .no-packages {
+      @apply(--layout-flex);
+      @apply(--layout-vertical);
+      @apply(--layout-center-center);
+      @apply(--layout-flex);
+    }
+
+    .no-packages .message {
+      @apply(--paper-font-subhead);
+    }
+
+    .action {
+      position: fixed;
+      right: 0px;
+      margin-right: 24px;
+      bottom: 0px;
+      margin-bottom: 24px;
+    }
+    </style>
+
+    <app-toolbar class="toolbar">
+      <div main-title>OMGs</div>
+      <base-omgs-current-info current-info="[[currentInfo]]"></base-omgs-current-info>
+    </app-toolbar>
+
+    <iron-list id="list" items="[[omgs]]" as="omg" hidden$="[[!hasOmgs]]">
+      <template>
+        <a href="/home/omgs/[[omg.id]]" tabindex="-1">
+          <base-omgs-list-item class="item" omg="[[omg]]"></base-omgs-list-item>
+        </a>
+      </template>
+    </iron-list>
+
+    <div class="no-packages" hidden$="[[hasOmgs]]">
+      <div class="message">ZOMG! No OMG Packages...</div>
+      <iron-image style="width: 300px; height: 300px; background-color: lightgray;" sizing="cover" src="/images/zomg-cat-2.jpg"></iron-image>
+    </div>
+
+    <paper-fab class="action" icon="add" on-tap="_openAddForm"></paper-fab>
+
+    <base-omgs-upload id="add-form"></base-omgs-upload>
+
+  </template>
+  <script>
+    (() => {
+      'use strict';
+
+      Polymer({
+        is: 'base-omgs-list',
+
+        properties: {
+          omgs: {
+            type: Array,
+          },
+          hasOmgs: {
+            type: Boolean,
+            computed: '_computeHasOmgs(omgs.*)'
+          },
+          selectedPackage: {
+            type: Object,
+            observer: '_selectedPackageChanged'
+          },
+          currentInfo: {
+            type: Object
+          }
+        },
+
+        _computeNoCurrentInfo: function(currentInfo) {
+          if (currentInfo) {
+            return false;
+          } else {
+            return true;
+          }
+        },
+
+        _computeHasOmgs: function(changes) {
+          const omgs = this.omgs;
+          return Array.isArray(omgs) && 0 < omgs.length;
+        },
+
+        behaviors: [
+          Polymer.IronResizableBehavior
+        ],
+
+        listeners: {
+          'base-omgs-upload-success': '_onUploadSuccess'
+        },
+
+        _onUploadSuccess: function(e, detail) {
+          this.$['get-list'].generateRequest();
+        },
+
+        _openAddForm: function() {
+          this.$['add-form'].open();
+        },
+      });
+    })();
+  </script>
+</dom-module>

@@ -1,0 +1,211 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/app-layout/app-toolbar/app-toolbar.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/iron-media-query/iron-media-query.html">
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../base-shared-styles/base-shared-styles.html">
+<link rel="import" href="../base-system/base-system-power-control.html">
+<link rel="import" href="../base-toolbar-items/base-toolbar-items.html">
+
+<dom-module id="base-toolbar">
+  <template>
+    <style include="base-shared-styles">
+      :host {
+        display: block;
+
+        --base-system-power-control-icon-color: var(--divider-color);
+        --base-toolbar-notifications-icon-color: var(--divider-color);
+        --base-system-power-control-icon-hover-color: var(--primary-background-color);
+        --base-toolbar-notifications-icon-hover-color: var(--primary-background-color);
+      }
+
+      app-toolbar {
+        height: 48px;
+        background-color: var(--base-toolbar-background-color, --primary-color);
+        color: var(--primary-background-color);
+        transition: background-color 0.2s ease;
+      }
+      :host([opened]) app-toolbar {
+        background-color: var(--primary-background-color);
+      }
+
+      #gallery {
+        margin-left: 4px;
+      }
+
+      .header {
+        margin-left: 12px;
+      }
+
+      :host([opened]) .action-btn {
+        display: none !important;
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+    </style>
+
+    <base-toolbar-items id="toolbarItems" no-items></base-toolbar-items>
+
+    <app-toolbar>
+      <paper-icon-button id="gallery" icon="icons:menu" on-tap="toggleGallery"></paper-icon-button>
+
+      <template is="dom-if" if="[[narrow]]" restamp="true">
+        <paper-icon-button icon="icons:list" on-tap="toggleSidenav" hidden$="[[_computeSidenavHidden(narrow, noSidenavToggle)]]"></paper-icon-button>
+      </template>
+
+      <div main-title>
+        <template is="dom-if" if="[[!narrow]]" restamp="true">
+          <span class="header">BITS</span>
+        </template>
+      </div>
+
+      <div id="toolbarItemContainer" class="line">
+        <template is="dom-if" if="[[!narrow]]" restamp="true">
+          <base-system-power-control class="action-btn"></base-system-power-control>
+        </template>
+      </div>
+
+    </app-toolbar>
+
+  </template>
+  <script>
+  (() => {
+    'use strict';
+
+    Polymer({
+      is: 'base-toolbar',
+
+      created: function() {
+        this._elements = new Map();
+      },
+
+      properties: {
+        noSidenavToggle: {
+          type: Boolean
+        },
+        narrow: {
+          type: Boolean
+        }
+      },
+
+      toggleGallery: function() {
+        this.fire('base-console-toggle-gallery');
+      },
+
+      toggleSidenav: function() {
+        this.fire('base-console-toggle-sidenav');
+      },
+
+      _computeSidenavHidden: function(narrow, noSidenavToggle) {
+        return noSidenavToggle || !narrow;
+      },
+
+      ready: function() {
+        Promise.resolve()
+        .then(() => this.$.toolbarItems.list())
+        .then((items) => items.reduce((chain, item) => chain.then(() => this._createToolbarItemElement(item)), Promise.resolve()));
+      },
+
+      listeners: {
+        'toolbarItems.base-crud-item-created': '_onToolbarItemCreated',
+        'toolbarItems.base-crud-item-deleted': '_onToolbarItemDeleted'
+      },
+
+      _onToolbarItemCreated: function(event, detail) {
+        const item = detail.item;
+        this._createToolbarItemElement(item);
+      },
+
+      _createToolbarItemElement: function(item) {
+        const id = item.id;
+
+        if (!this._elements.has(id)) {
+          this._elements.set(id, Promise.resolve(null));
+        }
+
+        const chain = this._elements.get(id)
+        .then((previous) => {
+          return Promise.resolve()
+          .then(() => this._createElement(item.primary))
+          .then((element) => {
+            element.classList.toggle('action-btn', true);
+            const container = this.$.toolbarItemContainer;
+            if (null === previous) {
+              container.insertBefore(element, container.firstChild);
+            } else {
+              container.replaceChild(element, previous);
+            }
+            return element;
+          });
+        });
+        this._elements.set(id, chain.catch(() => null));
+        return chain;
+      },
+
+      _onToolbarItemDeleted: function(event, detail) {
+        const item = detail.item;
+        const id = item.id;
+        if (!this._elements.has(id)) {
+          this._elements.set(id, Promise.resolve(null));
+        }
+
+        const chain = Promise.resolve()
+        .then((element) => {
+          const container = this.$.toolbarItemContainer;
+          container.removeChild(element);
+          return null;
+        });
+        this._elements.set(id, chain.catch(() => null));
+        return chain;
+      },
+
+      _findToolbarItemByTag: function(tag) {
+        const children = this.$.toolbarItemContainer.children;
+        for (let i = 0; i < children.length; i++) {
+          const child = children[i];
+          if (child.tagName.toLowerCase() === tag.toLowerCase()) {
+            return child;
+          }
+        }
+        return null;
+      },
+
+      _createElement: function({href, tag}) {
+        return Promise.resolve()
+        .then(() => {
+          const element = this.create(tag);
+          if (Polymer.isInstance(element)) {
+            return element;
+          } else {
+            return this._importHref(href)
+            .then(() => element);
+          }
+        });
+      },
+
+      _importHref: function(href) {
+        return new Promise((resolve, reject) => {
+          this.importHref(href, resolve, reject, true);
+        });
+      }
+    });
+  })();
+  </script>
+</dom-module>

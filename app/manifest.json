@@ -1,0 +1,13 @@
+{
+  "name": "Bits Integrated Technology System",
+  "short_name": "BITS",
+  "icons": [{
+    "src": "images/manifest/icon-192x192.png",
+    "sizes": "192x192",
+    "type": "image/png"
+  }],
+  "start_url": "/?homescreen=1",
+  "display": "standalone",
+  "background_color": "#03a9f4",
+  "theme_color": "#03a9f4"
+}
