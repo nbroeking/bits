@@ -228,10 +228,6 @@ limitations under the License.
       return value && value.indexSplices && Array.isArray(value.indexSplices);
     }
 
-    function escapedRegex(str) {
-      return new RegExp(String(str).trim().replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'i');
-    }
-
     Polymer({
       is: 'base-terminal',
 
@@ -327,10 +323,10 @@ limitations under the License.
 
       _computeAutosuggest: function(commandValue) {
         let autosuggest = '';
-        const commandRegex = escapedRegex(commandValue);
+        commandValue = String(commandValue).trim().toUpperCase();
 
         if (commandValue && Array.isArray(this.commandList) && this.commandList.length > 0) {
-          autosuggest = this.commandList.filter((command) => commandRegex.test(command)).shift();
+          autosuggest = this.commandList.filter((command) => command.toUpperCase().indexOf(commandValue) === 0).shift();
           if (!autosuggest) {
             autosuggest = '';
           }
