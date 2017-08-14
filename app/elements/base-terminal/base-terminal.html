@@ -1,0 +1,346 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-resizable-behavior/iron-resizable-behavior.html">
+<link rel="import" href="../base-system/base-system.html">
+<link rel="import" href="../base-auth/base-auth.html">
+
+<dom-module id="base-terminal">
+  <template>
+    <style>
+      :host {
+        display: block;
+        --bits-base-terminal-error: var(--error-color);
+        --bits-base-terminal-primary: var(--primary-color);
+        --bits-base-terminal-accent: var(--accent-color);
+        --bits-base-terminal-text-color: var(--primary-text-color);
+        --bits-base-terminal-background-color: var(--primary-background-color);
+
+        --bits-base-terminal-stdout: {};
+        --bits-base-terminal-stderr: {
+          color: var(--bits-base-terminal-error);
+        };
+        --bits-base-terminal-stdin: {};
+      }
+
+      :host.dark {
+        --bits-base-terminal-primary: var(--light-primary-color);
+        --bits-base-terminal-accent: var(--light-accent-color);
+        --bits-base-terminal-text-color: var(--dark-theme-text-color);
+        --bits-base-terminal-background-color: var(--dark-theme-background-color);
+      }
+
+      :host.light {
+        --bits-base-terminal-primary: var(--dark-primary-color);
+        --bits-base-terminal-accent: var(--dark-accent-color);
+        --bits-base-terminal-text-color: var(--light-theme-text-color);
+        --bits-base-terminal-background-color: var(--light-theme-background-color);
+      }
+
+      :host.material-theme-dark {
+        --bits-base-terminal-error: #e53935;
+        --bits-base-terminal-primary: #c3e88d;
+        --bits-base-terminal-accent: #82aaff;
+        --bits-base-terminal-text-color: #e0e0e1;
+        --bits-base-terminal-background-color: #243138;
+      }
+
+      :host.material-theme-light {
+        --bits-base-terminal-error: #ff5370;
+        --bits-base-terminal-primary: #91b859;
+        --bits-base-terminal-accent: #6182b8;
+        --bits-base-terminal-text-color: #243138;
+        --bits-base-terminal-background-color: #ffffff;
+      }
+
+      #scroller {
+        background-color: var(--bits-base-terminal-background-color);
+        padding: 16px;
+        height: 100%;
+        overflow-y: auto;
+      }
+
+      pre {
+        margin: 0;
+        word-break: break-word;
+        white-space: pre-wrap;
+        color: var(--bits-base-terminal-text-color);
+        @apply --paper-font-code1;
+      }
+
+      pre.stdin {
+        @apply --bits-base-terminal-stdin;
+      }
+
+      pre.stdout {
+        @apply --bits-base-terminal-stdout;
+      }
+
+      pre.stderr {
+        @apply --bits-base-terminal-stderr;
+      }
+
+      .input {
+        width: 100%;
+        @apply --layout-horizontal;
+        @apply --paper-font-code1;
+        color: var(--bits-base-terminal-text-color);
+      }
+
+      .input[hidden] {
+        display: none;
+      }
+
+      input {
+        padding: 0;
+        margin: 0;
+        outline: 0;
+        border: 0;
+        background-color: transparent;
+        box-shadow: 0;
+        color: var(--bits-base-terminal-text-color);
+        @apply --layout-flex;
+        @apply --paper-font-code1;
+      }
+
+      .prefix .user {
+        color: var(--bits-base-terminal-primary);
+        @apply --paper-font-code2;
+      }
+
+      .prefix .location {
+        color: var(--bits-base-terminal-accent);
+        @apply --paper-font-code2;
+      }
+
+    </style>
+
+    <base-system
+      bits-id="{{bitsId}}">
+    </base-system>
+
+    <base-auth
+      user="{{user}}">
+    </base-auth>
+
+    <div id="scroller" on-tap="_onTapInputFocus">
+      <template is="dom-repeat" items="[[items]]">
+        <pre class$="[[item.type]]"><span class="prefix" hidden="[[!_calculateIsCommand(item.type)]]"><span class="user">[[userId]]</span>:<span class="location">[[location]]</span><span class="prompt">[[prompt]]</span>&#160;</span>[[item.output]]</pre>
+      </template>
+      <span class="input" hidden="[[awaitingResponse]]">
+        <span class="prefix">
+          <span class="user">[[userId]]</span>:<span class="location">[[location]]</span><span class="prompt">[[prompt]]</span>&#160;
+        </span>
+        <input
+          id="input"
+          type="text"
+          value="{{commandValue::input}}"
+          disabled="[[awaitingResponse]]"
+          on-keydown="_onKeyDownInput">
+      </span>
+    </div>
+  </template>
+  <script>
+  (() => {
+    'use strict';
+
+    function parseChanges(changes) {
+      let changeSet = [];
+      const changeType = changes.path.split('.').shift();
+
+      if (changePathIsSplices(changes.path)) {
+        if (changeValueHasIndexSplices(changes.value)) {
+          const indexSplices = changes.value.indexSplices;
+          changeSet = indexSplices.filter((spliceObj) => spliceObj.addedCount > 0)
+          .map((spliceObj) => {
+            return {
+              type: changeType,
+              output: spliceObj.object[spliceObj.index]
+            };
+          });
+        }
+      }
+
+      return changeSet;
+    }
+
+    function changePathIsSplices(path) {
+      return path.split('.').pop() === 'splices';
+    }
+
+    function changeValueHasIndexSplices(value) {
+      return value && value.indexSplices && Array.isArray(value.indexSplices);
+    }
+
+    Polymer({
+      is: 'base-terminal',
+
+      behaviors: [
+        Polymer.IronResizableBehavior
+      ],
+
+      properties: {
+        userId: {
+          type: String,
+          value: '',
+          computed: '_computePrefix(bitsId, user.*)'
+        },
+        location: {
+          type: String,
+          value: 'bits'
+        },
+        prompt: {
+          type: String,
+          value: '$'
+        },
+        commandValue: {
+          type: String,
+          value: ''
+        },
+        command: {
+          type: String,
+          value: '',
+          readOnly: true
+        },
+        awaitingResponse: {
+          type: Boolean,
+          value: false
+        },
+        historyIndex: {
+          type: Number,
+          value: -1,
+          observer: '_observeHistoryIndex'
+        },
+        history: {
+          type: Array,
+          readOnly: true,
+          notify: true,
+          value: () => {
+            return [];
+          }
+        },
+        stdout: {
+          type: Array,
+          value: () => {
+            return [];
+          }
+        },
+        stderr: {
+          type: Array,
+          value: () => {
+            return [];
+          }
+        },
+        items: {
+          type: Array,
+          readOnly: true,
+          value: () => {
+            return [];
+          }
+        }
+      },
+
+      _computePrefix: function(bitsId) {
+        let prefix = '';
+
+        if (bitsId && this.user && this.user.username) {
+          const username = this.user.isAnonymous ? 'anonymous' : this.user.username;
+          prefix = `${username}@${bitsId}`;
+        }
+
+        return prefix;
+      },
+
+      observers: [
+        '_observeHistoryStdoutStderr(history.*, stdout.*, stderr.*)',
+        '_observeStdoutStderr(stdout.*, stderr.*)'
+      ],
+
+      _observeHistoryStdoutStderr: function(...changes) {
+        changes.map((change) => parseChanges(change))
+        .filter((changeSet) => changeSet.length > 0)
+        .forEach((changeSet) => changeSet.forEach((change) => this.push('items', change)));
+
+        this.updateScroll();
+      },
+
+      _observeStdoutStderr: function() {
+        this.set('awaitingResponse', false);
+        this.$.input.focus();
+      },
+
+      _observeHistoryIndex: function(index) {
+        if (this.history) {
+          if (index < -1) {
+            this.set('historyIndex', -1);
+          } else if (index >= this.history.length) {
+            this.set('historyIndex', (this.history.length - 1));
+          } else if (index !== -1 && index < this.history.length) {
+            this.set('commandValue', this.history[index]);
+          }
+        }
+      },
+
+      _calculateIsCommand: function(itemType) {
+        return itemType === 'history';
+      },
+
+      _onKeyDownInput: function(e) {
+        switch (Polymer.dom(e).event.keyCode) {
+        case 13:
+          this.setCommand();
+          break;
+        case 38:
+          this.set('historyIndex', (this.historyIndex + 1));
+          break;
+        case 40:
+          this.set('historyIndex', (this.historyIndex - 1));
+          break;
+        default:
+          break;
+        }
+      },
+
+      _onTapInputFocus: function() {
+        this.$.input.focus();
+      },
+
+      setCommand: function() {
+        const commandValue = String(this.commandValue).trim();
+        if (commandValue.length > 0) {
+          this.set('awaitingResponse', true);
+          this._setCommand(commandValue);
+          this.push('history', commandValue);
+          this.set('commandValue', '');
+          this.async(() => this.fire('base-terminal-command-prompt', {command: commandValue}));
+        }
+      },
+
+      updateScroll: function() {
+        const jobName = 'base-terminal#UpdateScroll';
+
+        this.cancelDebouncer(jobName);
+        this.debounce(jobName, () => this._updateScroll(), 100);
+      },
+
+      _updateScroll: function() {
+        this.$.scroller.scrollTop = this.$.scroller.scrollHeight;
+      }
+
+    });
+  })();
+  </script>
+</dom-module>
