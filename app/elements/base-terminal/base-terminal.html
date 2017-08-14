@@ -103,24 +103,40 @@ limitations under the License.
         @apply --bits-base-terminal-stderr;
       }
 
-      .input {
+      .input-container {
         width: 100%;
         @apply --layout-horizontal;
         @apply --paper-font-code1;
         color: var(--bits-base-terminal-text-color);
       }
 
-      .input[hidden] {
+      .input-container[hidden] {
         display: none;
       }
 
+      .input {
+        position: relative;
+      }
+
+      .input .autosuggest {
+        width: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 0;
+        opacity: 0.45;
+      }
+
       #input {
+        width: 100%;
         padding: 0;
         margin: 0;
         outline: 0;
         border: 0;
         background-color: transparent;
         box-shadow: 0;
+        position: relative;
+        z-index: 1;
         color: var(--bits-base-terminal-text-color);
         @apply --layout-flex;
         @apply --paper-font-code1;
@@ -158,16 +174,19 @@ limitations under the License.
       <template is="dom-repeat" items="[[items]]">
         <pre class$="[[item.type]]"><span class="prefix" hidden="[[!_calculateIsCommand(item.type)]]"><span class="user">[[userId]]</span>:<span class="location">[[location]]</span><span class="prompt">[[prompt]]</span>&#160;</span>[[item.output]]</pre>
       </template>
-      <span class="input" hidden="[[awaitingResponse]]">
+      <span class="input-container" hidden="[[awaitingResponse]]">
         <span class="prefix">
           <span class="user">[[userId]]</span>:<span class="location">[[location]]</span><span class="prompt">[[prompt]]</span>&#160;
         </span>
-        <input
-          id="input"
-          type="text"
-          value="{{commandValue::input}}"
-          disabled="[[_calculateAnyTrue(awaitingResponse, loading)]]"
-          on-keydown="_onKeyDownInput">
+        <span class="input">
+          <span class="autosuggest">[[autosuggest]]</span>
+          <input
+            id="input"
+            type="text"
+            value="{{commandValue::input}}"
+            disabled="[[_calculateAnyTrue(awaitingResponse, loading)]]"
+            on-keydown="_onKeyDownInput">
+        </span>
       </span>
     </div>
 
@@ -209,6 +228,10 @@ limitations under the License.
       return value && value.indexSplices && Array.isArray(value.indexSplices);
     }
 
+    function escapedRegex(str) {
+      return new RegExp(String(str).trim().replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'i');
+    }
+
     Polymer({
       is: 'base-terminal',
 
@@ -242,6 +265,16 @@ limitations under the License.
           type: String,
           value: '',
           readOnly: true
+        },
+        commandList: {
+          type: Array,
+          value: () => {
+            return [];
+          }
+        },
+        autosuggest: {
+          type: String,
+          computed: '_computeAutosuggest(commandValue, commandList.*)'
         },
         awaitingResponse: {
           type: Boolean,
@@ -292,6 +325,20 @@ limitations under the License.
         return prefix;
       },
 
+      _computeAutosuggest: function(commandValue) {
+        let autosuggest = '';
+        const commandRegex = escapedRegex(commandValue);
+
+        if (commandValue && Array.isArray(this.commandList) && this.commandList.length > 0) {
+          autosuggest = this.commandList.filter((command) => commandRegex.test(command)).shift();
+          if (!autosuggest) {
+            autosuggest = '';
+          }
+        }
+
+        return autosuggest;
+      },
+
       observers: [
         '_observeHistoryStdoutStderr(history.*, stdout.*, stderr.*)',
         '_observeStdoutStderr(stdout.*, stderr.*)'
@@ -330,13 +377,17 @@ limitations under the License.
         return args.some((arg) => arg === true);
       },
 
-      _onKeyDownInput: function(e) {
-        switch (Polymer.dom(e).event.keyCode) {
+      _onKeyDownInput: function(event) {
+        switch (Polymer.dom(event).event.keyCode) {
         case 13:
           this.setCommand();
           break;
         case 38:
           this.set('historyIndex', (this.historyIndex + 1));
+          break;
+        // case 9:
+        case 39:
+          this._autocomplete();
           break;
         case 40:
           this.set('historyIndex', (this.historyIndex - 1));
@@ -348,6 +399,12 @@ limitations under the License.
 
       _onTapInputFocus: function() {
         this.$.input.focus();
+      },
+
+      _autocomplete: function() {
+        if (this.autosuggest) {
+          this.set('commandValue', this.autosuggest);
+        }
       },
 
       setCommand: function() {
