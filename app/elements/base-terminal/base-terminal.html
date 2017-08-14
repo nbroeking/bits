@@ -15,6 +15,7 @@ limitations under the License.
 -->
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 <link rel="import" href="../../bower_components/iron-resizable-behavior/iron-resizable-behavior.html">
+<link rel="import" href="../../bower_components/paper-spinner/paper-spinner-lite.html">
 <link rel="import" href="../base-system/base-system.html">
 <link rel="import" href="../base-auth/base-auth.html">
 
@@ -23,6 +24,8 @@ limitations under the License.
     <style>
       :host {
         display: block;
+        position: relative;
+
         --bits-base-terminal-error: var(--error-color);
         --bits-base-terminal-primary: var(--primary-color);
         --bits-base-terminal-accent: var(--accent-color);
@@ -71,6 +74,12 @@ limitations under the License.
         padding: 16px;
         height: 100%;
         overflow-y: auto;
+        position: relative;
+        z-index: 0;
+      }
+
+      #scroller[loading] {
+        opacity: 0.65;
       }
 
       pre {
@@ -104,7 +113,7 @@ limitations under the License.
         display: none;
       }
 
-      input {
+      #input {
         padding: 0;
         margin: 0;
         outline: 0;
@@ -126,6 +135,14 @@ limitations under the License.
         @apply --paper-font-code2;
       }
 
+      paper-spinner-lite {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate3d(-50%, -50%, 0);
+        z-index: 1;
+      }
+
     </style>
 
     <base-system
@@ -136,7 +153,7 @@ limitations under the License.
       user="{{user}}">
     </base-auth>
 
-    <div id="scroller" on-tap="_onTapInputFocus">
+    <div id="scroller" on-tap="_onTapInputFocus" loading$="[[loading]]">
       <template is="dom-repeat" items="[[items]]">
         <pre class$="[[item.type]]"><span class="prefix" hidden="[[!_calculateIsCommand(item.type)]]"><span class="user">[[userId]]</span>:<span class="location">[[location]]</span><span class="prompt">[[prompt]]</span>&#160;</span>[[item.output]]</pre>
       </template>
@@ -148,10 +165,16 @@ limitations under the License.
           id="input"
           type="text"
           value="{{commandValue::input}}"
-          disabled="[[awaitingResponse]]"
+          disabled="[[_calculateAnyTrue(awaitingResponse, loading)]]"
           on-keydown="_onKeyDownInput">
       </span>
     </div>
+
+    <paper-spinner-lite
+      active="[[loading]]"
+      hidden="[[!loading]]">
+    </paper-spinner-lite>
+
   </template>
   <script>
   (() => {
@@ -193,6 +216,10 @@ limitations under the License.
       ],
 
       properties: {
+        loading: {
+          type: Boolean,
+          value: false
+        },
         userId: {
           type: String,
           value: '',
@@ -296,6 +323,10 @@ limitations under the License.
 
       _calculateIsCommand: function(itemType) {
         return itemType === 'history';
+      },
+
+      _calculateAnyTrue: function(...args) {
+        return args.some(arg => arg === true);
       },
 
       _onKeyDownInput: function(e) {
