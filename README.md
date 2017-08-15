@@ -159,7 +159,7 @@ this._messageCenter.addRequestListener('myEvent', {scopes: null}, (name) => {
 })
 ```
 
-Then a user on the server side can make a request to this api such as.
+Then a user on the server side can make a request to this api such as:
 
 ``` javascript
 this._messageCenter.sendRequest('myEvent', {scopes: null}, 'Nic')
