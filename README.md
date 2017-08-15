@@ -38,6 +38,7 @@ BITS
 - [Running BITS](#running-bits)
 - [Running Modules](#running-modules)
 - [Support](#support)
+- [Troubleshooting](#Troubleshooting)
 - [Tutorials](#tutorials)
 
 <!-- /MarkdownTOC -->
@@ -60,7 +61,9 @@ BITS can run on enterprise or embedded applications and can help jumpstart a pro
 
 # Quickstart
 
-It is always a good idea to make sure your host system is up to date. On Ubuntu systems it may prove useful to run apt-get upgrade before beginning.
+It may be a good idea to make sure your host system is up to date. On Ubuntu systems it may prove useful to run apt-get upgrade before beginning. The below instructions are for Ubuntu systems. Alternative instructions for installing nodejs via a package manager can be found at the node.js website:
+
+https://nodejs.org/en/download/package-manager/
 
 ``` bash
 # Install Node.js v6.x python-crypto python-serial python-netifaces python-magic
@@ -71,14 +74,27 @@ sudo apt-get install -y nodejs
 # Setup development environment
 npm run build
 
-# Add Yarn
-node ./support/development/yarn-legacy-0.19.1.js add --dev <node-pkg-name>
+# Install Yarn
+npm install yarn
 
 # Start BITS
 npm run dev
 ```
 
 BITS should now be running and is accessible at https://localhost:9001
+
+* Note if you are using a mac you do not have apt-get. You can setup node and python crypto dependencies with the below:
+
+``` bash
+curl "https://nodejs.org/dist/v6.11.1/node-v6.11.1.pkg" > "$HOME/Downloads/node-v6.11.1.pkg" && sudo installer -store -pkg "$HOME/Downloads/node-v6.11.1.pkg" -target "/"
+
+sudo easy_install pip
+sudo pip install pycrypto
+
+npm install yarn
+
+npm run build
+```
 
 # Modules
 
@@ -496,7 +512,21 @@ This prevents modules from being deleted by unloading  modules. Any module that 
 Support
 ===
 To make changes to BITS please submit pull requests via github. For feature requests/bug reporting send an email to artisanalbits@gmail.com
+---
 
+# Troubleshooting
+
+1. If you get an error that a bindings file can't be found, maybe leveldown, the below might help. Make sure to delete your node_modules directory and re-run npm run build
+
+``` bash
+curl "https://nodejs.org/dist/v6.11.1/node-v6.11.1-headers.tar.gz" > "$HOME/Downloads/node-v6.11.1-headers.tar.gz"
+
+mkdir ~/.node-gyp
+
+cd ~
+
+tar xvzf node-v6.11.1-headers.tar.gz -d ~/.node-gyp/
+```
 ---
 
 # Tutorials
