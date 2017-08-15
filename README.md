@@ -53,7 +53,7 @@ BITS can run on enterprise or embedded applications and can help jumpstart a pro
 * Dashboard homepage for widgets
 * Activity Log
 * Module management
-* OMG management
+* Optimized Module Groupings (OMG) management
 * Centralized system logging
 
 ---
