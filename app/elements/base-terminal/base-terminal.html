@@ -77,6 +77,7 @@ limitations under the License.
         overflow-y: auto;
         position: relative;
         z-index: 0;
+        box-sizing: border-box;
       }
 
       #scroller[loading] {
@@ -184,7 +185,7 @@ limitations under the License.
             id="input"
             type="text"
             value="{{commandValue::input}}"
-            disabled="[[_calculateAnyTrue(awaitingResponse, loading)]]"
+            disabled="[[_calculateAnyTrue(awaitingResponse, loading, disabled)]]"
             on-keydown="_onKeyDownInput">
         </span>
       </span>
@@ -236,6 +237,10 @@ limitations under the License.
       ],
 
       properties: {
+        disabled: {
+          type: Boolean,
+          value: false
+        },
         loading: {
           type: Boolean,
           value: false
@@ -423,6 +428,19 @@ limitations under the License.
 
       _updateScroll: function() {
         this.$.scroller.scrollTop = this.$.scroller.scrollHeight;
+      },
+
+      seedItems: function(items) {
+        items.forEach((item) => this.push(item.type, item.output));
+      },
+
+      clear: function() {
+        this.set('stdout', []);
+        this.set('stderr', []);
+        this._setHistory([]);
+        this._setItems([]);
+        this.set('historyIndex', -1);
+        this.set('awaitingResponse', false);
       }
 
     });
