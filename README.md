@@ -377,9 +377,9 @@ The base server provides a helper object that can interact with the base to set 
 The child process helper provides a way for modules to CRUD scripts on the system.
 ```javascript
 
-const UtilFs = global.helper.FS;
+const UtilChildProcess = global.helper.ChildProcess;
 
-return UtilFs.createSpawnPromise('ls', ['-alh'])
+return UtilChildProcess.createSpawnPromise('ls', ['-alh'])
 .then((contents) => {
   //The contents
 });
