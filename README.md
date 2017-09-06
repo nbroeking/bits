@@ -61,40 +61,37 @@ BITS can run on enterprise or embedded applications and can help jumpstart a pro
 
 # Quickstart
 
-It may be a good idea to make sure your host system is up to date. On Ubuntu systems it may prove useful to run apt-get upgrade before beginning. The below instructions are for Ubuntu systems. Alternative instructions for installing nodejs via a package manager can be found at the node.js website:
+BITS is built upon the NodeJS framework and requires that following
 
-https://nodejs.org/en/download/package-manager/
+
+* Linux Operating System, such as [Ubuntu LTS](https://www.ubuntu.com/download)
+* [NodeJS LTS](https://nodejs.org/en/download)
+* [Yarn](https://yarnpkg.com/en/docs/install)
+* [Python 2.x](https://www.python.org/downloads)
+* [Pyserial](https://pythonhosted.org/pyserial)
+* [Pycrypto](https://pypi.python.org/pypi/pycrypto)
+* [Pymagic](https://github.com/ahupp/python-magic)
+* [Pynetifaces](https://pypi.python.org/pypi/netifaces)
+
+Please consult these websites for directions on how to properly install these
+components for your Linux distribution.
+
+Once the pre-requisite items have been installed:
 
 ``` bash
-# Install Node.js v6.x python-crypto python-serial python-netifaces python-magic
-apt-get install python-crypto python-serial python-netifaces python-magic
-curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
-sudo apt-get install -y nodejs
+# Download BITS
+git clone https://github.com/LGSInnovations/bits.git
 
-# Setup development environment
+# Install BITS dependencies and build BITS
+cd bits
+npm install
 npm run build
-
-# Install Yarn
-npm install yarn
 
 # Start BITS
 npm run dev
 ```
 
 BITS should now be running and is accessible at https://localhost:9001
-
-* Note if you are using a mac you do not have apt-get. You can setup node and python crypto dependencies with the below:
-
-``` bash
-curl "https://nodejs.org/dist/v6.11.1/node-v6.11.1.pkg" > "$HOME/Downloads/node-v6.11.1.pkg" && sudo installer -store -pkg "$HOME/Downloads/node-v6.11.1.pkg" -target "/"
-
-sudo easy_install pip
-sudo pip install pycrypto
-
-npm install yarn
-
-npm run build
-```
 
 # Modules
 
