@@ -71,11 +71,11 @@ limitations under the License.
     const moduleName = moduleInfo.name;
 
     process.on('uncaughtException', (err) => {
-      logger.error(`Uncaught exception in module ${moduleName}: ${err.message}`);
+      logger.error(`Uncaught exception in module ${moduleName}: ${err.message}\n ${err.stack}`);
     });
 
     process.on('unhandledRejection', (err) => {
-      logger.error(`Unhandled rejection in module ${moduleName}: ${err.message}`);
+      logger.error(`Unhandled rejection in module ${moduleName}: ${err.message}\n ${err.stack}`);
     });
 
     base.dispatchModule(moduleInfo);
