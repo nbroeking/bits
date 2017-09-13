@@ -16,6 +16,14 @@ limitations under the License.
 (() => {
   'use strict';
 
+  process.on('unhandledRejection', (reason, p) => {
+    console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
+    // application specific logging, throwing an error, or other logic here
+    p.catch((err) => {
+      console.log(err.stack);
+    });
+  });
+
   const chai = require('chai');
   const chaiAsPromised = require('chai-as-promised');
   const MessageCenter = require('../lib/message-center');
@@ -58,7 +66,8 @@ limitations under the License.
     });
     describe('sendRequest', () => {
       it('should return a Promise', () => {
-        expect(messageCenter.sendRequest('test0', {scopes: null})).to.be.instanceof(Promise);
+        messageCenter.addRequestListener('test', {scopes: null}, () => null);
+        expect(messageCenter.sendRequest('test', {scopes: null})).to.be.instanceof(Promise);
       });
       it('should trigger request listener', () => {
         messageCenter.addRequestListener('test', {scopes: null}, () => null);
@@ -86,21 +95,61 @@ limitations under the License.
       it('should return a Promise', () => {
         expect(messageCenter.addEventListener('test', {scopes: null}, noop)).to.be.instanceof(Promise);
       });
-      it('should add event listener to be triggered on event', (done) => {
-        messageCenter.addEventListener('test', {scopes: null}, (data) => done(data));
+      it('should call when sendEvent is called', (done) => {
+        messageCenter.addEventListener('test', {scopes: null}, (data) => done());
         messageCenter.sendEvent('test', {scopes: null});
       });
-      it('should get an event when in the same scope', (done) => {
-        messageCenter.addEventListener('test', {scopes: ['a']}, (data) => done(data));
+      it('should call when scopes are null', (done) => {
+        messageCenter.addEventListener('test', {scopes: null}, (data) => done());
         messageCenter.sendEvent('test', {scopes: ['a']});
       });
-      it('should not get an event when not in the same scope', (done) => {
+      it('should call when scopes match sendEvent scopes', (done) => {
+        messageCenter.addEventListener('test', {scopes: ['a']}, (data) => done());
+        messageCenter.sendEvent('test', {scopes: ['a']});
+      });
+      it('should call when scopes is a super set of sendEvent scopes', (done) => {
+        messageCenter.addEventListener('test', {scopes: ['a', 'b']}, (data) => done());
+        messageCenter.sendEvent('test', {scopes: ['a']});
+      });
+      it('should not call when scopes does not contain sendEvent scopes', (done) => {
         const timeout = setTimeout(done, 10);
         messageCenter.addEventListener('test', {scopes: ['a']}, () => {
           clearTimeout(timeout);
           done(new Error('Should not be called.'));
         });
         messageCenter.sendEvent('test', {scopes: ['b']});
+      });
+      it('should not call when scopes is not null and sendEvent scopes is null', (done) => {
+        const timeout = setTimeout(done, 10);
+        messageCenter.addEventListener('test', {scopes: ['a']}, () => {
+          clearTimeout(timeout);
+          done(new Error('Should not be called.'));
+        });
+        messageCenter.sendEvent('test', {scopes: null});
+      });
+      it('should call when scopes contains all sendEvent scopes', (done) => {
+        messageCenter.addEventListener('test', {scopes: ['a', 'b']}, (data) => done());
+        messageCenter.sendEvent('test', {scopes: ['a', 'b']});
+      });
+      it('should call when scopes contains all sendEvent scopes (extra)', (done) => {
+        messageCenter.addEventListener('test', {scopes: ['a', 'b', 'c']}, (data) => done());
+        messageCenter.sendEvent('test', {scopes: ['a', 'b']});
+      });
+      it('should not call when scopes does not contain all sendEvent scopes', (done) => {
+        const timeout = setTimeout(done, 10);
+        messageCenter.addEventListener('test', {scopes: ['a']}, (data) => {
+          clearTimeout(timeout);
+          done(new Error('Should not be called.'));
+        });
+        messageCenter.sendEvent('test', {scopes: ['a', 'b']});
+      });
+      it('should not call when scopes does not contain all sendEvent scopes (extra)', (done) => {
+        const timeout = setTimeout(done, 10);
+        messageCenter.addEventListener('test', {scopes: ['a', 'c']}, (data) => {
+          clearTimeout(timeout);
+          done(new Error('Should not be called.'));
+        });
+        messageCenter.sendEvent('test', {scopes: ['a', 'b']});
       });
     });
     describe('removeEventListener', () => {
@@ -124,13 +173,48 @@ limitations under the License.
       it('should return a Promise', () => {
         expect(messageCenter.addRequestListener('test', {scopes: null}, noop)).to.be.instanceof(Promise);
       });
-      it('should get an request when in the same scope', () => {
+      it('should call when sendRequest is called', () => {
+        messageCenter.addRequestListener('test', {scopes: null}, () => null);
+        return messageCenter.sendRequest('test', {scopes: null});
+      });
+      it('should call when sendRequest scopes are null', () => {
+        messageCenter.addRequestListener('test', {scopes: ['a']}, () => null);
+        return messageCenter.sendRequest('test', {scopes: null});
+      });
+      it('should not call when scopes are null and sendRequest is scoped', (done) => {
+        const timeout = setTimeout(done, 10);
+        messageCenter.addRequestListener('test', {scopes: null}, () => {
+          clearTimeout(timeout);
+          done(new Error('Should not be called.'));
+        });
+        messageCenter.sendRequest('test', {scopes: ['a']})
+        .catch(() => null);
+      });
+      it('should call when scopes match sendRequest scopes', () => {
         messageCenter.addRequestListener('test', {scopes: ['a']}, () => null);
         return messageCenter.sendRequest('test', {scopes: ['a']});
       });
-      it('should not get an request when not in the same scope', () => {
+      it('should call when scopes are subset of sendRequest scopes', () => {
         messageCenter.addRequestListener('test', {scopes: ['a']}, () => null);
-        return expect(messageCenter.sendRequest('test', {scopes: ['b']})).to.be.rejected;
+        return messageCenter.sendRequest('test', {scopes: ['a', 'b']});
+      });
+      it('should not call when scopes are not a subset of sendRequest scopes', (done) => {
+        const timeout = setTimeout(done, 10);
+        messageCenter.addRequestListener('test', {scopes: ['a', 'b']}, () => {
+          clearTimeout(timeout);
+          done(new Error('Should not be called.'));
+        });
+        messageCenter.sendRequest('test', {scopes: ['a']})
+        .catch(() => null);
+      });
+      it('should not call when scopes are not a subset of sendRequest scopes (extra)', (done) => {
+        const timeout = setTimeout(done, 10);
+        messageCenter.addRequestListener('test', {scopes: ['a', 'b']}, () => {
+          clearTimeout(timeout);
+          done(new Error('Should not be called.'));
+        });
+        messageCenter.sendRequest('test', {scopes: ['a', 'c']})
+        .catch(() => null);
       });
     });
     describe('removeRequestListener', () => {
