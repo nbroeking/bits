@@ -40,18 +40,18 @@ limitations under the License.
         expect(messageCenter.sendEvent('test', {scopes: null})).to.be.instanceof(Promise);
       });
       it('should trigger event listener', (done) => {
-        messageCenter.addEventListener('test', null, (metadata, data) => done(data));
+        messageCenter.addEventListener('test', {scopes: null}, (metadata, data) => done(data));
         messageCenter.sendEvent('test', {scopes: null});
       });
       it('should trigger event listener with data', (done) => {
-        messageCenter.addEventListener('test', null, (data) => {
+        messageCenter.addEventListener('test', {scopes: null}, (data) => {
           expect(data).to.equals(2);
           done();
         });
         messageCenter.sendEvent('test', {scopes: null}, 2);
       });
       it('should not trigger event listener with different name', (done) => {
-        messageCenter.addEventListener('not-test', null, () => done(new Error('Should not be called')));
+        messageCenter.addEventListener('not-test', {scopes: null}, () => done(new Error('Should not be called')));
         messageCenter.sendEvent('test', {scopes: null});
         setTimeout(done, 10);
       });
@@ -61,22 +61,22 @@ limitations under the License.
         expect(messageCenter.sendRequest('test0', {scopes: null})).to.be.instanceof(Promise);
       });
       it('should trigger request listener', () => {
-        messageCenter.addRequestListener('test', null, () => null);
+        messageCenter.addRequestListener('test', {scopes: null}, () => null);
         return messageCenter.sendRequest('test', {scopes: null});
       });
       it('should trigger request listener with data', () => {
-        messageCenter.addRequestListener('test2', null, (metadata, data) => {
+        messageCenter.addRequestListener('test2', {scopes: null}, (metadata, data) => {
           expect(data).to.equals(2);
         });
         return messageCenter.sendRequest('test2', {scopes: null}, 2);
       });
       it('should resolve to request listener result', () => {
-        messageCenter.addRequestListener('test3', null, () => 2);
+        messageCenter.addRequestListener('test3', {scopes: null}, () => 2);
         return messageCenter.sendRequest('test3', {scopes: null})
         .then((data) => expect(data).to.equals(2));
       });
       it('should reject with request listener exception', () => {
-        messageCenter.addRequestListener('test', null, () => {
+        messageCenter.addRequestListener('test', {scopes: null}, () => {
           throw new Error('test');
         });
         return expect(messageCenter.sendRequest('test', {scopes: null})).to.be.rejected;
@@ -84,19 +84,19 @@ limitations under the License.
     });
     describe('addEventListener', () => {
       it('should return a Promise', () => {
-        expect(messageCenter.addEventListener('test', null, noop)).to.be.instanceof(Promise);
+        expect(messageCenter.addEventListener('test', {scopes: null}, noop)).to.be.instanceof(Promise);
       });
       it('should add event listener to be triggered on event', (done) => {
-        messageCenter.addEventListener('test', null, (data) => done(data));
+        messageCenter.addEventListener('test', {scopes: null}, (data) => done(data));
         messageCenter.sendEvent('test', {scopes: null});
       });
       it('should get an event when in the same scope', (done) => {
-        messageCenter.addEventListener('test', ['a'], (data) => done(data));
+        messageCenter.addEventListener('test', {scopes: ['a']}, (data) => done(data));
         messageCenter.sendEvent('test', {scopes: ['a']});
       });
       it('should not get an event when not in the same scope', (done) => {
         const timeout = setTimeout(done, 10);
-        messageCenter.addEventListener('test', ['a'], () => {
+        messageCenter.addEventListener('test', {scopes: ['a']}, () => {
           clearTimeout(timeout);
           done(new Error('Should not be called.'));
         });
@@ -105,7 +105,7 @@ limitations under the License.
     });
     describe('removeEventListener', () => {
       it('should return a Promise', () => {
-        messageCenter.addEventListener('test', null, noop);
+        messageCenter.addEventListener('test', {scopes: null}, noop);
         expect(messageCenter.removeEventListener('test', noop)).to.be.instanceof(Promise);
       });
       it('should not call listener on event', (done) => {
@@ -115,31 +115,31 @@ limitations under the License.
           clearTimeout(timeout);
           done(new Error('Should not be called.'));
         }
-        messageCenter.addEventListener('test', null, notCalled);
+        messageCenter.addEventListener('test', {scopes: null}, notCalled);
         messageCenter.removeEventListener('test', notCalled);
         messageCenter.sendEvent('test', {scopes: null});
       });
     });
     describe('addRequestListener', () => {
       it('should return a Promise', () => {
-        expect(messageCenter.addRequestListener('test', null, noop)).to.be.instanceof(Promise);
+        expect(messageCenter.addRequestListener('test', {scopes: null}, noop)).to.be.instanceof(Promise);
       });
       it('should get an request when in the same scope', () => {
-        messageCenter.addRequestListener('test', ['a'], () => null);
+        messageCenter.addRequestListener('test', {scopes: ['a']}, () => null);
         return messageCenter.sendRequest('test', {scopes: ['a']});
       });
       it('should not get an request when not in the same scope', () => {
-        messageCenter.addRequestListener('test', ['a'], () => null);
+        messageCenter.addRequestListener('test', {scopes: ['a']}, () => null);
         return expect(messageCenter.sendRequest('test', {scopes: ['b']})).to.be.rejected;
       });
     });
     describe('removeRequestListener', () => {
       it('should return a Promise', () => {
-        messageCenter.addRequestListener('test', null, noop);
+        messageCenter.addRequestListener('test', {scopes: null}, noop);
         expect(messageCenter.removeRequestListener('test', noop)).to.be.instanceof(Promise);
       });
       it('should not call listener on request', () => {
-        messageCenter.addRequestListener('test', null, noop);
+        messageCenter.addRequestListener('test', {scopes: null}, noop);
         messageCenter.removeRequestListener('test', noop);
         return expect(messageCenter.sendRequest('test', {scopes: null})).to.be.rejected;
       });
@@ -150,7 +150,7 @@ limitations under the License.
         messageCenter.addEventSubscriberListener('testA', (metadata) => {
           return done();
         });
-        messageCenter.addEventListener('testA', null, () => noop);
+        messageCenter.addEventListener('testA', {scopes: null}, () => noop);
       });
 
       it('should get called when removed removed when an event is added', (done) => {
@@ -160,7 +160,7 @@ limitations under the License.
           }
         });
         const func = () => noop;
-        messageCenter.addEventListener('testA', null, func);
+        messageCenter.addEventListener('testA', {scopes: null}, func);
         messageCenter.removeEventListener('testA', func);
       });
 
@@ -171,7 +171,7 @@ limitations under the License.
           return done('Should not get called');
         });
         const func = () => noop;
-        messageCenter.addEventListener('testB', null, func);
+        messageCenter.addEventListener('testB', {scopes: null}, func);
       });
 
       it('should get called with correct scopes when an event is added', (done) => {
