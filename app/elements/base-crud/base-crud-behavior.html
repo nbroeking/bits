@@ -55,7 +55,7 @@ limitations under the License.
             }
           });
         }
-        this.fire('base-crud-item-created', {tag: this.tag, item: item});
+        this.fire('base-crud-item-created', {tag: this.tag, items: items});
       },
 
       _updated: function(items) {
@@ -70,7 +70,7 @@ limitations under the License.
             }
           });
         }
-        this.fire('base-crud-item-updated', {tag: this.tag, item: item});
+        this.fire('base-crud-item-updated', {tag: this.tag, items: items});
       },
 
       _deleted: function(items) {
@@ -83,7 +83,7 @@ limitations under the License.
             }
           });
         }
-        this.fire('base-crud-item-deleted', {tag: this.tag, item: item});
+        this.fire('base-crud-item-deleted', {tag: this.tag, items: items});
       },
 
       properties: {
