@@ -43,39 +43,45 @@ limitations under the License.
         return aId === bId;
       },
 
-      _created: function(item) {
+      _created: function(items) {
         if (!this.noItems) {
-          const currentItem = this.items.find((currentItem) => this._compareItem(item, currentItem));
-          if (currentItem) {
-            const index = this.items.indexOf(currentItem);
-            this.splice('items', index, 1, item);
-          } else {
-            this.push('items', item);
-          }
+          items.forEach((item) => {
+            const currentItem = this.items.find((currentItem) => this._compareItem(item, currentItem));
+            if (currentItem) {
+              const index = this.items.indexOf(currentItem);
+              this.splice('items', index, 1, item);
+            } else {
+              this.push('items', item);
+            }
+          });
         }
         this.fire('base-crud-item-created', {tag: this.tag, item: item});
       },
 
-      _updated: function(item) {
+      _updated: function(items) {
         if (!this.noItems) {
-          const currentItem = this.items.find((currentItem) => this._compareItem(item, currentItem));
-          if (currentItem) {
-            const index = this.items.indexOf(currentItem);
-            this.splice('items', index, 1, item);
-          } else {
-            this.push('items', item);
-          }
+          items.forEach((item) => {
+            const currentItem = this.items.find((currentItem) => this._compareItem(item, currentItem));
+            if (currentItem) {
+              const index = this.items.indexOf(currentItem);
+              this.splice('items', index, 1, item);
+            } else {
+              this.push('items', item);
+            }
+          });
         }
         this.fire('base-crud-item-updated', {tag: this.tag, item: item});
       },
 
-      _deleted: function(item) {
+      _deleted: function(items) {
         if (!this.noItems) {
-          const currentItem = this.items.find((currentItem) => this._compareItem(item, currentItem));
-          if (currentItem) {
-            const index = this.items.indexOf(currentItem);
-            this.splice('items', index, 1);
-          }
+          items.forEach((item) => {
+            const currentItem = this.items.find((currentItem) => this._compareItem(item, currentItem));
+            if (currentItem) {
+              const index = this.items.indexOf(currentItem);
+              this.splice('items', index, 1);
+            }
+          });
         }
         this.fire('base-crud-item-deleted', {tag: this.tag, item: item});
       },
