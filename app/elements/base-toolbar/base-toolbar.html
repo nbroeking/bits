@@ -129,8 +129,10 @@ limitations under the License.
       },
 
       _onToolbarItemCreated: function(event, detail) {
-        const item = detail.item;
-        this._createToolbarItemElement(item);
+        const items = detail.items;
+        items.reduce((chain, item) => {
+          return chain.then(() => this._createToolbarItemElement(item));
+        }, Promise.resolve());
       },
 
       _createToolbarItemElement: function(item) {
@@ -160,20 +162,22 @@ limitations under the License.
       },
 
       _onToolbarItemDeleted: function(event, detail) {
-        const item = detail.item;
-        const id = item.id;
-        if (!this._elements.has(id)) {
-          this._elements.set(id, Promise.resolve(null));
-        }
+        const items = detail.items;
+        items.forEach((item) => {
+          const id = item.id;
+          if (!this._elements.has(id)) {
+            this._elements.set(id, Promise.resolve(null));
+          }
 
-        const chain = Promise.resolve()
-        .then((element) => {
-          const container = this.$.toolbarItemContainer;
-          container.removeChild(element);
-          return null;
+          const chain = Promise.resolve()
+          .then((element) => {
+            const container = this.$.toolbarItemContainer;
+            container.removeChild(element);
+            return null;
+          });
+          this._elements.set(id, chain.catch(() => null));
+          return chain;
         });
-        this._elements.set(id, chain.catch(() => null));
-        return chain;
       },
 
       _findToolbarItemByTag: function(tag) {
