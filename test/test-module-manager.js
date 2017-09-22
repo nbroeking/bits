@@ -60,19 +60,12 @@ limitations under the License.
         return expect(moduleManager.checkModuleInfoRequiredParameters(moduleInfo)).to.be.rejectedWith('name must be a non-empty string');
       });
 
-      it('should rejected if there is no version property', () => {
-        const moduleInfo = {
-          name: 'a'
-        };
-        return expect(moduleManager.checkModuleInfoRequiredParameters(moduleInfo)).to.be.rejectedWith('Module must have a version');
-      });
-
       it('should rejected if the version property is not valid', () => {
         const moduleInfo = {
           name: 'a',
           version: 'not a valid version'
         };
-        return expect(moduleManager.checkModuleInfoRequiredParameters(moduleInfo)).to.be.rejectedWith('Module must have a valid version');
+        return expect(moduleManager.checkModuleInfoRequiredParameters(moduleInfo)).to.be.rejectedWith('Module must have a valid semver version');
       });
 
       it('should return the moduleInfo given if a proper moduleInfo', () => {
