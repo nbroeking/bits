@@ -34,6 +34,13 @@ limitations under the License.
 
     const authElement = document.createElement('base-auth');
 
+    function onAuthEvent({type, reason}) {
+      console.warn(`Auth[${type}]: ${reason}`);
+      if ('unauthorized' === type) {
+        authElement.signOut();
+      }
+    }
+
     function onSignedInChanged(event) {
       const signedIn = event.detail.value;
       if (signedIn) {
@@ -42,6 +49,7 @@ limitations under the License.
           query: 'accessToken=' + accessToken
         };
         socket = io(options);
+        socket.on('auth', onAuthEvent);
       } else {
         socket = null;
       }
