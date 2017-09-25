@@ -275,17 +275,18 @@ limitations under the License.
 
       _newActivity: function(e, detail) {
         const tag = detail.tag;
-        if (this.$.activities.tag === tag) {
-          const item = detail.item;
-          if (!item.dismissed) {
+        const items = detail.items;
+        const isActivity = (this.$.activities.tag === tag);
+        items.forEach((item) => {
+          if (isActivity && !item.dismissed) {
             this.newNotifications++;
           }
-        }
-        this.notification({
-          tag: detail.tag,
-          item: detail.item
+          this.notification({
+            tag: detail.tag,
+            item: detail.item
+          });
+          this._getItems();
         });
-        this._getItems();
       },
 
       ready: function() {

@@ -131,20 +131,24 @@ limitations under the License.
       _onItemUpdated: function(event, detail) {
         const tag = detail.tag;
         if (tag === this.$.omgs.tag) {
-          const omg = detail.item;
-          if (omg.id === this.omgId) {
-            this.omg = omg;
-          }
+          const omgs = detail.items;
+          omgs.forEach((omg) => {
+            if (omg.id === this.omgId) {
+              this.omg = omg;
+            }
+          });
         }
       },
 
       _onItemDeleted: function(event, detail) {
         const tag = detail.tag;
         if (tag === this.$.omgs.tag) {
-          const omg = detail.item;
-          if (omg.id === this.omgId) {
-            this.omgId = null;
-          }
+          const omgs = detail.items;
+          omgs.forEach((omg) => {
+            if (omg.id === this.omgId) {
+              this.omgId = null;
+            }
+          });
         }
       },
 
