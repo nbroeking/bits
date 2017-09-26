@@ -16,120 +16,121 @@ limitations under the License.
 <link rel="import" href="../base-message-center/base-message-center-behavior.html">
 
 <script>
-  'use strict';
+  ((global) => {
+    'use strict';
 
-  Bits = Bits || {};
+    Bits = global.Bits || {};
 
-  /**
-   * @polymerBehavior
-   */
-  Bits.BaseKeyValueImpl = {
-    created: function() {
-      this._boundKvOnSet = this._kvOnSet.bind(this);
-      this._boundKvOnDelete = this._kvOnDelete.bind(this);
-      this._boundKvOnClear = this._kvOnClear.bind(this);
-    },
+    /**
+     * @polymerBehavior
+     */
+    Bits.BaseKeyValueImpl = {
+      created: function() {
+        this._boundKvOnSet = this._kvOnSet.bind(this);
+        this._boundKvOnDelete = this._kvOnDelete.bind(this);
+        this._boundKvOnClear = this._kvOnClear.bind(this);
+      },
 
-    _kvOnSet: function({key, value}) {
-      const detail = {
-        tag: this.tag,
-        key: key,
-        value: value
-      };
-      this.fire('base-key-value-set', detail);
-    },
+      _kvOnSet: function({key, value}) {
+        const detail = {
+          tag: this.tag,
+          key: key,
+          value: value
+        };
+        this.fire('base-key-value-set', detail);
+      },
 
-    _kvOnDelete: function({key}) {
-      const detail = {
-        tag: this.tag,
-        key: key
-      };
-      this.fire('base-key-value-delete', detail);
-    },
+      _kvOnDelete: function({key}) {
+        const detail = {
+          tag: this.tag,
+          key: key
+        };
+        this.fire('base-key-value-delete', detail);
+      },
 
-    _kvOnClear: function() {
-      const detail = {
-        tag: this.tag
-      };
-      this.fire('base-key-value-clear', detail);
-    },
+      _kvOnClear: function() {
+        const detail = {
+          tag: this.tag
+        };
+        this.fire('base-key-value-clear', detail);
+      },
 
-    properties: {
-      tag: {
-        type: String,
-        observer: '_tagChanged'
-      }
-    },
+      properties: {
+        tag: {
+          type: String,
+          observer: '_tagChanged'
+        }
+      },
 
-    _tagChanged: function(tag, oldTag) {
-      if (oldTag != null) {
-        this.removeSocketEventListener(`${oldTag} set`, this._boundKvOnSet);
-        this.removeSocketEventListener(`${oldTag} delete`, this._boundKvOnDelete);
-        this.removeSocketEventListener(`${oldTag} clear`, this._boundKvOnClear);
-      }
-      if (tag != null) {
-        this.addSocketEventListener(`${tag} set`, this._boundKvOnSet);
-        this.addSocketEventListener(`${tag} delete`, this._boundKvOnDelete);
-        this.addSocketEventListener(`${tag} clear`, this._boundKvOnClear);
-      }
-    },
+      _tagChanged: function(tag, oldTag) {
+        if (oldTag != null) {
+          this.removeSocketEventListener(`${oldTag} set`, this._boundKvOnSet);
+          this.removeSocketEventListener(`${oldTag} delete`, this._boundKvOnDelete);
+          this.removeSocketEventListener(`${oldTag} clear`, this._boundKvOnClear);
+        }
+        if (tag != null) {
+          this.addSocketEventListener(`${tag} set`, this._boundKvOnSet);
+          this.addSocketEventListener(`${tag} delete`, this._boundKvOnDelete);
+          this.addSocketEventListener(`${tag} clear`, this._boundKvOnClear);
+        }
+      },
 
-    kvSet: function(request) {
-      if (this.tag == null) {
-        return Promise.reject(new Error('no tag specified'));
-      }
-      return this.sendRequest(`${this.tag} set`, request);
-    },
+      kvSet: function(request) {
+        if (this.tag == null) {
+          return Promise.reject(new Error('no tag specified'));
+        }
+        return this.sendRequest(`${this.tag} set`, request);
+      },
 
-    kvGet: function(request) {
-      if (this.tag == null) {
-        return Promise.reject(new Error('no tag specified'));
-      }
-      return this.sendRequest(`${this.tag} get`, request);
-    },
+      kvGet: function(request) {
+        if (this.tag == null) {
+          return Promise.reject(new Error('no tag specified'));
+        }
+        return this.sendRequest(`${this.tag} get`, request);
+      },
 
-    kvHas: function(request) {
-      if (this.tag == null) {
-        return Promise.reject(new Error('no tag specified'));
-      }
-      return this.sendRequest(`${this.tag} has`, request);
-    },
+      kvHas: function(request) {
+        if (this.tag == null) {
+          return Promise.reject(new Error('no tag specified'));
+        }
+        return this.sendRequest(`${this.tag} has`, request);
+      },
 
-    kvDelete: function(request) {
-      if (this.tag == null) {
-        return Promise.reject(new Error('no tag specified'));
-      }
-      return this.sendRequest(`${this.tag} delete`, request);
-    },
+      kvDelete: function(request) {
+        if (this.tag == null) {
+          return Promise.reject(new Error('no tag specified'));
+        }
+        return this.sendRequest(`${this.tag} delete`, request);
+      },
 
-    kvClear: function(request) {
-      if (this.tag == null) {
-        return Promise.reject(new Error('no tag specified'));
-      }
-      return this.sendRequest(`${this.tag} clear`, request);
-    },
+      kvClear: function(request) {
+        if (this.tag == null) {
+          return Promise.reject(new Error('no tag specified'));
+        }
+        return this.sendRequest(`${this.tag} clear`, request);
+      },
 
-    kvKeys: function(request) {
-      if (this.tag == null) {
-        return Promise.reject(new Error('no tag specified'));
-      }
-      return this.sendRequest(`${this.tag} keys`, request);
-    },
+      kvKeys: function(request) {
+        if (this.tag == null) {
+          return Promise.reject(new Error('no tag specified'));
+        }
+        return this.sendRequest(`${this.tag} keys`, request);
+      },
 
-    kvValues: function(request) {
-      if (this.tag == null) {
-        return Promise.reject(new Error('no tag specified'));
-      }
-      return this.sendRequest(`${this.tag} values`, request);
-    },
-  };
+      kvValues: function(request) {
+        if (this.tag == null) {
+          return Promise.reject(new Error('no tag specified'));
+        }
+        return this.sendRequest(`${this.tag} values`, request);
+      },
+    };
 
-  /**
-    * @polymerBehavior
-    */
-  Bits.BaseKeyValueBehavior = [
-    Bits.BaseMessageCenterBehavior,
-    Bits.BaseKeyValueImpl
-  ];
-
+    /**
+      * @polymerBehavior
+      */
+    Bits.BaseKeyValueBehavior = [
+      Bits.BaseMessageCenterBehavior,
+      Bits.BaseKeyValueImpl
+    ];
+  })(this);
 </script>

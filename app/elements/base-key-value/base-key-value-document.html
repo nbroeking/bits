@@ -20,153 +20,155 @@ limitations under the License.
 
 <dom-module id="base-key-value-document">
   <script>
-    'use strict';
+    (() => {
+      'use strict';
 
-    Polymer({
-      is: 'base-key-value-document',
+      Polymer({
+        is: 'base-key-value-document',
 
-      behaviors: [
-        Polymer.AppStorageBehavior,
-        Bits.BaseKeyValueBehavior
-      ],
+        behaviors: [
+          Polymer.AppStorageBehavior,
+          Bits.BaseKeyValueBehavior
+        ],
 
-      properties: {
-        key: {
-          type: String,
-          notify: true
-        }
-      },
-
-      observers: [
-        '__keyValueSourceChanged(tag, key)'
-      ],
-
-      __keyValueSourceChanged: function(tag, key) {
-        if (key != null) {
-          this._initializeStoredValue();
-        } else {
-          this.reset();
-        }
-      },
-
-      listeners: {
-        'base-key-value-set': '_onSetEvent',
-        'base-key-value-delete': '_onDeleteEvent',
-        'base-key-value-clear': '_onClearEvent'
-      },
-
-      _onSetEvent(event, {key, value}) {
-        if (this.key !== key) {
-          return;
-        }
-
-        this.syncToMemory(() => {
-          this.set('data', value);
-        });
-      },
-
-      _onDeleteEvent(event, {key}) {
-        if (this.key !== key) {
-          return;
-        }
-        this.reset();
-      },
-
-      _onClearEvent(event) {
-        this.reset();
-      },
-
-      /**
-       * @override
-       */
-      get isNew() {
-        return this.key == null;
-      },
-
-      /**
-       * Stores a value at the given key, and if successful, updates this.key.
-       *
-       * @override
-       * @param {string} key The new key to use.
-       */
-      save: function(key) {
-        return Promise.resolve()
-        .then(() => this.kvSet({key: key, value: this.data}))
-        .then(() => {
-          this.key = key;
-        });
-      },
-
-      /**
-       * @override
-       */
-      reset: function() {
-        this.key = null;
-        this.data = this.zeroValue;
-      },
-
-      /**
-       * @override
-       */
-      destroy: function() {
-        return Promise.resolve()
-        .then(() => this.kvDelete({key: this.key}))
-        .then(() => this.reset());
-      },
-
-      /**
-       * @override
-       */
-      initializeStoredValue: function() {
-        if (this.isNew) {
-          return Promise.resolve();
-        }
-
-        return this.getStoredValue('data')
-        .then((data) => {
-          this._log('Got stored value!', data, this.data);
-          if (data == null) {
-            return this._setStoredValue(
-              'data', this.data || this.zeroValue);
-          } else {
-            this.syncToMemory(() => {
-              this.set('data', data);
-            });
+        properties: {
+          key: {
+            type: String,
+            notify: true
           }
-        })
-        .catch((err) => console.warn(err.message));
-      },
+        },
 
-      /**
-       * @override
-       */
-      getStoredValue: function(path) {
-        if (this.key != null) {
-          return this.kvGet({key: this.key})
-          .then((value) => {
-            if (value != null) {
-              value = this.get(path, {
-                data: value
+        observers: [
+          '__keyValueSourceChanged(tag, key)'
+        ],
+
+        __keyValueSourceChanged: function(tag, key) {
+          if (key != null) {
+            this._initializeStoredValue();
+          } else {
+            this.reset();
+          }
+        },
+
+        listeners: {
+          'base-key-value-set': '_onSetEvent',
+          'base-key-value-delete': '_onDeleteEvent',
+          'base-key-value-clear': '_onClearEvent'
+        },
+
+        _onSetEvent(event, {key, value}) {
+          if (this.key !== key) {
+            return;
+          }
+
+          this.syncToMemory(() => {
+            this.set('data', value);
+          });
+        },
+
+        _onDeleteEvent(event, {key}) {
+          if (this.key !== key) {
+            return;
+          }
+          this.reset();
+        },
+
+        _onClearEvent(event) {
+          this.reset();
+        },
+
+        /**
+         * @override
+         */
+        get isNew() {
+          return this.key == null;
+        },
+
+        /**
+         * Stores a value at the given key, and if successful, updates this.key.
+         *
+         * @override
+         * @param {string} key The new key to use.
+         */
+        save: function(key) {
+          return Promise.resolve()
+          .then(() => this.kvSet({key: key, value: this.data}))
+          .then(() => {
+            this.key = key;
+          });
+        },
+
+        /**
+         * @override
+         */
+        reset: function() {
+          this.key = null;
+          this.data = this.zeroValue;
+        },
+
+        /**
+         * @override
+         */
+        destroy: function() {
+          return Promise.resolve()
+          .then(() => this.kvDelete({key: this.key}))
+          .then(() => this.reset());
+        },
+
+        /**
+         * @override
+         */
+        initializeStoredValue: function() {
+          if (this.isNew) {
+            return Promise.resolve();
+          }
+
+          return this.getStoredValue('data')
+          .then((data) => {
+            this._log('Got stored value!', data, this.data);
+            if (data == null) {
+              return this._setStoredValue(
+                'data', this.data || this.zeroValue);
+            } else {
+              this.syncToMemory(() => {
+                this.set('data', data);
               });
             }
-            return value;
-          });
-        }
-        return Promise.resolve();
-      },
+          })
+          .catch((err) => console.warn(err.message));
+        },
 
-      /**
-       * @override
-       */
-      setStoredValue: function(path, value) {
-        return Promise.resolve()
-        .then(() => {
+        /**
+         * @override
+         */
+        getStoredValue: function(path) {
           if (this.key != null) {
-            return this.kvSet({key: this.key, value: this.data});
+            return this.kvGet({key: this.key})
+            .then((value) => {
+              if (value != null) {
+                value = this.get(path, {
+                  data: value
+                });
+              }
+              return value;
+            });
           }
-        })
-        .then(() => value);
-      }
-    });
+          return Promise.resolve();
+        },
+
+        /**
+         * @override
+         */
+        setStoredValue: function(path, value) {
+          return Promise.resolve()
+          .then(() => {
+            if (this.key != null) {
+              return this.kvSet({key: this.key, value: this.data});
+            }
+          })
+          .then(() => value);
+        }
+      });
+    })();
   </script>
 </dom-module>
