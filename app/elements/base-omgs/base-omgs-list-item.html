@@ -95,7 +95,7 @@ limitations under the License.
     <div class="state">[[omg.state]]</div>
 
     <div hidden="[[!isUploading]]">
-      <span>[[_convertToMebaBytes(omg.data.curr)]]MB / [[_convertToMebaBytes(omg.data.size)]]MB ([[_computePercentage(omg.data.curr, omg.data.size)]])</span>
+      <span>[[_convertToMegaBytes(omg.data.curr)]]MB / [[_convertToMegaBytes(omg.data.size)]]MB ([[_computePercentage(omg.data.curr, omg.data.size)]])</span>
       <paper-progress value="[[omg.data.curr]]" max="[[omg.data.size]]"></paper-progress>
     </div>
 
@@ -134,7 +134,7 @@ limitations under the License.
         this.fire('base-omgs-content-delete', {omg: this.omg});
       },
 
-      _convertToMebaBytes: function(size) {
+      _convertToMegaBytes: function(size) {
         if (Number.isInteger(size)) {
           return (size / 1024 / 1024).toFixed(1);
         } else {
