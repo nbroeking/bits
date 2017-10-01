@@ -51,10 +51,15 @@ limitations under the License.
       _pageChanged: function(page) {
         return Promise.resolve()
         .then(() => {
-          if (page) {
+          if (page && page.element) {
+            // if page.element is valid, create the element and show it
             return this._createPageElement(page)
             .then((element) => this._showElement(element));
+          } else if (page && page.element === null) {
+            // if page.element is explicitly set to null, then we are purposefully empty
+            return this._showEmpty();
           } else {
+            // otherwise show the loading indicator
             return this._showLoading();
           }
         });
@@ -66,7 +71,7 @@ limitations under the License.
           const element = this.create(page.element);
           if (Polymer.isInstance(element)) {
             return element;
-          } else {
+          } else if (page.element && page.import) {
             return this._showLoading()
             .then(() => this._importHref(page.import))
             .then(() => element);
@@ -78,6 +83,14 @@ limitations under the License.
         return Promise.resolve()
         .then(() => {
           const element = this.create('base-loading');
+          return this._showElement(element);
+        });
+      },
+
+      _showEmpty: function() {
+        return Promise.resolve()
+        .then(() => {
+          const element = this.create('div');
           return this._showElement(element);
         });
       },
