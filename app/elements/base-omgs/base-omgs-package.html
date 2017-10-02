@@ -91,7 +91,7 @@ limitations under the License.
                 <div class="value">[[omg.state]]</div>
               </div>
               <div class="line" hidden="[[!isUploading]]">
-                <span class="label">[[_convertToMebaBytes(omg.data.curr)]]MB / [[_convertToMebaBytes(omg.data.size)]]MB ([[_computePercentage(omg.data.curr, omg.data.size)]])</span>
+                <span class="label">[[_convertToMegaBytes(omg.data.curr)]]MB / [[_convertToMegaBytes(omg.data.size)]]MB ([[_computePercentage(omg.data.curr, omg.data.size)]])</span>
                 <paper-progress class="value" value="[[omg.data.curr]]" max="[[omg.data.size]]"></paper-progress>
               </div>
             </div>
@@ -139,7 +139,7 @@ limitations under the License.
           return omg && ('Uploading' === omg.state || 'Stalled' === omg.state);
         },
 
-        _convertToMebaBytes: function(size) {
+        _convertToMegaBytes: function(size) {
           if (Number.isInteger(size)) {
             return (size / 1024 / 1024).toFixed(1);
           } else {
