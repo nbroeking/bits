@@ -1,0 +1,96 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../base-crud/base-crud-behavior.html">
+
+<script>
+  ((global) => {
+    'use strict';
+
+    global.Bits = global.Bits || {};
+
+    global.Bits.BaseDynamicElementsBehaviorImpl = {
+      properties: {
+        meta: {
+          type: Object,
+          value: {},
+          notify: true
+        }
+      },
+
+      observers: [
+        '_childChanged(items, items.*)',
+        '_updateChildren(filter)', // adding listeners this way so that
+        '_updateChildren(sort)', // any permutation can be undefined and
+        '_updateChildren(meta.*)' // so items does not have any extra listeners
+      ],
+
+
+      callFunction(functionName, ...args) {
+        const content = Polymer.dom(Polymer.dom(this).firstElementChild);
+        return Promise.resolve()
+        .then(() => Promise.all(content.children.map((child) => child[functionName](...args))));
+      },
+
+      _childChanged(items) {
+        if (Array.isArray(items) && 0 < items.length) {
+          this._chain = (this._chain || Promise.resolve())
+          .then(() => this.set('_cache', this._cache || {}))
+          .then(() => items.filter(i => i && i.import && i.element))
+          .then((items) => this.filter ? items.filter(this.filter) : items)
+          .then((items) => this.sort ? items.sort(this.sort) : items)
+          .then((items) => Promise.all(items.map((item) => this._loadDisplay(item))))
+          .then((elements) => {
+            const content = Polymer.dom(Polymer.dom(this).firstElementChild);
+            while (0 < content.children.length) {
+              content.removeChild(content.firstChild);
+            }
+            return elements.reduce((p, element) => p.then(() => content.appendChild(element)), Promise.resolve());
+          })
+          .catch((err) => console.warn(err));
+          return this._chain;
+        } else {
+          return;
+        }
+      },
+
+      _loadDisplay(item) {
+        let element = document.createElement(item.element, {});
+        element.meta = this.meta;
+        element.BaseDynamicElementsDocument = item;
+        const id = item.id;
+        if (!this._cache[id]) {
+          if (Polymer.isInstance(element)) {
+            this._cache[id] = Promise.resolve();
+          } else {
+            this._cache[id] = new Promise((resolve, reject) => {
+              this.importHref(item.import, resolve, reject, false);
+            });
+          }
+        }
+        return this._cache[id].then(() => element);
+      },
+
+      _updateChildren() {
+        return this._childChanged(this.items);
+      },
+    };
+
+    global.Bits.BaseDynamicElementsBehavior = [
+      global.Bits.BaseCrudBehavior,
+      global.Bits.BaseDynamicElementsBehaviorImpl
+    ];
+  })(this);
+</script>
