@@ -22,8 +22,7 @@ build-dev:
     script:
         - printenv
         - export PROJECT_BUILD_ID=$(/opt/bits-tools/ci-tools/tools/get-build-id.sh)
-        - /opt/bits-tools/build-tools/package-module.py -m ./ --git-branch "${CI_COMMIT_REF_NAME}" -b "${PROJECT_BUILD_ID}" -d
-        - /usr/bin/destiny -d ./
+        - /opt/bits-tools/build-tools/package-module.py -m ./ --git-branch "${CI_COMMIT_REF_NAME}" -b "${PROJECT_BUILD_ID}" -d -a '/usr/bin/destiny -d ./'
         - echo -n "dev" > .test-branch
         - /opt/bits-tools/ci-tools/tools/get-build-id.sh -u
     artifacts:
@@ -44,8 +43,7 @@ build-release:
         - docker
     script:
         - export PROJECT_BUILD_ID=$(/opt/bits-tools/ci-tools/tools/get-build-id.sh)
-        - /opt/bits-tools/build-tools/package-module.py -m ./ --git-branch "${CI_COMMIT_REF_NAME}" -b "${PROJECT_BUILD_ID}"
-        - /usr/bin/destiny -d ./
+        - /opt/bits-tools/build-tools/package-module.py -m ./ --git-branch "${CI_COMMIT_REF_NAME}" -b "${PROJECT_BUILD_ID}" -d -a '/usr/bin/destiny -d ./'
         - echo -n "${CI_COMMIT_REF_NAME}" > .test-branch
         - /opt/bits-tools/ci-tools/tools/get-build-id.sh -u
     artifacts:
