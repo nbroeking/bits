@@ -48,7 +48,7 @@ limitations under the License.
         if (Array.isArray(items) && 0 < items.length) {
           this._chain = (this._chain || Promise.resolve())
           .then(() => this.set('_cache', this._cache || {}))
-          .then(() => items.filter(i => i && i.import && i.element))
+          .then(() => items.filter((i) => i && i.import && i.element))
           .then((items) => this.filter ? items.filter(this.filter) : items)
           .then((items) => this.sort ? items.sort(this.sort) : items)
           .then((items) => Promise.all(items.map((item) => this._loadDisplay(item))))
