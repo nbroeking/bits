@@ -1,6 +1,6 @@
 {
     "isBase": true,
-    "version": "2.9.0",
+    "version": "",
     "displayName": "BITS Base",
     "name": "bits-base",
     "upgrade-dependencies": {
