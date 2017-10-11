@@ -19,6 +19,7 @@ limitations under the License.
 <link rel="import" href="../../bower_components/iron-resizable-behavior/iron-resizable-behavior.html">
 <link rel="import" href="../../bower_components/paper-button/paper-button.html">
 <link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/paper-toast/paper-toast.html">
 <link rel="import" href="../base-layout/base-header-layout/base-header-layout.html">
 <link rel="import" href="../base-layout/base-single-grid-item-wrapper/base-single-grid-item-wrapper.html">
 <link rel="import" href="../base-shared-styles/base-shared-styles.html">
@@ -58,6 +59,8 @@ limitations under the License.
       </div>
     </base-header-layout>
 
+    <paper-toast id="toast"></paper-toast>
+
   </template>
   <script>
   (() => {
@@ -74,7 +77,12 @@ limitations under the License.
       },
 
       generateDump: function() {
-        this.$.logs.generateDump();
+        this.$.logs.generateDump()
+        .catch((err) => {
+          console.warn(err);
+          this.$.toast.text = err.message;
+          this.$.toast.show();
+        });
       }
     });
   })();
