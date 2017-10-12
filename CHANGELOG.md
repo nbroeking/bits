@@ -1,3 +1,18 @@
+<a name="2.11.0"></a>
+# 2.11.0 (2017-10-12)
+
+
+### Bug Fixes
+
+* **omgs-manager:** allow OMGs to upgrade/downgrade as long as new base version is not 1.x.y   (3c24b3c), closes BITS-49
+
+
+### Features
+
+* made base-lazy-element safe when page is an empty object   (4090e7c), closes #21
+
+---
+
 <a name="2.10.1"></a>
 ## 2.10.1 (2017-10-11)
 
