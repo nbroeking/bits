@@ -37,7 +37,6 @@ limitations under the License.
     });
 
     describe('checkGenerateId', () => {
-
       it('should return the equivalent to os.hostname', () => {
         return bitsId._generateId()
         .then((bitsId) => {
