@@ -12,7 +12,7 @@
     "build": "yarn && bower install && npm run lint && npm run test",
     "bits:install": "yarn --prod",
     "lint": "eslint --fix --ext js,html .",
-    "test": "mocha test/*.js test/helpers/*.js",
+    "test": "mocha test/*.js test/helpers/*.js test/omgs/*.js",
     "clean": "rm -rf node_modules/ app/bower_components/ data/ npm-error.log yarn-error.log",
     "dev": "HTTP_PORT=9000 HTTPS_PORT=9001 node app.js -v"
   },
