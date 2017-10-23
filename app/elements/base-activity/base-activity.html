@@ -17,12 +17,16 @@ limitations under the License.
 <link rel="import" href="../../bower_components/app-layout/app-header/app-header.html">
 <link rel="import" href="../../bower_components/app-layout/app-header-layout/app-header-layout.html">
 <link rel="import" href="../../bower_components/app-layout/app-toolbar/app-toolbar.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="../../bower_components/paper-spinner/paper-spinner-lite.html">
 <link rel="import" href="../../bower_components/paper-styles/typography.html">
 <link rel="import" href="../base-activities/base-activities.html">
 <link rel="import" href="../base-shared-styles/base-shared-styles.html">
 <link rel="import" href="../base-vendor/moment.html">
-
+<link rel="import" href="../base-key-value/base-key-value-document.html">
 
 <dom-module id="base-activity">
   <template>
@@ -32,7 +36,7 @@ limitations under the License.
         display: block;
         height: 100%;
 
-        @apply(--paper-font-body1);
+        @apply --paper-font-body1;
         font-size: 12px;
       }
 
@@ -125,7 +129,7 @@ limitations under the License.
         left: 0px;
       }
       .activity-summary {
-        @apply(--layout-vertical);
+        @apply --layout-vertical;
         -webkit-flex: 1 1 auto;
         flex: 1 1 auto;
         -webkit-box-ordinal-group: 3;
@@ -168,7 +172,7 @@ limitations under the License.
           padding-left: 8px;
         }
         .activity-summary {
-          @apply(--layout-horizontal);
+          @apply --layout-horizontal;
         }
         .activity-title {
           -webkit-flex: 0 0 152px;
@@ -184,10 +188,13 @@ limitations under the License.
     </style>
 
     <base-activities id="activities" no-items></base-activities>
+    <base-key-value-document id="settings" tag="base#ActivitySettings"></base-key-value-document>
+
     <app-header-layout has-scrolling-region fullbleed>
       <app-header id="header">
         <app-toolbar>
           <div main-title>Activity</div>
+          <paper-icon-button icon="icons:settings" on-tap="openSettings"></paper-icon-button>
         </app-toolbar>
       </app-header>
       <div class="panel-content">
@@ -197,9 +204,6 @@ limitations under the License.
               <ol class="activity-stream">
                 <li class="activity-group">
                   <div>
-                    <!-- <div class="expanding-row activity-day">
-                      <h3 class="activity-day-label">Yesterday</h3>
-                    </div> -->
                     <ol>
                       <template id="repeat" is="dom-repeat" items="[[activities]]" as="activity">
                         <li>
@@ -236,6 +240,16 @@ limitations under the License.
       </div>
     </app-header-layout>
 
+    <paper-dialog id="settingsDialog">
+      <h2>Settings</h2>
+      <paper-input id="activityLimit" label="Activity Limit" value="{{activityLimit}}" type="number"></paper-input>
+      <div class="buttons">
+        <paper-button dialog-dismiss>Cancel</paper-button>
+        <paper-button dialog-confirm autofocus>Save</paper-button>
+      </div>
+    </paper-dialog>
+
+
   </template>
   <script>
   (() => {
@@ -247,10 +261,20 @@ limitations under the License.
       properties: {
         activities: {
           type: Array
+        },
+
+        count: {
+          type: Number,
+          observer: '_countChanged'
         }
       },
 
+      _countChanged: function(count) {
+        console.log(`count=${count}`);
+      },
+
       listeners: {
+        'settingsDialog.iron-overlay-closed': '_onSettingsClosed',
         'base-crud-item-created': '_getItems',
         'base-crud-item-updated': '_getItems',
         'base-crud-item-deleted': '_getItems'
@@ -270,6 +294,28 @@ limitations under the License.
       _computeTimestamp: function(createdAt) {
         const m = moment(createdAt);
         return m.format('h:mm A');
+      },
+
+      openSettings: function() {
+        Promise.resolve()
+        .then(() => this.$.settings.kvGet({key: 'activityLimit'}))
+        .catch(() => 1000)
+        .then((activityLimit) => {
+          this.activityLimit = activityLimit;
+          this.$.settingsDialog.open();
+          this.async(() => this.$.activityLimit.focus(), 100);
+        });
+      },
+
+      _onSettingsClosed: function(event, {canceled, confirmed}) {
+        if (!canceled && confirmed) {
+          Promise.resolve()
+          .then(() => {
+            this.$.settings.key = null;
+            this.$.settings.data = this.activityLimit;
+            return this.$.settings.save('activityLimit');
+          });
+        }
       }
     });
   })();
