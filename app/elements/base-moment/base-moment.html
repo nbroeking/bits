@@ -1,0 +1,107 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<script type="text/javascript" src="../../bower_components/moment/min/moment.min.js"></script>
+
+<dom-module id="base-moment">
+  <template>
+    [[_calculateTimeAgo(__timestamp, __timer)]]
+  </template>
+  <script>
+    ((global) => {
+      'use strict';
+
+      function isValidNumber(num) {
+        return !isNaN(parseFloat(num)) && isFinite(num);
+      }
+
+      Polymer({
+        is: 'base-moment',
+
+        properties: {
+          __timer: {
+            type: Boolean,
+            value: true
+          },
+          __timestamp: {
+            type: Number,
+            computed: '_computeTime(timestamp, isEpoch)'
+          },
+          isEpoch: {
+            type: Boolean,
+            value: false
+          },
+          reformat: {
+            type: Boolean,
+            value: false
+          },
+          format: {
+            type: String,
+            value: 'MMMM Do, YYYY'
+          },
+          elapse: {
+            type: Number,
+            value: (24 * 60 * 60 * 1000) // 1 day
+          },
+          unknown: {
+            type: String,
+            value: '--'
+          }
+        },
+
+        _computeTime: function(timestamp, isEpoch) {
+          if (!!isEpoch) return this._epochToMilliseconds(timestamp);
+          return timestamp;
+        },
+
+        _calculateTimeAgo(timestamp) {
+          let str = this.unknown;
+
+          if (!isValidNumber(timestamp)) return str;
+
+          if (this.reformat && (Date.now() - timestamp) >= this.elapse) {
+            str = moment(timestamp).format(this.format);
+          } else {
+            str = moment(timestamp).fromNow();
+          }
+
+          return str;
+        },
+
+        _epochToMilliseconds: function(epoch) {
+          return epoch * 1000;
+        },
+
+        _toggleTimer: function() {
+          this.set('__timer', !this.__timer);
+          this._requestAnimationFrame();
+        },
+
+        _requestAnimationFrame: function() {
+          this._animationFrame = requestAnimationFrame(this._toggleTimer.bind(this));
+        },
+
+        ready: function() {
+          this._requestAnimationFrame();
+        },
+
+        detached: function() {
+          cancelAnimationFrame(this._animationFrame);
+        }
+      });
+    })(this);
+  </script>
+</dom-module>
