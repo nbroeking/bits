@@ -40,10 +40,10 @@ limitations under the License.
 
     <base-header-layout no-back x-title="Logs" scroll-target="{{scrollTarget}}">
       <div class="header-toolbar line">
-        <paper-button class="primary-btn-light" on-tap="generateDump">Generate Dump</paper-button>
+        <paper-button class="primary-btn-light" on-tap="generateDump">Generate Log Bundle</paper-button>
       </div>
       <div class="content">
-        <base-single-grid-item-wrapper b-title="Log Dumps">
+        <base-single-grid-item-wrapper b-title="Log Bundles">
           <iron-list id="list" items="[[items]]" scroll-target="{{scrollTarget}}">
             <template>
               <div class="item line">
