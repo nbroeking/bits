@@ -257,7 +257,7 @@ limitations under the License.
     </div>
 
     <iron-selector id="list" attr-for-selected="module" multi selected-values="{{selectedModules}}">
-      <template is="dom-repeat" items="[[filteredModules]]" as="module">
+      <template is="dom-repeat" items="[[filteredModules]]" sort="_sortModules" as="module">
         <base-modules-list-item class="item" module="[[module]]" on-module-info="onModuleInfo" selected$="[[selected]]"></base-modules-list-item>
       </template>
   </iron-selector>
@@ -597,6 +597,12 @@ limitations under the License.
           } else {
             return [];
           }
+        },
+
+        _sortModules: function(a, b) {
+          if(a.name < b.name) return -1;
+          if(a.name > b.name) return 1;
+          return 0;
         },
 
         _computeBaseModule: function(modules) {
