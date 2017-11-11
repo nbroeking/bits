@@ -1,3 +1,22 @@
+<a name="2.13.0"></a>
+# 2.13.0 (2017-11-11)
+
+
+### Bug Fixes
+
+* allow modules to subscribe to event listeners   (51ab538)
+* Long titles will be capped with an ellipsis to make room for sibling elements.   (fe1b315)
+* **client:** sort modules alphabetically   (af46cd3), closes BITS-62
+* **server:** fix user id for proxy request   (a77ab7f), closes BITS-60
+
+
+### Features
+
+* **backend:** add PouchDB crud manager   (54eebf5)
+* **polymer-element:** Adds new base-moment element   (d0d97cc)
+
+---
+
 <a name="2.12.0"></a>
 # 2.12.0 (2017-10-27)
 
