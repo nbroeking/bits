@@ -600,8 +600,22 @@ limitations under the License.
         },
 
         _sortModules: function(a, b) {
-          if (a.displayName < b.displayName) return -1;
-          if (a.displayName > b.displayName) return 1;
+          let aName = a.displayName;
+          let bName = b.displayName;
+          if (a.displayName === undefined || 'string' !== typeof(a.displayName)) {
+            aName = a.name;
+          }
+          if (b.displayName === undefined || 'string' !== typeof(b.displayName)) {
+            bName = b.name;
+          }
+          if ('string' === typeof(aName)) {
+            aName = aName.toUpperCase();
+          }
+          if ('string' === typeof(bName)) {
+            bName = bName.toUpperCase();
+          }
+          if (aName < bName) return -1;
+          if (aName > bName) return 1;
           return 0;
         },
 
