@@ -1,3 +1,25 @@
+<a name="2.14.0"></a>
+# 2.14.0 (2017-11-29)
+
+
+### Bug Fixes
+
+* **activity-creation:** chain creation of activities to avoid creating in the same millisecond   (3bcc22f)
+* **client:** add month and day to activity timestamp   (cdd01a5)
+* **client:** handle no displayName and sort ignoring case   (e17adb6)
+* **client:** sort by display name   (0df112f)
+* **daemon:** add kill method to daemon helper   (536a143)
+* **remove-listeners:** fix method signature and logic to handle scopes being passed in   (d30585c), closes BITS-65
+* **remove-middleware:** fix issue with removing middleware   (2fbf5db), closes BITS-64
+* **server:** report module installation path   (0df9612)
+
+
+### Features
+
+* create promise-ified exec() from child-process   (433cce2)
+
+---
+
 <a name="2.13.0"></a>
 # 2.13.0 (2017-11-11)
 
