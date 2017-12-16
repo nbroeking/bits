@@ -46,13 +46,21 @@ limitations under the License.
   // Master specific
   if (cluster.isMaster) {
     // Set up the normal bits stack
-    process.on('uncaughtException', (err) => logger.error('Uncaught Exception: %s', err.message, {
-      name: err.name,
-      message: err.message,
-      stack: err.stack,
-    }));
+    process.on('uncaughtException', (err) => {
+      if (err instanceof Error) {
+        logger.error(`Uncaught exception occurred '${moduleName}': ${err.message}\n ${err.stack}`);
+      } else {
+        logger.error('Uncaught exception occurred without error:', err);
+      }
+    });
 
-    process.on('unhandledRejection', (err) => logger.error('Unhandled Rejection: %s', err.message, err));
+    process.on('unhandledRejection', (err) => {
+      if (err instanceof Error) {
+        logger.error('Unhandled Rejection: %s', err.message, err);
+      } else {
+        logger.error('Unhandled Rejection occurred without error:', err);
+      }
+    });
 
     return Promise.resolve()
     .then(() => base.initialize())
@@ -71,11 +79,19 @@ limitations under the License.
     const moduleName = moduleInfo.name;
 
     process.on('uncaughtException', (err) => {
-      logger.error(`Uncaught exception in module ${moduleName}: ${err.message}\n ${err.stack}`);
+      if (err instanceof Error) {
+        logger.error(`Uncaught exception in module '${moduleName}': ${err.message}\n ${err.stack}`);
+      } else {
+        logger.error(`Uncaught exception in module '${moduleName}' without error:`, err);
+      }
     });
 
     process.on('unhandledRejection', (err) => {
-      logger.error(`Unhandled rejection in module ${moduleName}: ${err.message}\n ${err.stack}`);
+      if (err instanceof Error) {
+        logger.error(`Unhandled rejection in module '${moduleName}': ${err.message}\n ${err.stack}`);
+      } else {
+        logger.error(`Unhandled Rejection in module '${ moduleName }' without error:`, err);
+      }
     });
 
     base.dispatchModule(moduleInfo);
