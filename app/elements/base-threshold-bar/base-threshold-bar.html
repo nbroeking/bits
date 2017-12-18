@@ -1,0 +1,67 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<!-- bplint-disable no-unused-import -->
+<link rel="import" href="../../bower_components/iron-range-behavior/iron-range-behavior.html">
+<!-- bplint-disable no-unused-import -->
+
+<dom-module id="base-threshold-bar">
+  <template>
+    <style>
+      :host {
+        height: 100%;
+        display: inline-block;
+
+        --base-threshold-bar-b: var(--base-threshold-bar-bg, #fff);
+        --base-threshold-bar-f: var(--base-threshold-bar-fg, #ddd);
+        --base-threshold-bar-l: var(--base-threshold-bar-low, #91b859);
+        --base-threshold-bar-m: var(--base-threshold-bar-med, #ffcb6b);
+        --base-threshold-bar-h: var(--base-threshold-bar-high, #e53935);
+      }
+
+      .bar {
+        display: block;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(to right, transparent 50%, var(--base-threshold-bar-b) 50%), linear-gradient(to right, var(--base-threshold-bar-f), var(--base-threshold-bar-f));
+        background-size: 8px 2px, 100% 2px;
+      }
+
+      .inner {
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(to right, transparent 50%, var(--base-threshold-bar-b) 50%),
+          linear-gradient(to right, var(--base-threshold-bar-l) 0%, var(--base-threshold-bar-l) 69.99%, var(--base-threshold-bar-m) 70%, var(--base-threshold-bar-m) 89.99%, var(--base-threshold-bar-h) 90%, var(--base-threshold-bar-h) 100%);
+        background-size: 8px 2px, 100% 2px;
+        transition: 0.25s cubic-bezier(0.215, 0.610, 0.355, 1.000);
+      }
+    </style>
+
+    <div class="bar">
+      <div
+        class="inner"
+        style$="clip-path: inset(0 [[percentage]]% 0 0);">
+      </div>
+    </div>
+
+  </template>
+  <script>
+    ((global) => {
+      'use strict';
+
+      Polymer({
+        is: 'base-threshold-bar',
+
+        behaviors: [Polymer.IronRangeBehavior],
+
+        observers: [
+          '_observeMinMaxValue(min, max, value)'
+        ],
+
+        _observeMinMaxValue: function(min, max, value) {
+          // clipping needs inverse of ratio as percentage
+          const percentage = (1 - this._calcRatio(value)) * 100;
+          this.set('percentage', percentage);
+        }
+      });
+    })(this);
+  </script>
+</dom-module>
