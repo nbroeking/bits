@@ -1,0 +1,92 @@
+<!--
+Copyright 2017 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="./base-vaadin-grid-core-behavior.html">
+
+<script>
+  ((global) => {
+    'use strict';
+
+    global.Bits = global.Bits || {};
+
+    global.Bits.BaseVaadinGridColumnBehaviorImpl = {
+
+      properties: {
+        columns: {
+          type: Object,
+          value: () => {
+            return {};
+          }
+        }
+      },
+
+      listeners: {
+        'property-changed': '_onPropertyChanged'
+      },
+
+      _onPropertyChanged: function(event, detail) {
+        if (this._eventPathIs(detail, 'order') && typeof detail.value === 'number') {
+          this._updateColumns();
+        }
+      },
+
+      _eventPathIs: function(detail, path) {
+        return (detail.path && detail.path === path);
+      },
+
+      _updateColumns: function() {
+        const jobName = 'baseVaadinGridColumnBehavior#updateColumns';
+        this.cancelDebouncer(jobName);
+        this.debounce(jobName, () => this.updateColumns(), 200);
+      },
+
+      updateColumns: function() {
+        const columns = Polymer.dom(this.$.grid).querySelectorAll('vaadin-grid-column')
+        .map((el) => Object.assign({}, {
+          key: el.getAttribute('column-id'),
+          order: el._order
+        }))
+        .filter((obj) => obj.key !== undefined)
+        .reduce((obj, props) => {
+          const data = Object.assign({}, props);
+          delete data.key;
+          return Object.assign(obj, {[props.key]: data});
+        }, {});
+
+        this.set('columns', columns);
+      },
+
+      ready: function() {
+        const grid = this.$.grid;
+
+        if (grid) {
+          grid._columnPropChanged = function(e) {
+            if (e.detail.path === '_childColumns') {
+              grid._updateColumnTree();
+            }
+          };
+        } else {
+          console.warn('No Grid Element Found!');
+        }
+      }
+
+    };
+
+    global.Bits.BaseVaadinGridColumnBehavior = [
+      global.Bits.BaseVaadinGridCoreBehavior,
+      global.Bits.BaseVaadinGridColumnBehaviorImpl
+    ];
+  })(this);
+</script>
