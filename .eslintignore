@@ -1,7 +1,7 @@
 .gitignore
 
 # Nodejs
-node_packages/*
+node_modules/
 yarn.lock
 
 # Bower
