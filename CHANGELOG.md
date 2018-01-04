@@ -1,3 +1,19 @@
+<a name="2.15.0"></a>
+# 2.15.0 (2018-01-04)
+
+
+### Bug Fixes
+
+* **chain-failure:** prevent one failed operation from ruining it for the rest   (9182aaf), closes BITS-73
+* **clear-activities:** fix dismiss all button not working   (9814ecf), closes BITS-73
+
+
+### Features
+
+* allow BaseServer helper to start web server on any port   (4575082)
+
+---
+
 <a name="2.14.0"></a>
 # 2.14.0 (2017-11-29)
 
