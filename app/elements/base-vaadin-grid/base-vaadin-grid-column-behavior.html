@@ -37,9 +37,17 @@ limitations under the License.
       },
 
       _onPropertyChanged: function(event, detail) {
-        if (this._eventPathIs(detail, 'order') && typeof detail.value === 'number') {
+        if (this._eventIsOrder(detail) || this._eventIsWidth(detail)) {
           this.updateColumns();
         }
+      },
+
+      _eventIsOrder: function(detail) {
+        return this._eventPathIs(detail, 'order') && typeof detail.value === 'number';
+      },
+
+      _eventIsWidth: function(detail) {
+        return this._eventPathIs(detail, 'width') && typeof detail.value === 'string';
       },
 
       _eventPathIs: function(detail, path) {
@@ -50,7 +58,8 @@ limitations under the License.
         const columns = this.getColumnEls()
         .map((el) => Object.assign({}, {
           key: el.getAttribute('column-id'),
-          order: el._order
+          order: el._order,
+          width: el.width
         }))
         .filter((obj) => obj.key !== undefined)
         .reduce((obj, props) => {
@@ -79,12 +88,21 @@ limitations under the License.
       refreshColumns: function() {
         const els = this.getColumnEls();
 
-        els.forEach(el => {
+        els.forEach((el) => {
           const columnId = el.getAttribute('column-id');
-          if(this.columns.hasOwnProperty(columnId)) {
-            el.set('_order', this.columns[columnId].order);
+          if (this.columns.hasOwnProperty(columnId)) {
+            const vals = this.columns[columnId];
+            el.set('_order', vals.order);
+            el.set('width', vals.width);
           }
         });
+      },
+
+      resetColumnSize: function() {
+        const columns = Object.assign({}, this.columns);
+        Object.keys(columns).map((key) => (columns[key].width = '150px'));
+        this.setColumns(columns);
+        this.refreshColumns();
       },
 
       ready: function() {
