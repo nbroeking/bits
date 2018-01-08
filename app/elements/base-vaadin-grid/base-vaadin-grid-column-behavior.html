@@ -58,7 +58,7 @@ limitations under the License.
         const columns = this.getColumnEls()
         .map((el) => Object.assign({}, {
           key: el.getAttribute('column-id'),
-          order: el._order,
+          _order: el._order,
           width: el.width
         }))
         .filter((obj) => obj.key !== undefined)
@@ -87,13 +87,14 @@ limitations under the License.
 
       refreshColumns: function() {
         const els = this.getColumnEls();
+        const keys = ['_order', 'width'];
 
         els.forEach((el) => {
           const columnId = el.getAttribute('column-id');
           if (this.columns.hasOwnProperty(columnId)) {
             const vals = this.columns[columnId];
-            el.set('_order', vals.order);
-            el.set('width', vals.width);
+            keys.filter((key) => vals.hasOwnProperty(key))
+            .map((key) => el.set(key, vals[key]));
           }
         });
       },
