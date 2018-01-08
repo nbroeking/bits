@@ -38,7 +38,7 @@ limitations under the License.
 
       _onPropertyChanged: function(event, detail) {
         if (this._eventPathIs(detail, 'order') && typeof detail.value === 'number') {
-          this._updateColumns();
+          this.updateColumns();
         }
       },
 
@@ -47,13 +47,7 @@ limitations under the License.
       },
 
       _updateColumns: function() {
-        const jobName = 'baseVaadinGridColumnBehavior#updateColumns';
-        this.cancelDebouncer(jobName);
-        this.debounce(jobName, () => this.updateColumns(), 200);
-      },
-
-      updateColumns: function() {
-        const columns = Polymer.dom(this.$.grid).querySelectorAll('vaadin-grid-column')
+        const columns = this.getColumnEls()
         .map((el) => Object.assign({}, {
           key: el.getAttribute('column-id'),
           order: el._order
@@ -65,7 +59,32 @@ limitations under the License.
           return Object.assign(obj, {[props.key]: data});
         }, {});
 
+        this.setColumns(columns);
+      },
+
+      updateColumns: function() {
+        const jobName = 'baseVaadinGridColumnBehavior#updateColumns';
+        this.cancelDebouncer(jobName);
+        this.debounce(jobName, () => this._updateColumns(), 200);
+      },
+
+      getColumnEls: function() {
+        return Polymer.dom(this.$.grid).querySelectorAll('vaadin-grid-column');
+      },
+
+      setColumns: function(columns) {
         this.set('columns', columns);
+      },
+
+      refreshColumns: function() {
+        const els = this.getColumnEls();
+
+        els.forEach(el => {
+          const columnId = el.getAttribute('column-id');
+          if(this.columns.hasOwnProperty(columnId)) {
+            el.set('_order', this.columns[columnId].order);
+          }
+        });
       },
 
       ready: function() {
