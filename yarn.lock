@@ -2,6 +2,12 @@
 # yarn lockfile v1
 
 
+"@skidder/bits-crypto@^1.0.0":
+  version "1.0.0"
+  resolved "@skidder/bits-crypto/-/bits-crypto-1.0.0.tgz#dfd36b42d24fff6cf2f8593f6b88f2908b7b484e"
+  dependencies:
+    commander "^2.12.2"
+
 abbrev@1:
   version "1.1.0"
   resolved abbrev/-/abbrev-1.1.0.tgz#d0554c2256636e2f56e7c2e5ad183f859428d81f
@@ -31,7 +37,7 @@ acorn@^3.0.4:
 
 acorn@^5.1.1:
   version "5.1.1"
-  resolved "acorn/-/acorn-5.1.1.tgz#53fe161111f912ab999ee887a90a0bc52822fd75"
+  resolved acorn/-/acorn-5.1.1.tgz#53fe161111f912ab999ee887a90a0bc52822fd75
 
 after@0.8.2, after@~0.8.1:
   version "0.8.2"
@@ -50,7 +56,7 @@ ajv@^4.7.0, ajv@^4.9.1:
 
 ajv@^5.2.0:
   version "5.2.2"
-  resolved "ajv/-/ajv-5.2.2.tgz#47c68d69e86f5d953103b0074a9430dc63da5e39"
+  resolved ajv/-/ajv-5.2.2.tgz#47c68d69e86f5d953103b0074a9430dc63da5e39
   dependencies:
     co "^4.6.0"
     fast-deep-equal "^1.0.0"
@@ -59,7 +65,7 @@ ajv@^5.2.0:
 
 ansi-escapes@^2.0.0:
   version "2.0.0"
-  resolved "ansi-escapes/-/ansi-escapes-2.0.0.tgz#5bae52be424878dd9783e8910e3fc2922e83c81b"
+  resolved ansi-escapes/-/ansi-escapes-2.0.0.tgz#5bae52be424878dd9783e8910e3fc2922e83c81b
 
 ansi-regex@^2.0.0:
   version "2.1.1"
@@ -75,7 +81,7 @@ ansi-styles@^2.2.1:
 
 ansi-styles@^3.1.0:
   version "3.2.0"
-  resolved "ansi-styles/-/ansi-styles-3.2.0.tgz#c159b8d5be0f9e5a6f346dab94f16ce022161b88"
+  resolved ansi-styles/-/ansi-styles-3.2.0.tgz#c159b8d5be0f9e5a6f346dab94f16ce022161b88
   dependencies:
     color-convert "^1.9.0"
 
@@ -175,7 +181,7 @@ aws4@^1.2.1:
 
 babel-code-frame@^6.22.0:
   version "6.22.0"
-  resolved "babel-code-frame/-/babel-code-frame-6.22.0.tgz#027620bee567a88c32561574e7fd0801d33118e4"
+  resolved babel-code-frame/-/babel-code-frame-6.22.0.tgz#027620bee567a88c32561574e7fd0801d33118e4
   dependencies:
     chalk "^1.1.0"
     esutils "^2.0.2"
@@ -344,7 +350,7 @@ chalk@^1.1.0, chalk@^1.1.1, chalk@^1.1.3:
 
 chalk@^2.0.0:
   version "2.1.0"
-  resolved "chalk/-/chalk-2.1.0.tgz#ac5becf14fa21b99c6c92ca7a7d7cfd5b17e743e"
+  resolved chalk/-/chalk-2.1.0.tgz#ac5becf14fa21b99c6c92ca7a7d7cfd5b17e743e
   dependencies:
     ansi-styles "^3.1.0"
     escape-string-regexp "^1.0.5"
@@ -364,7 +370,7 @@ circular-json@^0.3.1:
 
 cli-cursor@^2.1.0:
   version "2.1.0"
-  resolved "cli-cursor/-/cli-cursor-2.1.0.tgz#b35dac376479facc3e94747d41d0d0f5238ffcb5"
+  resolved cli-cursor/-/cli-cursor-2.1.0.tgz#b35dac376479facc3e94747d41d0d0f5238ffcb5
   dependencies:
     restore-cursor "^2.0.0"
 
@@ -386,13 +392,13 @@ code-point-at@^1.0.0:
 
 color-convert@^1.9.0:
   version "1.9.0"
-  resolved "color-convert/-/color-convert-1.9.0.tgz#1accf97dd739b983bf994d56fec8f95853641b7a"
+  resolved color-convert/-/color-convert-1.9.0.tgz#1accf97dd739b983bf994d56fec8f95853641b7a
   dependencies:
     color-name "^1.1.1"
 
 color-name@^1.1.1:
   version "1.1.3"
-  resolved "color-name/-/color-name-1.1.3.tgz#a7d0558bd89c42f795dd42328f740831ca53bc25"
+  resolved color-name/-/color-name-1.1.3.tgz#a7d0558bd89c42f795dd42328f740831ca53bc25
 
 colors@1.0.x:
   version "1.0.3"
@@ -409,6 +415,10 @@ commander@2.9.0:
   resolved commander/-/commander-2.9.0.tgz#9c99094176e12240cb22d6c5146098400fe0f7d4
   dependencies:
     graceful-readlink ">= 1.0.0"
+
+commander@^2.12.2:
+  version "2.12.2"
+  resolved "commander/-/commander-2.12.2.tgz#0f5946c427ed9ec0d91a46bb9def53e54650e555"
 
 component-bind@1.0.0:
   version "1.0.0"
@@ -497,7 +507,7 @@ core-util-is@~1.0.0:
 
 cross-spawn@^5.1.0:
   version "5.1.0"
-  resolved "cross-spawn/-/cross-spawn-5.1.0.tgz#e8bd0efee58fcff6f8f94510a0a554bbfa235449"
+  resolved cross-spawn/-/cross-spawn-5.1.0.tgz#e8bd0efee58fcff6f8f94510a0a554bbfa235449
   dependencies:
     lru-cache "^4.0.1"
     shebang-command "^1.2.0"
@@ -786,24 +796,24 @@ escape-string-regexp@1.0.5, escape-string-regexp@^1.0.2, escape-string-regexp@^1
 
 eslint-config-google@^0.9.1:
   version "0.9.1"
-  resolved "eslint-config-google/-/eslint-config-google-0.9.1.tgz#83353c3dba05f72bb123169a4094f4ff120391eb"
+  resolved eslint-config-google/-/eslint-config-google-0.9.1.tgz#83353c3dba05f72bb123169a4094f4ff120391eb
 
 eslint-plugin-html@^3.2.0:
   version "3.2.0"
-  resolved "eslint-plugin-html/-/eslint-plugin-html-3.2.0.tgz#fb64c2789e9582b97f580a38814a57966f91a7b2"
+  resolved eslint-plugin-html/-/eslint-plugin-html-3.2.0.tgz#fb64c2789e9582b97f580a38814a57966f91a7b2
   dependencies:
     htmlparser2 "^3.8.2"
 
 eslint-scope@^3.7.1:
   version "3.7.1"
-  resolved "eslint-scope/-/eslint-scope-3.7.1.tgz#3d63c3edfda02e06e01a452ad88caacc7cdcb6e8"
+  resolved eslint-scope/-/eslint-scope-3.7.1.tgz#3d63c3edfda02e06e01a452ad88caacc7cdcb6e8
   dependencies:
     esrecurse "^4.1.0"
     estraverse "^4.1.1"
 
 eslint@^4.4.1:
   version "4.4.1"
-  resolved "eslint/-/eslint-4.4.1.tgz#99cd7eafcffca2ff99a5c8f5f2a474d6364b4bd3"
+  resolved eslint/-/eslint-4.4.1.tgz#99cd7eafcffca2ff99a5c8f5f2a474d6364b4bd3
   dependencies:
     ajv "^5.2.0"
     babel-code-frame "^6.22.0"
@@ -844,7 +854,7 @@ eslint@^4.4.1:
 
 espree@^3.5.0:
   version "3.5.0"
-  resolved "espree/-/espree-3.5.0.tgz#98358625bdd055861ea27e2867ea729faf463d8d"
+  resolved espree/-/espree-3.5.0.tgz#98358625bdd055861ea27e2867ea729faf463d8d
   dependencies:
     acorn "^5.1.1"
     acorn-jsx "^3.0.0"
@@ -935,7 +945,7 @@ extend@~3.0.0:
 
 external-editor@^2.0.4:
   version "2.0.4"
-  resolved "external-editor/-/external-editor-2.0.4.tgz#1ed9199da9cbfe2ef2f7a31b2fde8b0d12368972"
+  resolved external-editor/-/external-editor-2.0.4.tgz#1ed9199da9cbfe2ef2f7a31b2fde8b0d12368972
   dependencies:
     iconv-lite "^0.4.17"
     jschardet "^1.4.2"
@@ -951,7 +961,7 @@ eyes@0.1.x:
 
 fast-deep-equal@^1.0.0:
   version "1.0.0"
-  resolved "fast-deep-equal/-/fast-deep-equal-1.0.0.tgz#96256a3bc975595eb36d82e9929d060d893439ff"
+  resolved fast-deep-equal/-/fast-deep-equal-1.0.0.tgz#96256a3bc975595eb36d82e9929d060d893439ff
 
 fast-future@~1.0.0, fast-future@~1.0.2:
   version "1.0.2"
@@ -963,7 +973,7 @@ fast-levenshtein@~2.0.4:
 
 figures@^2.0.0:
   version "2.0.0"
-  resolved "figures/-/figures-2.0.0.tgz#3ab1a2d2a62c8bfb431a0c94cb797a2fce27c962"
+  resolved figures/-/figures-2.0.0.tgz#3ab1a2d2a62c8bfb431a0c94cb797a2fce27c962
   dependencies:
     escape-string-regexp "^1.0.5"
 
@@ -1034,7 +1044,7 @@ fstream@^1.0.0, fstream@^1.0.2:
 
 functional-red-black-tree@^1.0.1:
   version "1.0.1"
-  resolved "functional-red-black-tree/-/functional-red-black-tree-1.0.1.tgz#1b0ab3bd553b2a0d6399d29c0e3ea0b252078327"
+  resolved functional-red-black-tree/-/functional-red-black-tree-1.0.1.tgz#1b0ab3bd553b2a0d6399d29c0e3ea0b252078327
 
 gauge@~1.2.5:
   version "1.2.7"
@@ -1117,7 +1127,7 @@ glob@7.1.1:
 
 globals@^9.17.0:
   version "9.18.0"
-  resolved "globals/-/globals-9.18.0.tgz#aa3896b3e69b487f17e31ed2143d69a8e30c2d8a"
+  resolved globals/-/globals-9.18.0.tgz#aa3896b3e69b487f17e31ed2143d69a8e30c2d8a
 
 globby@^5.0.0:
   version "5.0.0"
@@ -1175,7 +1185,7 @@ has-flag@^1.0.0:
 
 has-flag@^2.0.0:
   version "2.0.0"
-  resolved "has-flag/-/has-flag-2.0.0.tgz#e8207af1cc7b30d446cc70b734b5e8be18f88d51"
+  resolved has-flag/-/has-flag-2.0.0.tgz#e8207af1cc7b30d446cc70b734b5e8be18f88d51
 
 has-symbol-support-x@^1.4.0:
   version "1.4.0"
@@ -1292,7 +1302,7 @@ iconv-lite@0.4.15:
 
 iconv-lite@^0.4.17:
   version "0.4.18"
-  resolved "iconv-lite/-/iconv-lite-0.4.18.tgz#23d8656b16aae6742ac29732ea8f0336a4789cf2"
+  resolved iconv-lite/-/iconv-lite-0.4.18.tgz#23d8656b16aae6742ac29732ea8f0336a4789cf2
 
 ienoopen@1.0.0:
   version "1.0.0"
@@ -1300,7 +1310,7 @@ ienoopen@1.0.0:
 
 ignore@^3.3.3:
   version "3.3.3"
-  resolved "ignore/-/ignore-3.3.3.tgz#432352e57accd87ab3110e82d3fea0e47812156d"
+  resolved ignore/-/ignore-3.3.3.tgz#432352e57accd87ab3110e82d3fea0e47812156d
 
 immediate@3.0.6, immediate@~3.0.5:
   version "3.0.6"
@@ -1331,7 +1341,7 @@ ini@~1.3.0:
 
 inquirer@^3.0.6:
   version "3.2.1"
-  resolved "inquirer/-/inquirer-3.2.1.tgz#06ceb0f540f45ca548c17d6840959878265fa175"
+  resolved inquirer/-/inquirer-3.2.1.tgz#06ceb0f540f45ca548c17d6840959878265fa175
   dependencies:
     ansi-escapes "^2.0.0"
     chalk "^2.0.0"
@@ -1407,7 +1417,7 @@ is-primitive@^2.0.0:
 
 is-promise@^2.1.0:
   version "2.1.0"
-  resolved "is-promise/-/is-promise-2.1.0.tgz#79a2a9ece7f096e80f36d2b2f3bc16c1ff4bf3fa"
+  resolved is-promise/-/is-promise-2.1.0.tgz#79a2a9ece7f096e80f36d2b2f3bc16c1ff4bf3fa
 
 is-resolvable@^1.0.0:
   version "1.0.0"
@@ -1441,7 +1451,7 @@ js-tokens@^3.0.0:
 
 js-yaml@^3.9.1:
   version "3.9.1"
-  resolved "js-yaml/-/js-yaml-3.9.1.tgz#08775cebdfdd359209f0d2acd383c8f86a6904a0"
+  resolved js-yaml/-/js-yaml-3.9.1.tgz#08775cebdfdd359209f0d2acd383c8f86a6904a0
   dependencies:
     argparse "^1.0.7"
     esprima "^4.0.0"
@@ -1452,11 +1462,11 @@ jsbn@~0.1.0:
 
 jschardet@^1.4.2:
   version "1.5.1"
-  resolved "jschardet/-/jschardet-1.5.1.tgz#c519f629f86b3a5bedba58a88d311309eec097f9"
+  resolved jschardet/-/jschardet-1.5.1.tgz#c519f629f86b3a5bedba58a88d311309eec097f9
 
 json-schema-traverse@^0.3.0:
   version "0.3.1"
-  resolved "json-schema-traverse/-/json-schema-traverse-0.3.1.tgz#349a6d44c53a51de89b40805c5d5e59b417d3340"
+  resolved json-schema-traverse/-/json-schema-traverse-0.3.1.tgz#349a6d44c53a51de89b40805c5d5e59b417d3340
 
 json-schema@0.2.3:
   version "0.2.3"
@@ -1670,7 +1680,7 @@ lodash@^4.0.0, lodash@^4.17.4, lodash@^4.3.0:
 
 lru-cache@^4.0.1:
   version "4.1.1"
-  resolved "lru-cache/-/lru-cache-4.1.1.tgz#622e32e82488b49279114a4f9ecf45e7cd6bba55"
+  resolved lru-cache/-/lru-cache-4.1.1.tgz#622e32e82488b49279114a4f9ecf45e7cd6bba55
   dependencies:
     pseudomap "^1.0.2"
     yallist "^2.1.2"
@@ -1707,7 +1717,7 @@ mime@1.3.4:
 
 mimic-fn@^1.0.0:
   version "1.1.0"
-  resolved "mimic-fn/-/mimic-fn-1.1.0.tgz#e667783d92e89dbd342818b5230b9d62a672ad18"
+  resolved mimic-fn/-/mimic-fn-1.1.0.tgz#e667783d92e89dbd342818b5230b9d62a672ad18
 
 minimatch@3, minimatch@^3.0.2, minimatch@^3.0.4:
   version "3.0.4"
@@ -1786,7 +1796,7 @@ multer@^1.2.1:
 
 mute-stream@0.0.7:
   version "0.0.7"
-  resolved "mute-stream/-/mute-stream-0.0.7.tgz#3075ce93bc21b8fab43e1bc4da7e8115ed1e7bab"
+  resolved mute-stream/-/mute-stream-0.0.7.tgz#3075ce93bc21b8fab43e1bc4da7e8115ed1e7bab
 
 nan@~2.4.0:
   version "2.4.0"
@@ -1918,7 +1928,7 @@ once@^1.3.0, once@^1.3.1, once@^1.4.0:
 
 onetime@^2.0.0:
   version "2.0.1"
-  resolved "onetime/-/onetime-2.0.1.tgz#067428230fd67443b2794b22bba528b6867962d4"
+  resolved onetime/-/onetime-2.0.1.tgz#067428230fd67443b2794b22bba528b6867962d4
   dependencies:
     mimic-fn "^1.0.0"
 
@@ -2044,7 +2054,7 @@ platform@1.3.4:
 
 pluralize@^4.0.0:
   version "4.0.0"
-  resolved "pluralize/-/pluralize-4.0.0.tgz#59b708c1c0190a2f692f1c7618c446b052fd1762"
+  resolved pluralize/-/pluralize-4.0.0.tgz#59b708c1c0190a2f692f1c7618c446b052fd1762
 
 pouchdb-abstract-mapreduce@6.3.4:
   version "6.3.4"
@@ -2207,7 +2217,7 @@ process-nextick-args@~1.0.6:
 
 progress@^2.0.0:
   version "2.0.0"
-  resolved "progress/-/progress-2.0.0.tgz#8a1be366bf8fc23db2bd23f10c6fe920b4389d1f"
+  resolved progress/-/progress-2.0.0.tgz#8a1be366bf8fc23db2bd23f10c6fe920b4389d1f
 
 proxy-addr@~1.1.4:
   version "1.1.5"
@@ -2226,7 +2236,7 @@ prr@~1.0.1:
 
 pseudomap@^1.0.2:
   version "1.0.2"
-  resolved "pseudomap/-/pseudomap-1.0.2.tgz#f052a28da70e618917ef0a8ac34c1ae5a68286b3"
+  resolved pseudomap/-/pseudomap-1.0.2.tgz#f052a28da70e618917ef0a8ac34c1ae5a68286b3
 
 pump@^1.0.0, pump@^1.0.1:
   version "1.0.2"
@@ -2381,7 +2391,7 @@ request@2.80.0:
 
 require-uncached@^1.0.3:
   version "1.0.3"
-  resolved "require-uncached/-/require-uncached-1.0.3.tgz#4e0d56d6c9662fd31e43011c4b95aa49955421d3"
+  resolved require-uncached/-/require-uncached-1.0.3.tgz#4e0d56d6c9662fd31e43011c4b95aa49955421d3
   dependencies:
     caller-path "^0.1.0"
     resolve-from "^1.0.0"
@@ -2396,7 +2406,7 @@ resolve-from@^1.0.0:
 
 restore-cursor@^2.0.0:
   version "2.0.0"
-  resolved "restore-cursor/-/restore-cursor-2.0.0.tgz#9f7ee287f82fd326d4fd162923d62129eee0dfaf"
+  resolved restore-cursor/-/restore-cursor-2.0.0.tgz#9f7ee287f82fd326d4fd162923d62129eee0dfaf
   dependencies:
     onetime "^2.0.0"
     signal-exit "^3.0.2"
@@ -2409,19 +2419,19 @@ rimraf@2, rimraf@^2.2.8:
 
 run-async@^2.2.0:
   version "2.3.0"
-  resolved "run-async/-/run-async-2.3.0.tgz#0371ab4ae0bdd720d4166d7dfda64ff7a445a6c0"
+  resolved run-async/-/run-async-2.3.0.tgz#0371ab4ae0bdd720d4166d7dfda64ff7a445a6c0
   dependencies:
     is-promise "^2.1.0"
 
 rx-lite-aggregates@^4.0.8:
   version "4.0.8"
-  resolved "rx-lite-aggregates/-/rx-lite-aggregates-4.0.8.tgz#753b87a89a11c95467c4ac1626c4efc4e05c67be"
+  resolved rx-lite-aggregates/-/rx-lite-aggregates-4.0.8.tgz#753b87a89a11c95467c4ac1626c4efc4e05c67be
   dependencies:
     rx-lite "*"
 
 rx-lite@*, rx-lite@^4.0.8:
   version "4.0.8"
-  resolved "rx-lite/-/rx-lite-4.0.8.tgz#0b1e11af8bc44836f04a6407e92da42467b79444"
+  resolved rx-lite/-/rx-lite-4.0.8.tgz#0b1e11af8bc44836f04a6407e92da42467b79444
 
 safe-buffer@5.1.1, safe-buffer@^5.0.1, safe-buffer@~5.1.0, safe-buffer@~5.1.1:
   version "5.1.1"
@@ -2476,13 +2486,13 @@ setprototypeof@1.0.3:
 
 shebang-command@^1.2.0:
   version "1.2.0"
-  resolved "shebang-command/-/shebang-command-1.2.0.tgz#44aac65b695b03398968c39f363fee5deafdf1ea"
+  resolved shebang-command/-/shebang-command-1.2.0.tgz#44aac65b695b03398968c39f363fee5deafdf1ea
   dependencies:
     shebang-regex "^1.0.0"
 
 shebang-regex@^1.0.0:
   version "1.0.0"
-  resolved "shebang-regex/-/shebang-regex-1.0.0.tgz#da42f49740c0b42db2ca9728571cb190c98efea3"
+  resolved shebang-regex/-/shebang-regex-1.0.0.tgz#da42f49740c0b42db2ca9728571cb190c98efea3
 
 signal-exit@^3.0.0, signal-exit@^3.0.2:
   version "3.0.2"
@@ -2598,7 +2608,7 @@ string-width@^1.0.1, string-width@^1.0.2:
 
 string-width@^2.0.0, string-width@^2.1.0:
   version "2.1.1"
-  resolved "string-width/-/string-width-2.1.1.tgz#ab93f27a8dc13d28cac815c462143a6d9012ae9e"
+  resolved string-width/-/string-width-2.1.1.tgz#ab93f27a8dc13d28cac815c462143a6d9012ae9e
   dependencies:
     is-fullwidth-code-point "^2.0.0"
     strip-ansi "^4.0.0"
@@ -2645,13 +2655,13 @@ supports-color@^2.0.0:
 
 supports-color@^4.0.0:
   version "4.2.1"
-  resolved "supports-color/-/supports-color-4.2.1.tgz#65a4bb2631e90e02420dba5554c375a4754bb836"
+  resolved supports-color/-/supports-color-4.2.1.tgz#65a4bb2631e90e02420dba5554c375a4754bb836
   dependencies:
     has-flag "^2.0.0"
 
 table@^4.0.1:
   version "4.0.1"
-  resolved "table/-/table-4.0.1.tgz#a8116c133fac2c61f4a420ab6cdf5c4d61f0e435"
+  resolved table/-/table-4.0.1.tgz#a8116c133fac2c61f4a420ab6cdf5c4d61f0e435
   dependencies:
     ajv "^4.7.0"
     ajv-keywords "^1.0.0"
@@ -2710,7 +2720,7 @@ through@^2.3.6:
 
 tmp@^0.0.31:
   version "0.0.31"
-  resolved "tmp/-/tmp-0.0.31.tgz#8f38ab9438e17315e5dbd8b3657e8bfb277ae4a7"
+  resolved tmp/-/tmp-0.0.31.tgz#8f38ab9438e17315e5dbd8b3657e8bfb277ae4a7
   dependencies:
     os-tmpdir "~1.0.1"
 
@@ -2899,7 +2909,7 @@ xtend@4.0.1, "xtend@>=4.0.0 <4.1.0-0", xtend@^4.0.0, xtend@^4.0.1, xtend@~4.0.0,
 
 yallist@^2.1.2:
   version "2.1.2"
-  resolved "yallist/-/yallist-2.1.2.tgz#1c11f9218f076089a47dd512f93c6699a6a81d52"
+  resolved yallist/-/yallist-2.1.2.tgz#1c11f9218f076089a47dd512f93c6699a6a81d52
 
 yeast@0.1.2:
   version "0.1.2"
