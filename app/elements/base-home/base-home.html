@@ -16,6 +16,8 @@ limitations under the License.
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 <link rel="import" href="../base-layout/base-drawer-layout/base-drawer-layout.html">
 <link rel="import" href="../base-shared-styles/base-shared-styles.html">
+<link rel="import" href="/elements/base-auth/base-auth.html">
+
 
 <dom-module id="base-home">
   <template>
@@ -26,6 +28,10 @@ limitations under the License.
         height: 100%;
       }
     </style>
+
+    <base-auth
+     user="{{user}}">
+   </base-auth>
 
     <base-drawer-layout
       id="layout"
@@ -47,46 +53,53 @@ limitations under the License.
       properties: {
         pages: {
           type: Array,
-          value: function() {
-            return [{
-              name: 'dashboard',
-              element: 'base-dashboard',
-              import: '/elements/base-dashboard/base-dashboard.html',
-              displayName: 'Dashboard',
-              icon: 'icons:dashboard'
-            }, {
-              name: 'activity',
-              element: 'base-activity',
-              import: '/elements/base-activity/base-activity.html',
-              displayName: 'Activity',
-              icon: 'icons:list'
-            }, {
-              name: 'users',
-              element: 'base-users-content',
-              import: '/elements/base-users/base-users-content.html',
-              displayName: 'Users',
-              icon: 'social:people'
-            }, {
-              name: 'omgs',
-              element: 'base-omgs-content',
-              import: '/elements/base-omgs/base-omgs-content.html',
-              displayName: 'OMGs',
-              icon: 'icons:group-work'
-            }, {
-              name: 'modules',
-              element: 'base-modules-list',
-              import: '/elements/base-modules/base-modules-list.html',
-              displayName: 'Modules',
-              icon: 'icons:view-module'
-            }, {
-              name: 'logs',
-              element: 'base-logs-content',
-              import: '/elements/base-logs/base-logs-content.html',
-              displayName: 'Logs',
-              icon: 'icons:timeline'
-            }];
-          }
+          computed: '_computeSideBar(user)'
         }
+      },
+
+      _computeSideBar(user) {
+        return [{
+          name: 'dashboard',
+          element: 'base-dashboard',
+          import: '/elements/base-dashboard/base-dashboard.html',
+          displayName: 'Dashboard',
+          icon: 'icons:dashboard'
+        }, {
+          name: 'activity',
+          element: 'base-activity',
+          import: '/elements/base-activity/base-activity.html',
+          displayName: 'Activity',
+          icon: 'icons:list'
+        }, {
+          name: 'users',
+          element: 'base-users-content',
+          import: '/elements/base-users/base-users-content.html',
+          displayName: 'Users',
+          icon: 'social:people',
+          visible: this._showUserManager(user)
+        }, {
+          name: 'omgs',
+          element: 'base-omgs-content',
+          import: '/elements/base-omgs/base-omgs-content.html',
+          displayName: 'OMGs',
+          icon: 'icons:group-work'
+        }, {
+          name: 'modules',
+          element: 'base-modules-list',
+          import: '/elements/base-modules/base-modules-list.html',
+          displayName: 'Modules',
+          icon: 'icons:view-module'
+        }, {
+          name: 'logs',
+          element: 'base-logs-content',
+          import: '/elements/base-logs/base-logs-content.html',
+          displayName: 'Logs',
+          icon: 'icons:timeline'
+        }];
+      },
+
+      _showUserManager(user) {
+        return Boolean(this.user && this.user.scopes && this.user.scopes.find((scope) => scope.name === 'users'));
       },
 
       toggleSidenav: function() {
