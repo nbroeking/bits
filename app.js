@@ -48,7 +48,7 @@ limitations under the License.
     // Set up the normal bits stack
     process.on('uncaughtException', (err) => {
       if (err instanceof Error) {
-        logger.error(`Uncaught exception occurred '${moduleName}': ${err.message}\n ${err.stack}`);
+        logger.error(`Uncaught exception occurred in BITS Master cluster: ${err.message}\n ${err.stack}`);
       } else {
         logger.error('Uncaught exception occurred without error:', err);
       }
