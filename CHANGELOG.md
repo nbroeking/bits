@@ -1,3 +1,25 @@
+<a name="2.16.0"></a>
+# 2.16.0 (2018-01-12)
+
+
+### Bug Fixes
+
+* fix ReferenceError that results from an uncaughtException   (25d44c0)
+* make stdout/stderr available on non-0 exit code   (3f1d92c)
+
+
+### Features
+
+* **client:** Vaadin Grid column behavior.   (8cf0d0d)
+* add bits-crypto module   (e28abd5)
+* add santize item to pouch operations   (030884e)
+* **manager-state-listener:** add manager state changed listener to module-api   (fea575d)
+* Adds column width and default setting of widths   (1538168)
+* use Decrypter to decrypt files   (3de8b85)
+* use Encrypter to encrypt   (ca405ac)
+
+---
+
 <a name="2.15.0"></a>
 # 2.15.0 (2018-01-04)
 
