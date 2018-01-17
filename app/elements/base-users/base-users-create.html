@@ -123,7 +123,13 @@ limitations under the License.
           password: String,
           invalidPassword: Boolean,
           scopes: Array,
-          selectedScopes: Array,
+          selectedScopes: {
+            type: Array,
+            value: [{
+              name: 'account',
+              displayName: 'Account Management'
+            }]
+          },
           invalidScopes: Boolean,
           invalid: {
             type: Boolean,
@@ -140,7 +146,10 @@ limitations under the License.
           this.async(() => this.$.username.focus(), 25);
           this.async(() => this.$.username.focus(), 75);
           this.$.password.reset();
-          this.selectedScopes = [];
+          this.selectedScopes = [{
+            name: 'account',
+            displayName: 'Account Management'
+          }];
         },
 
         createUser: function() {

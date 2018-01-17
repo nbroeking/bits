@@ -76,7 +76,7 @@ limitations under the License.
           import: '/elements/base-users/base-users-content.html',
           displayName: 'Users',
           icon: 'social:people',
-          visible: this._showUserManager(user)
+          visible: this._showAccountManager(user)
         }, {
           name: 'omgs',
           element: 'base-omgs-content',
@@ -98,8 +98,8 @@ limitations under the License.
         }];
       },
 
-      _showUserManager(user) {
-        return Boolean(this.user && this.user.scopes && this.user.scopes.find((scope) => scope.name === 'users'));
+      _showAccountManager(user) {
+        return Boolean(this.user && this.user.scopes && this.user.scopes.find((scope) => scope.name === 'account'));
       },
 
       toggleSidenav: function() {

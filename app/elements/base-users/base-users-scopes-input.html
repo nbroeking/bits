@@ -93,7 +93,7 @@ limitations under the License.
       },
 
       _computeInvalid: function(changes) {
-        return !Array.isArray(this.selectedScopes) || 0 >= this.selectedScopes.length;
+        return !Array.isArray(this.selectedScopes) || 0 > this.selectedScopes.length;
       },
 
       _invalidChanged: function(invalid) {
@@ -138,7 +138,7 @@ limitations under the License.
       selectScope: function(event) {
         const scope = event.model.scope;
         const checked = event.srcElement.checked;
-        const index = this.selectedScopes.indexOf(scope);
+        const index = this.selectedScopes.findIndex((s) => s.name === scope.name);
         if (checked && 0 > index) {
           this.push('selectedScopes', scope);
         } else if (!checked && -1 < index) {
