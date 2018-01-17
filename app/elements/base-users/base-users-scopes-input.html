@@ -93,7 +93,7 @@ limitations under the License.
       },
 
       _computeInvalid: function(changes) {
-        return !Array.isArray(this.selectedScopes) || 0 > this.selectedScopes.length;
+        return !Array.isArray(this.selectedScopes);
       },
 
       _invalidChanged: function(invalid) {
