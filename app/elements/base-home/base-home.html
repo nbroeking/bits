@@ -99,7 +99,16 @@ limitations under the License.
       },
 
       _showAccountManager(user) {
-        return Boolean(this.user && this.user.scopes && this.user.scopes.find((scope) => scope.name === 'account'));
+        if ('object' !== typeof(user) || null === user) {
+          return false;
+        }
+        if (!Array.isArray(user.scopes)) {
+          return false;
+        }
+        if (!user.scopes.some((scope) => scope.name === 'account')) {
+          return false;
+        }
+        return true;
       },
 
       toggleSidenav: function() {

@@ -125,10 +125,12 @@ limitations under the License.
           scopes: Array,
           selectedScopes: {
             type: Array,
-            value: [{
-              name: 'account',
-              displayName: 'Account Management'
-            }]
+            value: () => {
+              return [{
+                name: 'account',
+                displayName: 'Account Management'
+              }];
+            }
           },
           invalidScopes: Boolean,
           invalid: {
