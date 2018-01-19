@@ -81,7 +81,7 @@ limitations under the License.
         userMigrationManager = new UserMigrationManager(userManager, database);
       });
 
-      it('should keep scopes length as 1 for id 0', () => {
+      it('should not add scope to user if user already has scope', () => {
         return userMigrationManager.addFlaggedScopes()
         .then(() => {
           const item = userManager.get(0);
@@ -89,7 +89,7 @@ limitations under the License.
         });
       });
 
-      it('should keep scopes length as 0 for id 1', () => {
+      it('should not add scope to user if user does not have scope and flag is set', () => {
         return database.get()
         .then((flags) => Promise.resolve(flags.account = 1))
         .then(() => userMigrationManager.addFlaggedScopes())
@@ -99,7 +99,7 @@ limitations under the License.
         });
       });
 
-      it('should set scopes length to 1 for id 1', () => {
+      it('should add scope to user if user does not have scope and flag is not set', () => {
         return userMigrationManager.addFlaggedScopes()
         .then(() => {
           const item = userManager.get(1);
@@ -107,7 +107,7 @@ limitations under the License.
         });
       });
 
-      it('should set scope item name to "account" for id 1', () => {
+      it('should add "account" scope to user if user does not have the scope and flag is not set', () => {
         return userMigrationManager.addFlaggedScopes()
         .then(() => {
           const item = userManager.get(1);
