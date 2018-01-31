@@ -42,7 +42,7 @@
       .then(() => messenger._list({scopes: []}))
       .then(([user]) => { // 'front end' list
         expect(user).to.have.all.keys('id', 'username', 'scopes', 'isAnonymous', 'createdAt', 'updatedAt');
-      }); ;
+      });
     });
   });
 })();
