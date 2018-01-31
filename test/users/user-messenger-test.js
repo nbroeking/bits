@@ -36,9 +36,13 @@
       return Promise.resolve()
       .then(() => messenger.load(messageCenter))
       .then(() => api.list())
-      .then(([user]) => {
+      .then(([user]) => { // 'back end' list
+        expect(user).to.have.all.keys('id', 'username', 'scopes', 'isAnonymous', 'createdAt', 'updatedAt', 'passwordHash', 'salt');
+      })
+      .then(() => messenger._list({scopes: []}))
+      .then(([user]) => { // 'front end' list
         expect(user).to.have.all.keys('id', 'username', 'scopes', 'isAnonymous', 'createdAt', 'updatedAt');
-      });
+      }); ;
     });
   });
 })();
