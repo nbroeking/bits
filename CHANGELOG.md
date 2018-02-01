@@ -1,3 +1,18 @@
+<a name="2.17.0"></a>
+# 2.17.0 (2018-02-01)
+
+
+### Bug Fixes
+
+* backend list gets all data for users   (88ad29d)
+
+
+### Features
+
+* added ability to manually add a proxy path   (8bbaece)
+
+---
+
 <a name="2.16.0"></a>
 # 2.16.0 (2018-01-12)
 
