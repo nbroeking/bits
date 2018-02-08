@@ -14,3 +14,9 @@ app/bower_components/
 build/
 
 *.swp
+
+# Webstorm
+.idea
+
+# V8 cache
+v8-compile-cache-0/
