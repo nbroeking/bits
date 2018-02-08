@@ -1,0 +1,38 @@
+<dom-module id="base-layout-shared-styles">
+  <template>
+    <style>
+      :host {
+        display: block;
+        position: relative;
+        height: 100%;
+      }
+
+      .toolbar.drawer {
+        border-bottom: 1px solid;
+        border-bottom-color: var(--divider-color);
+      }
+
+      .toolbar.drawer .icon {
+        @apply(--layout-vertical);
+        @apply(--layout-center);
+        width: 64px;
+        margin-left: -8px;
+      }
+      .toolbar.drawer iron-icon {
+        --iron-icon-height: 32px;
+        --iron-icon-width: 32px;
+        color: var(--secondary-text-color);
+      }
+
+      #content {
+        height: 100%;
+        position: relative;
+      }
+
+      /*style the user supplied toolbar actions consistently*/
+      .content-wrapper ::content > .header-toolbar {
+        color: #2196f3;
+      }
+    </style>
+  </template>
+</dom-module>
