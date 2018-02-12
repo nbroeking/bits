@@ -1,3 +1,13 @@
+<a name="2.17.1"></a>
+## 2.17.1 (2018-02-12)
+
+
+### Bug Fixes
+
+* **browser:** vaadin-grid-sorter order   (e1b1265)
+
+---
+
 <a name="2.17.0"></a>
 # 2.17.0 (2018-02-01)
 
