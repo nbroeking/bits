@@ -36,7 +36,7 @@ limitations under the License.
       },
 
       _updateSorters: function() {
-        const sorters = this.$.grid._sorters.reduce((obj, el) => Object.assign(obj, {[el.path]: el.direction}), {});
+        const sorters = this.$.grid._sorters.reduce((obj, el, index) => Object.assign(obj, {[el.path]: {direction: el.direction, order: index}}), {});
         this.setSorters(sorters);
       },
 
@@ -52,13 +52,17 @@ limitations under the License.
 
       refreshSort: function() {
         const grid = this.$.grid;
+        const sorters = [];
         grid.querySelectorAll('vaadin-grid-sorter').forEach((el) => {
-          if (this.sorters.hasOwnProperty(el.path)) {
-            el.set('direction', this.sorters[el.path]);
+          if (this.sorters.hasOwnProperty(el.path) && this.sorters[el.path].hasOwnProperty('direction') && this.sorters[el.path].hasOwnProperty('order')) {
+            sorters.push({el: el, direction: this.sorters[el.path].direction, order: this.sorters[el.path].order});
           } else if (el.direction !== null) {
             el.set('direction', null);
           }
         });
+
+        sorters.sort((a, b) => b.order - a.order);
+        sorters.map((sorter) => sorter.el.set('direction', sorter.direction));
       },
 
       resetSort: function() {
