@@ -53,14 +53,20 @@ limitations under the License.
         }
       },
 
+      _renderValidation: function({query={}}={}) {
+        return true;
+      },
+
       _getItemCount: function() {
         if (!this.query) return Promise.resolve(0);
+        if (!this._renderValidation({query: this.query})) return Promise.resolve(0);
 
         return this.$.items.count(this.query);
       },
 
       _getItems: function(options={}) {
         if (!this.query) return Promise.resolve([]);
+        if (!this._renderValidation({query: this.query})) return Promise.resolve([]);
 
         return this.$.items.list(this.query, options);
       },
