@@ -33,6 +33,16 @@ limitations under the License.
       :host {
         display: block;
         height: 100%;
+
+        --base-dashboard-widget: {
+          @apply --layout-relative;
+          @apply --shadow-elevation-2dp;
+          display: inline-block;
+          margin-bottom: 16px;
+          box-sizing: border-box;
+          width: 320px;
+          background-color: #fff;
+        }
       }
 
       #header {
@@ -51,42 +61,7 @@ limitations under the License.
       }
 
       #grid > .card {
-        @apply(--layout-relative);
-        @apply(--shadow-elevation-2dp);
-        display: inline-block;
-        margin-bottom: 16px;
-        box-sizing: border-box;
-        width: 320px;
-        background-color: #fff;
-        transition: -webkit-filter 0.25s ease, opacity 0.25s ease;
-        -webkit-filter: grayscale(0);
-        opacity: 1;
-      }
-
-      #grid > .card:after {
-        content: '';
-        width: 100%;
-        height: 100%;
-        position: absolute;
-        top: 0;
-        left: 0;
-        z-index: 100;
-        cursor: pointer;
-        display: none;
-      }
-
-      #grid > .card.edit {
-        -webkit-filter: grayscale(1);
-        opacity: 0.65;
-      }
-
-      #grid > .card.edit[hidden] {
-        display: block !important;
-        opacity: 0.25;
-      }
-
-      #grid > .card.edit:after {
-        display: block;
+        @apply --base-dashboard-widget;
       }
 
       .wrapper {
