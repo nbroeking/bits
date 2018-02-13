@@ -114,7 +114,7 @@ limitations under the License.
       },
 
       attached: function() {
-        const headerContentNodes = this.$.headerToolbar.getDistributedNodes();
+        const headerContentNodes = Polymer.dom(this.$.headerToolbar).getDistributedNodes();
         const hasSiblings = (headerContentNodes.length > 0 && headerContentNodes[0].children.length > 0);
         this.set('hasSiblings', hasSiblings);
       },
