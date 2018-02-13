@@ -127,7 +127,7 @@ limitations under the License.
       },
 
       _connectedChanged: function(connected) {
-        if (connected) {
+        if (socket && connected) {
           this._eventInfos.forEach((info) => {
             const meta = {
               event: info.event
