@@ -1,3 +1,14 @@
+<a name="2.17.2"></a>
+## 2.17.2 (2018-02-21)
+
+
+### Bug Fixes
+
+* fixes issue where module crashes during load   (6914af6), closes BITS-79
+* **browser:** getDistributedNodes deprecated in Firefox Quantum   (eb17ad6)
+
+---
+
 <a name="2.17.1"></a>
 ## 2.17.1 (2018-02-12)
 
