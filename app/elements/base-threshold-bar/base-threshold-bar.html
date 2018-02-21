@@ -39,9 +39,17 @@
     <div class="bar">
       <div
         class="inner"
-        style$="clip-path: inset(0 [[percentage]]% 0 0);">
+        style$="clip-path: url('#clip-shape-[[_id]]'); clip-path: inset(0 [[inset]]% 0 0);">
       </div>
     </div>
+
+    <svg width="0" height="0">
+      <defs>
+        <clipPath id$="clip-shape-[[_id]]" clipPathUnits="objectBoundingBox">
+          <rect x="0" y="0" width$="[[percentage]]" height="1" />
+        </clipPath>
+      </defs>
+    </svg>
 
   </template>
   <script>
@@ -51,6 +59,15 @@
       Polymer({
         is: 'base-threshold-bar',
 
+        properties: {
+          _id: {
+            type: String,
+            value: () => {
+              return String(Date.now());
+            }
+          }
+        },
+
         behaviors: [Polymer.IronRangeBehavior],
 
         observers: [
@@ -59,8 +76,9 @@
 
         _observeMinMaxValue: function(min, max, value) {
           // clipping needs inverse of ratio as percentage
-          const percentage = (1 - this._calcRatio(value)) * 100;
+          const percentage = this._calcRatio(value);
           this.set('percentage', percentage);
+          this.set('inset', ((1 - percentage) * 100));
         }
       });
     })(this);
