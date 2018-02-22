@@ -65,6 +65,7 @@ BITS is built upon the NodeJS framework and requires that following
 
 
 * Linux Operating System, such as [Ubuntu LTS](https://www.ubuntu.com/download)
+* Build tools, such as [Build Essential](https://packages.ubuntu.com/xenial/build-essential)
 * [NodeJS LTS](https://nodejs.org/en/download)
 * [Yarn](https://yarnpkg.com/en/docs/install)
 * [Python 2.x](https://www.python.org/downloads)
