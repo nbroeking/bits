@@ -28,6 +28,39 @@ limitations under the License.
 <link rel="import" href="./base-layout-shared-styles.html">
 <link rel="import" href="./base-lazy-content/base-lazy-content.html">
 
+<!--
+`base-layout` is a full screen app view layout with lazy load and toolbar navigation. It supports nav actions through
+header toolbar links/buttons and not the sidebar IE(there is no sidebar). Nav actions are inserted as children elements
+within the 'header-toolbar' class and should link to a different lazy loaded page.
+
+Example:
+    <base-layout
+      id="layout"
+      m-name="notes"
+      m-icon="assignment"
+      m-display-name="Notes"
+      pages="[[pages]]"
+      page-name="{{currentPage}}"
+      default-page-name="dashboard"
+      current-element="{{currentElement}}">
+
+      <div id="actions" class="header-toolbar" hidden$="[[isHideActions]]">
+        <div>
+          <a href="/[[mName]]/create" tabindex="-1">
+            <paper-button class="primary-btn-light">Take a note...</paper-button>
+          </a>
+        </div>
+      </div>
+
+    </base-layout>
+
+### Styling
+The following custom properties and mixins are available for styling:
+Custom property | Description | Default
+`--base-layout-header-toolbar-color` | Text color for non-pre-styled elements | `--primary-color`
+
+-->
+
 <dom-module id="base-layout">
   <template>
     <style include="base-shared-styles"></style>
