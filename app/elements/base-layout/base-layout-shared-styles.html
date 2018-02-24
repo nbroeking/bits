@@ -44,7 +44,8 @@ limitations under the License.
 
       /*style the user supplied toolbar actions consistently*/
       .content-wrapper ::content > .header-toolbar {
-        color: var(--primary-color);
+        /*Set the default text color to primary or user defined*/
+        color: var(--base-layout-header-toolbar-color, var(--primary-color));
       }
     </style>
   </template>
