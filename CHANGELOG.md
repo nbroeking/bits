@@ -1,3 +1,13 @@
+<a name="2.18.0"></a>
+# 2.18.0 (2018-02-28)
+
+
+### Features
+
+* **server:** disable setTime request handler   (0918eba), closes BITS-98
+
+---
+
 <a name="2.17.2"></a>
 ## 2.17.2 (2018-02-21)
 
