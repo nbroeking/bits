@@ -1,0 +1,105 @@
+<!--
+Copyright 2018 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/app-route/app-location.html">
+<link rel="import" href="../../bower_components/app-route/app-route.html">
+<link rel="import" href="../../bower_components/app-layout/app-layout.html">
+<link rel="import" href="../../bower_components/app-layout/app-scroll-effects/effects/waterfall.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/paper-styles/color.html">
+<link rel="import" href="../../bower_components/paper-styles/default-theme.html">
+<link rel="import" href="../../bower_components/paper-styles/typography.html">
+<link rel="import" href="../base-loading/base-loading.html">
+<link rel="import" href="../base-shared-styles/base-shared-styles.html">
+<link rel="import" href="./base-layout-behavior.html">
+<link rel="import" href="./base-layout-shared-styles.html">
+<link rel="import" href="./base-lazy-content/base-lazy-content.html">
+
+<!--
+`base-layout` is a full screen app view layout with lazy load and toolbar navigation. It supports nav actions through
+header toolbar links/buttons and not the sidebar IE(there is no sidebar). Nav actions are inserted as children elements
+within the 'header-toolbar' class and should link to a different lazy loaded page.
+
+Example:
+    <base-layout
+      id="layout"
+      m-name="notes"
+      m-icon="assignment"
+      m-display-name="Notes"
+      pages="[[pages]]"
+      page-name="{{currentPage}}"
+      default-page-name="dashboard"
+      current-element="{{currentElement}}">
+
+      <div id="actions" class="header-toolbar" hidden$="[[isHideActions]]">
+        <div>
+          <a href="/[[mName]]/create" tabindex="-1">
+            <paper-button class="primary-btn-light">Take a note...</paper-button>
+          </a>
+        </div>
+      </div>
+
+    </base-layout>
+
+### Styling
+The following custom properties and mixins are available for styling:
+Custom property | Description | Default
+`--base-layout-header-toolbar-color` | Text color for non-pre-styled elements | `--primary-color`
+
+-->
+
+<dom-module id="base-layout">
+  <template>
+    <style include="base-shared-styles"></style>
+    <style include="base-layout-shared-styles"></style>
+
+    <app-location route="{{route}}"></app-location>
+    <app-route route="{{route}}" pattern="/[[mName]]/:pageName" data="{{routeData}}"></app-route>
+
+    <app-header-layout id="headerLayout" has-scrolling-region fullbleed>
+      <app-header fixed effects="waterfall">
+        <app-toolbar class="toolbar drawer">
+          <div class="highlight"></div>
+          <div class="icon">
+            <iron-icon icon="[[mIcon]]" item-icon></iron-icon>
+          </div>
+          <div class="title" main-title>[[mDisplayName]]</div>
+
+          <div class="content-wrapper">
+            <!--put your icons/buttons here that will be connected to the router-->
+            <content id="headerToolbar" select=".header-toolbar"></content>
+          </div>
+
+        </app-toolbar>
+      </app-header>
+
+      <base-lazy-content id="content" page="[[page]]" current-element="{{currentElement}}"></base-lazy-content>
+    </app-header-layout>
+
+  </template>
+  <script>
+    (() => {
+      'use strict';
+
+      Polymer({
+        is: 'base-layout',
+
+        behaviors: [Bits.BaseLayoutBehavior],
+
+      });
+    })();
+  </script>
+</dom-module>

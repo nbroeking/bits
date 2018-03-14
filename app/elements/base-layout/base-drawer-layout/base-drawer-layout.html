@@ -30,12 +30,7 @@ limitations under the License.
 <dom-module id="base-drawer-layout">
   <template>
     <style include="base-shared-styles"></style>
-    <style>
-      :host {
-        display: block;
-        position: relative;
-        height: 100%;
-      }
+    <style include="base-layout-shared-styles">
 
       app-drawer {
         --app-drawer-scrim-background: rgba(0, 0, 0, 0);
@@ -45,23 +40,6 @@ limitations under the License.
           border-right: 1px solid;
           border-right-color: var(--divider-color);
         };
-      }
-
-      .toolbar.drawer {
-        border-bottom: 1px solid;
-        border-bottom-color: var(--divider-color);
-      }
-
-      .toolbar.drawer .icon {
-        @apply(--layout-vertical);
-        @apply(--layout-center);
-        width: 64px;
-        margin-left: -8px;
-      }
-      .toolbar.drawer iron-icon {
-        --iron-icon-height: 32px;
-        --iron-icon-width: 32px;
-        color: var(--secondary-text-color);
       }
 
       .item {
@@ -110,11 +88,6 @@ limitations under the License.
         text-overflow: ellipsis;
       }
 
-      #content {
-        height: 100%;
-        position: relative;
-      }
-
     </style>
 
     <app-location route="{{route}}"></app-location>
@@ -129,6 +102,10 @@ limitations under the License.
               <iron-icon icon="[[mIcon]]" item-icon></iron-icon>
             </div>
             <div class="title" main-title>[[mDisplayName]]</div>
+            <div class="content-wrapper">
+              <!--put your icons/buttons here that will be connected to the router-->
+              <content id="headerToolbar" select=".header-toolbar"></content>
+            </div>
           </app-toolbar>
           <iron-selector selected="[[pageName]]" attr-for-selected="data-route">
             <template is="dom-repeat" items="[[navItems]]" as="page">
