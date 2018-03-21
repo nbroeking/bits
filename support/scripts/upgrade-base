@@ -1,264 +1,303 @@
-#!/bin/bash
+#!/usr/bin/env node
 
-#*************************************************************************
- # COPYRIGHT (c) 2017 LGS INNOVATIONS - ALL RIGHTS RESERVED
- # LGS INNOVATIONS PROPRIETARY - USE PURSUANT TO COMPANY INSTRUCTIONS
-#************************************************************************/
+// *************************************************************************
+//  Copyright 2018 LGS Innovations
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+// ************************************************************************/
 
-# This script upgrades the base. This  script lives in a specific place.
-# Leave it there.  ./bits/Linux/bits-files/bits-base/scripts
-#
-# -h,--help       display this help and exit.
-# -t,--target     the target base file to upgrade to
-# -P              bits base directory
-#
-# exit code 1: incorrect arguments supplied, files incorrect, or key not private
-# exit code 2: upgrade failed
-# exit code 4: upgrade suceeded with partial failures error log should be presented to user
-# exit code 8: upgrade succeded with yarn errors, error log should be presented to user
+//  This script upgrades the base. This  script lives in a specific place.
+//  Leave it there.  ./bits/Linux/bits-files/bits-base/scripts
+//
+//  -h,--help       display this help and exit.
+//  -t,--target     the target base file to upgrade to
+//  -P              bits base directory
+//
+//  exit code 1: incorrect arguments supplied, files incorrect, or key not private
+//  exit code 2: upgrade failed
+//  exit code 4: upgrade suceeded with partial failures error log should be presented to user
+//  exit code 8: upgrade succeded with yarn errors, error log should be presented to user
 
-# Static items
-DATE="$(date +%Y%m%d-%H%M%S)"
-TARGET=""
-DATA_DIR="/var/bits"
-LOG="/tmp/bits-upgrade-log-${DATE}"
-YARN_INSTALL_ERROR=0
-YARN_CACHE_FOLDER="${DATA_DIR}/yarn-cache"
+'use strict';
 
-GETOPTS="$(which getopt)"
+const fs = require('fs');
+const path = require('path');
+const spawnSync = require('child_process').spawnSync;
 
-function print-usage {
-  cat << EOF
-Usage: ${0##*/} [-h][--help] [-t][--target][-P]
-Upgrade the Base software stack [BITS OS]
- -h,--help       display this help and exit.
- -t,--target     the target base file to upgrade to
- -P,--base       bits base directory
- -d,--data       bits data directory
-EOF
-  exit 1
+// Static items
+const d = new Date();
+const ENV_DATE = '' + d.getFullYear()
+    + ('0' + (d.getMonth()+1)).slice(-2)
+    + ('0' + d.getDate()).slice(-2)
+    + '-'
+    + ('0' + d.getHours()).slice(-2)
+    + ('0' + d.getMinutes()).slice(-2)
+    + ('0' + d.getSeconds()).slice(-2);
+
+const LOG_FILE_NAME = `/tmp/bits-upgrade-log-${ENV_DATE}`;
+
+const args = parseArgs(process.argv, {
+  default: {
+    rootBaseDir: '/opt/bits/',
+    rootDataDir: '/var/bits',
+    target: '',
+    help: false,
+    logLevel: 'info', // error=0, warn=1, info=2, verbose=3, debug=4, silly=5
+  },
+  alias: {
+    rootBaseDir: ['P', '-base'],
+    rootDataDir: ['d', '-data'],
+    target: ['t', '-target'],
+    help: ['h', '-help'],
+    logLevel: ['l', '-level'],
+  },
+});
+
+console.log('args:\n', args);
+if (args.help) {
+  printUsage();
 }
 
-# Execute old getopt to have long options support
-ARGS=$($GETOPTS -o ht:P:d:i -l "help,target:,base:,data:" -n "${0##*/}" -- "$@");
-#Bad arguments
-if [ $? -ne 0 ]; then print-usage ; fi;
-eval set -- "$ARGS";
+console.log(`* Upgrade Base: logging to ${LOG_FILE_NAME}`);
+log(`* ARGS: [${process.argv}]`);
+const scriptName = path.parse(process.argv[1]).base;
+log(`* Script: ${scriptName}`);
 
-while true; do
-        case "$1" in
-                -h|--help) shift; print-usage;;
-                -t|--target) TARGET=$2; shift 2;;
-                -P|--base) BASE_DIR=$2; shift 2;;
-                --) shift; break;;
-                -d|--data) DATA_DIR=$2; shift 2;;
-                *) shift; break;;
-        esac
-done
+const user = whoami();
+log('* Current user: ' + user);
 
-if [ "${BASE_DIR}" = "" ]; then
-    echo "Error no base dir specified" >> "${LOG}" 2>&1
-    exit 1
-fi
+const tmpdir = fs.mkdtempSync('/tmp/bitsupdater.');
+log('* Working directory: ' + tmpdir);
+fs.chmodSync(tmpdir, 766);
 
-# Trap any exit and cleanup
-function finish {
-  echo "$(date +%H:%M:%S) * INFO Finishing Script" >> "${LOG}" 2>&1
-  if [ -e "${LOG}" ];
-  then
-    echo "$(date +%H:%M:%S) * INFO Copying Upgrade Log to data directory as $(basename "${LOG}")" >> "${LOG}" 2>&1
-    mkdir -p "${DATA_DIR}/upgrade" >> "${LOG}" 2>&1
-    cp -v "${LOG}" "${DATA_DIR}/upgrade/"
-    rm "${DATA_DIR}/upgrade/latest"
-    ln -s "${DATA_DIR}/upgrade/$(basename "${LOG}")" "${DATA_DIR}/upgrade/latest"
-  fi
-  #cleanup backup
-  echo "* INFO cleaning up ${BACKUP_DIR}" >> "${LOG}" 2>&1
-  rm -rf "${BACKUP_DIR}" >> "${LOG}" 2>&1
+let argumentError = false;
+
+// validate user
+if (user !== 'root') {
+  log(`* ${scriptName}: ERROR: This script must be run as root`);
+  argumentError = true;
 }
 
-function abort {
-  echo "$(date +%H:%M:%S) * INFO Aborting Script" >> "${LOG}" 2>&1
-  cp -r "${BACKUP_DIR}/backup" "${BASE_DIR}" >> "${LOG}" 2>&1
-  exit 2
+// validate base directory (-P)
+if (!args.rootBaseDir) {
+  log('* ERROR: no base dir specified (-P <dirname>)');
+  argumentError = true;
+} else if (fs.existsSync(args.rootBaseDir) && fs.statSync(args.rootBaseDir).isDirectory()) {
+  log('* Base dir: ' + args.rootBaseDir);
+} else {
+  log(`* ERROR: Specified base dir is not a directory (${args.rootBaseDir})`);
+  argumentError = true;
 }
 
-function run_install {
-  CWD="${PWD}"
-  INSTALL_DIR="${1}"
-  export HOME="/root"
-  cd "${INSTALL_DIR}"
-
-  echo "Running install for ${INSTALL_DIR}" >> "${LOG}" 2>&1
-
-  if [ -f "package.json" ] && grep -q "\"bits:install\" *:" "package.json";
-  then
-    if [ -d "${INSTALL_DIR}/support/yarn-cache" ];
-    then
-      rsync -a "${INSTALL_DIR}/support/yarn-cache/" "${YARN_CACHE_FOLDER}" >> "${LOG}" 2>&1
-    fi
-    npm run bits:install >> "${LOG}" 2>&1
-    RET=$?
-    echo "Install status = ${RET}" >> "${LOG}" 2>&1
-  else
-    echo "No package.json or no bits:install script command in ${INSTALL_DIR}" >> "${LOG}" 2>&1
-  fi
-
-  cd "${CWD}"
-  return "${RET}"
+// validate data directory (-d)
+if (!args.rootDataDir) {
+  log('* ERROR: no data dir specified (-d <dirname>)');
+  argumentError = true;
+} else if (fs.existsSync(args.rootDataDir) && fs.statSync(args.rootDataDir).isDirectory()) {
+  log('* Data dir: ' + args.rootDataDir);
+} else {
+  log(`* ERROR: Specified data dir is not a directory (${args.rootDataDir})`);
+  argumentError = true;
 }
 
-trap finish EXIT
-shopt -s dotglob
+// validate target filename
+if (!args.target) {
+  log('* ERROR: need to supply new base ROMG (-t <filename>)');
+  argumentError = true;
+} else if (fs.existsSync(args.target) && fs.statSync(args.target).isFile()) {
+  log('* Target: ' + args.target);
+} else {
+  log(`* ERROR: Specified target is not a file (${args.target})`);
+  argumentError = true;
+}
 
-RELEASE="$(lsb_release -c -s)"
-DISTRIBUTOR="$(lsb_release -i -s | tr '[:upper:]' '[:lower:]')"
-ARCH="$(uname -m)"
-echo "$(date +%H:%M:%S) * INFO Upgrading bits-base with: ${TARGET}|||" > "${LOG}" 2>&1
-if [ ! -f "${TARGET}" ];
-then
-  echo "$(date +%H:%M:%S) * ERROR need to supply new base tgz as parameter" >> "${LOG}" 2>&1
-  exit 1
-else
-  echo "$(date +%H:%M:%S) * We can see the new base tgz" >> "${LOG}" 2>&1
-fi
+// validate log level
+const validLevels = ['error', 'warn', 'info', 'verbose', 'debug', 'silly'];
+if (!validLevels.includes(args.logLevel)) {
+  log('* ERROR: invalid log level provided (' + args.logLevel + ')');
+  argumentError = true;
+} else {
+  log(`* Log level is (${args.logLevel})`);
+}
 
-echo "$(date +%H:%M:%S) * Attempting to stop the old base" >> "${LOG}" 2>&1
-#STOPPING THE BITS PROCESS
-if [ "$(whoami)" == 'root' ]; then
-  if [ "${RELEASE}" == "xenial" ]; then
-    echo "$(date +%H:%M:%S) * Stopping the systemctl bits process" >> "${LOG}" 2>&1
-    systemctl stop bits >> "${LOG}" 2>&1
-    echo "Report: $?" >> "${LOG}" 2>&1
-  elif [ "${RELEASE}" == "trusty" ]; then
-    echo "$(date +%H:%M:%S) * Stopping the upstart bits process" >> "${LOG}" 2>&1
-    service bits stop >> "${LOG}" 2>&1
-  else
-    echo "$(date +%H:%M:%S) * ${PLATFORM} not supported" >> "${LOG}" 2>&1
-    abort
-  fi
-else
-    echo "$(date +%H:%M:%S) * Not stopping the bits process" >> "${LOG}" 2>&1
-fi
+if (argumentError) {
+  printUsage();
+}
 
-echo "$(date +%H:%M:%S) * Creating the backup directory" >> "${LOG}" 2>&1
-BACKUP_DIR="${BASE_DIR}/upgrade-$(date +%Y%m%d-%H%M%S)"
-mkdir -p "${BACKUP_DIR}"
+// Unpack the components we need into our TMPDIR
+const untarResults = spawnSync('tar',
+  ['xf', args.target, '--strip-components=4', '-C', tmpdir, './support/scripts/upgrade-server'],
+  {});
+if (untarResults.output.join('').length > 0) {
+  log('* Untar Results:\n' + untarResults.output.join('\n').trim());
+}
 
-#-----------------------
-echo "$(date +%H:%M:%S) * Unpacking the new base" >> "${LOG}" 2>&1
+// Now launch the upgrade app
+log(`* Launching upgrade-app in ${tmpdir}`);
+const execResults = spawnSync('node',
+  ['./upgrade-app.js',
+    '-t', args.target,
+    '-P', args.rootBaseDir,
+    '-d', args.rootDataDir,
+    '-o', LOG_FILE_NAME,
+    '-l', args.logLevel],
+  {cwd: tmpdir});
+if (execResults.output.join('').length > 0) {
+  log('* Upgrade App Results:\n' + execResults.output.join('\n').trim());
+}
+// console.log('EXEC RESULTS:\n', execResults);
+const yarnInstallError = execResults.status;
+log(`* Back from Upgrade App (${yarnInstallError})`);
 
-# Unpack the new base in target directory
-TARGET_EXTRACT="${BACKUP_DIR}/extract"
-mkdir -p "${TARGET_EXTRACT}"
-echo " ${TARGET} -C ${TARGET_EXTRACT}" >> "${LOG}" 2>&1
-tar -xzf "${TARGET}" -C "${TARGET_EXTRACT}" >> "${LOG}" 2>&1
-if [ $? -ne 0 ];
-then
-  echo "* ERROR Failed to untar $1" >> "${LOG}" 2>&1
-  echo "* Original Target: ${TARGET}" >> "${LOG}" 2>&1
-  exit 2
-fi
+if (yarnInstallError > 0) {
+  log('* Cleaning up working files');
+  let results = spawnSync('rm', ['-rf', path.join(tmpdir, 'node_modules')], {});
+  log('* rm (' + path.join(tmpdir, 'node_modules') + ') results: ' + results.output.join('\n').trim());
+  results = spawnSync('rm', ['-rf', path.join(tmpdir, 'public')], {});
+  log('* rm (' + path.join(tmpdir, 'public') + ') results: ' + results.output.join('\n').trim());
+  results = spawnSync('rm', ['-rf', path.join(tmpdir, '*.js')], {});
+  log('* rm (' + path.join(tmpdir, '*.js') + ') results: ' + results.output.join('\n').trim());
+  results = spawnSync('rm', ['-rf', path.join(tmpdir, '*.json')], {});
+  log('* rm (' + path.join(tmpdir, '*.json') + ') results: ' + results.output.join('\n').trim());
+  results = spawnSync('rm', ['-rf', path.join(tmpdir, '*.lock')], {});
+  log('* rm (' + path.join(tmpdir, '*.lock') + ') results: ' + results.output.join('\n').trim());
+  results = spawnSync('rm', ['-rf', path.join(tmpdir, '*.txt')], {});
+  log('* rm (' + path.join(tmpdir, '*.txt') + ') results: ' + results.output.join('\n').trim());
+  results = spawnSync('rm', ['-rf', path.join(tmpdir, '*.MD')], {});
+  log('* rm (' + path.join(tmpdir, '*.MD') + ') results: ' + results.output.join('\n').trim());
+  // if (results.output.join('').length > 0) {
+  //   log('* rm Results: ' + results.output.join('\n').trim());
+  // }
+  finish(yarnInstallError);
+} else {
+  // completely remove TMPDIR, but only on success
+  log('* Clean exit');
+  const results = spawnSync('rm',
+    ['-rf', tmpdir],
+    {});
+  if (results.output.join('').length > 0) {
+    log('* rm Results: ' + results.output.join('\n').trim());
+  }
+  finish(0);
+}
 
-echo "$(date +%H:%M:%S) * INFO extracted the new bits" >> "${LOG}" 2>&1
-# Clear out the bits directory
-mkdir -p "${BACKUP_DIR}/backup/"
-mv "${BASE_DIR}"/* "${BACKUP_DIR}/backup/" >> "${LOG}" 2>&1
-if [ "$(ls "${BASE_DIR}" | wc -l)" -ne 1 ];
-then
-  echo "* ERROR Failed to clear $BASE_DIR" >> "${LOG}" 2>&1
-  ls "${BASE_DIR}" >> "${LOG}" 2>&1
-  abort
-fi
+// Cleanup on exit
+function finish(exitCode) {
+  log('* INFO Finishing Script');
+  if (fs.statSync(LOG_FILE_NAME).isFile()) {
+    const upgradeDir = path.join(args.rootDataDir, 'upgrade');
+    const baseLogName = path.basename(LOG_FILE_NAME);
+    log(`* INFO Moving Upgrade Log to data directory as ${baseLogName})`);
+    mkdir(upgradeDir);
+    spawnSync('mv', ['-v', LOG_FILE_NAME, upgradeDir], {});
+    const latestLinkName = path.join(upgradeDir, 'latest');
+    if (fs.statSync(latestLinkName).isFile()) {
+      fs.unlinkSync(latestLinkName);
+    }
+    fs.symlinkSync(path.join(upgradeDir, baseLogName), latestLinkName);
+  }
+  process.exit(exitCode);
+}
 
-# Move target extraction to bits directory
-echo "$(date +%H:%M:%S) * INFO moving the new bits" >> "${LOG}" 2>&1
-mv "${TARGET_EXTRACT}"/* "${BASE_DIR}/" >> "${LOG}" 2>&1
-if [ $? -ne 0 ];
-then
-  echo "$(date +%H:%M:%S) * ERROR Failed to install ${TARGET_EXTRACT}" >> "${LOG}" 2>&1
-  abort
-else
-  echo "$(date +%H:%M:%S) * INFO moved bits into place" >> "${LOG}" 2>&1
-fi
+function log(...args) {
+  const d = new Date();
+  const logTime = ('0' + d.getHours()).slice(-2)
+    + ':'
+    + ('0' + d.getMinutes()).slice(-2)
+    + ':'
+    + ('0' + d.getSeconds()).slice(-2)
+    + '.'
+    + ('00' + d.getMilliseconds()).slice(-3);
+  fs.appendFileSync(LOG_FILE_NAME, logTime + ' ' + args.join('\n') + '\n');
+}
 
-#if this is a romg then we must handle moving modules and data to
-#the appropriate spot
-if [ -d "${BASE_DIR}/data/base/modules/modules" ]; then
-  echo "$(date +%H:%M:%S) * INFO copying omg modules" >> "${LOG}" 2>&1
-  mkdir -p "${DATA_DIR}/base/modules/modules"
-  #clean up old modules
-  rm -rf "${DATA_DIR}/base/modules/modules"/*
-  #install new modules
-  mv -v "${BASE_DIR}/data/base/modules/modules"/* "${DATA_DIR}/base/modules/modules/" >> "${LOG}" 2>&1
+function mkdir(path) {
+  if (fs.statSync(path).isDirectory()) {
+    log(`* mkdir(${path}): already exists`);
+  } else {
+    fs.mkdirSync(path);
+  }
+}
 
-  for MODULE_DATA_DIR in "${BASE_DIR}/data"/*; do
-    if [ "${MODULE_DATA_DIR}" !=  "${BASE_DIR}/data/base" ]; then
-      echo "$(date +%H:%M:%S) * INFO copying prepopulated module data for $(basename "${MODULE_DATA_DIR}")" >> "${LOG}" 2>&1
-      #copy prepopulated data to data dir
-      cp -v -a "${MODULE_DATA_DIR}" "${DATA_DIR}/" >> "${LOG}" 2>&1
-    fi
-  done
-fi
-#cleanup data dir from the romg
-if [ "${BASE_DIR}/data"  != "${DATA_DIR}" ]; then
-  rm -rf "${BASE_DIR}/data"
-fi
+function parseArgs(argArray, options) {
+  const results = {};
+  // initialize results with default values, if any
+  if ('default' in options) {
+    for (let key in options.default) {
+      if (options.default.hasOwnProperty(key)) {
+        results[key] = options.default[key];
+      }
+    }
+  }
+  // extract values from argArray based on alias args
+  if ('alias' in options) {
+    // the number of arguments in our argArray doesn't change, so
+    // cache this value
+    const argLen = argArray.length;
+    // walk through each argument on the command line.  If it
+    // starts with '-', check it against our aliases
+    for (let i = 0; i < argLen; i++) {
+      const argument = argArray[i];
+      if (argument.charAt(0) === '-') {
+        // argument starts with '-'; find a matching alias
+        for (let key in options.alias) {
+          if (options.alias.hasOwnProperty(key)) {
+            const aliasKeys = options.alias[key];
+            aliasKeys.forEach((aliasKey) => {
+              if (argument === ('-' + aliasKey)) {
+                // we found a matching alias key... now set the
+                // result accordingly
+                let parameter = null;
+                if (i < argLen - 1) {
+                  parameter = argArray[i+1];
+                }
+                if (key in results) {
+                  // handle booleans
+                  if (typeof(results[key]) === 'boolean') {
+                    results[key] = true;
+                  } else {
+                    results[key] = parameter;
+                  }
+                } else {
+                  // key does not yet exist... assume it's a string
+                  results[key] = parameter;
+                }
+              }
+            });
+          }
+        }
+      }
+    }
+  }
+  return results;
+}
 
-# Set the yarn cache folder
-rm -rf "${YARN_CACHE_FOLDER}" >> "${LOG}" 2>&1
-mkdir -p "${YARN_CACHE_FOLDER}" >> "${LOG}" 2>&1
-yarn config set cache-folder "${YARN_CACHE_FOLDER}" >> "${LOG}" 2>&1
-yarn config list >> "${LOG}" 2>&1
+function printUsage() {
+  console.log(`
+BITS Upgrade Script - usage:
+  node app.js -P BASE -d DATA -t TARGET [-h] [-l LEVEL]
+where:
+  -h: show this usage text
+  -t TARGET: use TARGET as the target OMG file
+  -P BASE: use BASE as the BITS base directory
+  -d DATA: use DATA as the BITS data directory
+  -l LEVEL: set log level to LEVEL, where LEVEL is one of:
+     error, warn, info, verbose, debug, silly (default is info)
+CAVEAT: this script must be run as root user`);
+  process.exit(1);
+}
 
-#run the yarn install on base
-run_install "${BASE_DIR}"
-if [ $? -ne 0 ]; then
-  echo "$(date +%H:%M:%S) * ERROR yarn install error" >> "${LOG}" 2>&1
-  YARN_INSTALL_ERROR=8
-fi
-
-#run yarn install for modules
-for MODULE_DIR in "${DATA_DIR}/base/modules/modules"/*; do
-  run_install "${MODULE_DIR}"
-  if [ $? -ne 0 ]; then
-    echo "$(date +%H:%M:%S) * ERROR yarn module install error" >> "${LOG}" 2>&1
-    YARN_INSTALL_ERROR=8
-  fi
-done
-
-echo "$(date +%H:%M:%S) * INFO updating bits and data dir permissions" >> "${LOG}" 2>&1
-#Secure /opt/bits OD
-chown -R root:root "${BASE_DIR}" >> "${LOG}" 2>&1
-chmod -R g-w,g-x,g-r,o-w,o-x,o-r "${BASE_DIR}" >> "${LOG}" 2>&1
-#Secure /var/bits OD
-chown -R root:root "${DATA_DIR}" >> "${LOG}" 2>&1
-chmod -R g-w,g-x,g-r,o-w,o-x,o-r "${DATA_DIR}" >> "${LOG}" 2>&1
-
-
-if [ "${RELEASE}" == "xenial" -a "$(whoami)" == "root" ]; then
-    echo "Installing ubuntu 16 init scripts" >> "${LOG}" 2>&1
-
-    cp -v "${BASE_DIR}/support/systemd/bits.service" "/lib/systemd/system/bits.service" >> "${LOG}" 2>&1
-    chmod 644 /lib/systemd/system/bits.service >> "${LOG}" 2>&1
-
-    #Enable the system
-    systemctl disable bits.service >> "${LOG}" 2>&1
-    systemctl daemon-reload >> "${LOG}" 2>&1
-    systemctl enable bits.service >> "${LOG}" 2>&1
-    systemctl daemon-reload >> "${LOG}" 2>&1
-    #start bits upgrade finished
-    systemctl start bits >> "${LOG}" 2>&1
-elif [ "${RELEASE}" == "trusty" -a "$(whoami)" == "root" ]; then
-    echo "Installing ubuntu 14 init scripts" >> "${LOG}" 2>&1
-
-    cp -v "${BASE_DIR}/support/upstart/bits.conf" "/etc/init/bits.conf" >> "${LOG}" 2>&1
-    chmod 644 /etc/init/bits.conf >> "${LOG}" 2>&1
-    #start bits upgrade finished
-    service bits start >> "${LOG}" 2>&1
-fi
-
-if [ "${YARN_INSTALL_ERROR}" -gt 0 ]; then
-  exit ${YARN_INSTALL_ERROR}
-fi
-exit 0
+function whoami() {
+  const results = spawnSync('whoami', [], {});
+  return results.output.join('\n').trim();
+}

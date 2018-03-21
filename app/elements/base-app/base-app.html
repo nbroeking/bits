@@ -19,6 +19,7 @@ limitations under the License.
 <link rel="import" href="../../bower_components/paper-styles/default-theme.html">
 <link rel="import" href="../base-auth/base-auth.html">
 <link rel="import" href="../base-splash/base-splash.html">
+<link rel="import" href="../base-load-url/base-load-url.html">
 
 <dom-module id="base-app">
   <template>
@@ -43,6 +44,7 @@ limitations under the License.
     </style>
 
     <base-auth id="auth" signed-in="{{signedIn}}"></base-auth>
+    <base-load-url></base-load-url>
 
     <div id="content"></div>
 
