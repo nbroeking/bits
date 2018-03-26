@@ -1,3 +1,35 @@
+<a name="2.19.0"></a>
+# 2.19.0 (2018-03-26)
+
+
+### Bug Fixes
+
+* **browser:** fix behavior context   (35e9f47)
+* **browser:** fix behavior context   (812b007)
+* **browser:** Missing shared style import   (d545151), closes BITS-100
+* **modules:** bits base shows loaded   (37c1770), closes BITS-88
+* **var-name:** send correct result   (12eb3bf)
+* **var-name:** send correct result   (b83f2ad)
+
+
+### Features
+
+* **browser:** implement base-layout   (326004e)
+* **browser:** shared styles and behavior   (0e99583)
+* **browser:** style override   (117c80a)
+* **crud-router:** add crud-router base class with setup via crud-manager   (ddd1de1), closes BITS-89
+* **crud-router:** add crud-router base class with setup via crud-manager   (4f7c549), closes BITS-89
+* **crud-router:** add crud-router base class with setup via crud-manager   (136b620), closes BITS-89
+* can remove sensors   (b7278e9)
+* loading base will reject if something goes wrong   (56bdfb1)
+
+
+### Reverts
+
+* **browser): revert refactor(browser:** remove unused props   (bf4376d)
+
+---
+
 <a name="2.18.0"></a>
 # 2.18.0 (2018-02-28)
 
