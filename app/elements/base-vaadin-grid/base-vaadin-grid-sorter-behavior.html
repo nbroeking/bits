@@ -54,7 +54,7 @@ limitations under the License.
         const grid = this.$.grid;
         const sorters = [];
         grid.querySelectorAll('vaadin-grid-sorter').forEach((el) => {
-          if (this.sorters.hasOwnProperty(el.path) && this.sorters[el.path].hasOwnProperty('direction') && this.sorters[el.path].hasOwnProperty('order')) {
+          if (this.sorters && this.sorters.hasOwnProperty(el.path) && this.sorters[el.path].hasOwnProperty('direction') && this.sorters[el.path].hasOwnProperty('order')) {
             sorters.push({el: el, direction: this.sorters[el.path].direction, order: this.sorters[el.path].order});
           } else if (el.direction !== null) {
             el.set('direction', null);
