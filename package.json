@@ -9,7 +9,8 @@
   },
   "homepage": "https://github.com/LGSInnovations/bits#readme",
   "scripts": {
-    "build": "yarn && bower install && npm run lint && npm run test",
+    "build": "yarn && bower install && npm run lint && npm run test && npm run upgrade-build",
+    "upgrade-build": "cd support/scripts/upgrade-server && npm run build",
     "bits:install": "yarn --prod",
     "lint": "eslint --fix --ext js,html .",
     "test": "mocha --recursive",

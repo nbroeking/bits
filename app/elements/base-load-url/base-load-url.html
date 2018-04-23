@@ -1,0 +1,138 @@
+<!--
+Copyright 2018 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../base-message-center/base-message-center.html">
+
+<dom-module id="base-load-url">
+  <template>
+    <!-- base-load-url start -->
+    <base-message-center id="messageCenter"></base-message-center>
+    <!-- base-load-url finish -->
+  </template>
+  <script>
+    ((global) => {
+      'use strict';
+
+      const BASE_LOAD_URL_PREFIX = 'base#LoadUrl ';
+      const BASE_LOAD_URL = {
+        REQUEST: {
+          URL_GET: BASE_LOAD_URL_PREFIX + 'urlGet',
+          URL_SET: BASE_LOAD_URL_PREFIX + 'urlSet',
+          IDENTITY_GET: BASE_LOAD_URL_PREFIX + 'identityGet',
+          IDENTITY_SET: BASE_LOAD_URL_PREFIX + 'identitySet',
+        },
+        EVENT: {
+          URL_UPDATED: BASE_LOAD_URL_PREFIX + 'urlUpdated',
+          IDENTITY_UPDATED: BASE_LOAD_URL_PREFIX + 'identityUpdated',
+        },
+      };
+
+      Polymer({
+        is: 'base-load-url',
+
+        properties: {
+          url: {
+            type: String,
+            notify: true,
+            value: null,
+          },
+          identity: {
+            type: String,
+            value: null,
+          },
+        },
+
+        created: function() {
+          this._boundSocketDisconnected = this._socketDisconnected.bind(this);
+          this.__init();
+        },
+
+        __init: function() {
+          this._url = null;
+          this._identity = null;
+        },
+
+        ready: function() {
+          this.messageCenter = this.$.messageCenter;
+          this._loadFromServer();
+
+          this.messageCenter.addConnectRunnable(() => {
+            this._socketConnected();
+          });
+        },
+
+        _socketConnected: function() {
+          this.messageCenter.socket.on('disconnect', this._boundSocketDisconnected);
+          // check ID & reload if different
+          return Promise.resolve()
+          .then(() => this.messageCenter.sendRequest(BASE_LOAD_URL.REQUEST.IDENTITY_GET))
+          .then((reply) => this._onIdentityUpdatedEvent(reply));
+        },
+
+        _socketDisconnected: function() {
+          this.messageCenter.socket.removeEventListener('disconnect', this._boundSocketDisconnected);
+        },
+
+        _loadFromServer() {
+          return Promise.resolve()
+          .then(() => this.messageCenter.addSocketEventListener(BASE_LOAD_URL.EVENT.URL_UPDATED, this._onUrlUpdatedEvent.bind(this)))
+          .catch((err) => console.error('BASE LOAD URL: Error registering URL_UPDATED event listener: ', err))
+          .then(() => this.messageCenter.addSocketEventListener(BASE_LOAD_URL.EVENT.IDENTITY_UPDATED, this._onIdentityUpdatedEvent.bind(this)))
+          .catch((err) => console.error('BASE LOAD URL: Error registering IDENTITY_UPDATED event listener: ', err))
+          .then(() => this.messageCenter.sendRequest(BASE_LOAD_URL.REQUEST.IDENTITY_GET))
+          .then((reply) => this._onIdentityUpdatedEvent(reply))
+          .catch((err) => console.error('BASE LOAD URL: Error setting IDENTITY: ', err))
+          ;
+        },
+
+        _onUrlUpdatedEvent: function(newUrl) {
+          // FUTURE: send an object instead of a string so we can:
+          //   * replace the current URL (remove current URL from history)
+          //      (use location.replace)
+          //   * open a URL in same window (keep current url in history)
+          //      (use location.assign)
+          //   * open a URL in new tab
+          //   * open a URL in new window
+          //   * refresh current URL
+          //      ( use location.reload)
+          if (newUrl) {
+            // load this URL
+            this._url = newUrl;
+            location.assign(this._url);
+          } else {
+            // no URL given; reload the current page
+            location.reload();
+          }
+        },
+
+        _onIdentityUpdatedEvent: function(newIdentity) {
+          let prevIdentity = this._identity;
+          if (prevIdentity == null) {
+            // set initial identity
+            this._identity = newIdentity;
+          } else if (prevIdentity != newIdentity) {
+            // change identity & reload page
+            this._identity = newIdentity;
+            location.reload();
+          } else {
+            // no change to identity
+          }
+        },
+
+      });
+    })(this);
+  </script>
+</dom-module>

@@ -1,0 +1,182 @@
+<!--
+Copyright 2018 LGS Innovations
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Updating BITS Installation</title>
+  <link rel="stylesheet" href="/public/main.css">
+</head>
+<body>
+  <main>
+    <div class="content">
+      <div class="title">
+        <span class="primary courier">BITS</span>
+        <span class="secondary">Updating Installation</span>
+      </div>
+      <div id="progress" class="progress-container">
+        <div id="progressBar" class="progress-bar"></div>
+        <div id="progressBarText" class="courier status progress-bar-percent">0%</div>
+      </div>
+      <div id="status" class="status">Preparing upgrade&#8230;</div>
+      <div id="debug" class="debug-status status"></div>
+      </div>
+    </div>
+  </main>
+  <script>
+  (() => {
+    'use strict';
+
+    let websocket = null;
+    let actionText = null;
+    let statusEl = null;
+    let percent = null;
+    let progressBarEl = null;
+    let progressBarTextEl = null;
+    let debugEl = null;
+    let debug = false;
+    const debugData = [];
+
+    function onLoad() {
+      statusEl = document.getElementById('status');
+      progressBarEl = document.getElementById('progressBar');
+      progressBarTextEl = document.getElementById('progressBarText');
+      debugEl = document.getElementById('debug');
+      _setDebug();
+      _outputActionText();
+      _outputProgress();
+      _outputDebugText();
+      _initiateWebSocket();
+    }
+
+    function _setDebug() {
+      const {search} = window.location;
+      if (search.length) {
+        const params = search.slice(1)
+        .split('&')
+        .map(decodeURIComponent)
+        .map((args) => args.split((/=(.+)/)))
+        .reduce((obj, args) => Object.assign(obj, {[args[0]]: args[1]}), {});
+
+        debug = String(params.debug).toLowerCase() === 'true';
+      }
+    }
+
+    function _initiateWebSocket() {
+      const url = new URL(window.location.href);
+      let websocketUrl = 'wss://' + url.hostname;
+      if (url.port) {
+        websocketUrl += ':' + url.port;
+      }
+      websocket = new WebSocket(websocketUrl);
+      websocket.onopen = function(...args) {
+        websocket.send('updateActivity');
+      };
+      websocket.onmessage = function(evt) {
+        processJsonMessage(evt.data);
+      };
+    }
+
+    function _outputProgress() {
+      if (percent !== null) {
+        if (progressBarEl !== null) {
+          progressBarEl.style.width = percent;
+        }
+        if (progressBarTextEl !== null) {
+          progressBarTextEl.innerHTML = percent;
+        }
+      }
+    }
+
+    function _outputActionText() {
+      if (statusEl != null && actionText != null) {
+        statusEl.innerHTML = actionText;
+      }
+    }
+
+    function _outputDebugText() {
+      if (debug && debugData.length && debugEl) {
+        debugEl.style.display = 'block';
+        debugEl.innerHTML = debugData[debugData.length - 1].message;
+        console.table(debugData);
+      }
+    }
+
+    function _doReload() {
+      let request = null;
+      if (window.XMLHttpRequest) {
+        request = new XMLHttpRequest();
+      } else {
+        request = new ActiveXObject('Microsoft.XMLHTTP');
+      }
+      if (request == null) {
+        // wait 12 seconds for the server to restart, then
+        // reload the page
+        console.log('12 second timeout before reload');
+        window.setTimeout(() => {
+          console.log('reload now');
+          location.reload(true);
+        }, 12000);
+      } else {
+        let timer = window.setInterval(() => {
+          try {
+            console.log('Requesting "/"');
+            request.open('GET', '/', false);
+            request.send(); // blocks until the response arrives
+            console.log('status: ' + request.status);
+            if (request.status === 200) {
+              window.clearInterval(timer);
+              location.reload(true);
+            }
+          } catch (err) {
+            console.log('Not ready: ' + err);
+          }
+        }, 1000);
+      }
+    }
+
+    function processJsonMessage(jsonMessage) {
+      try {
+        const obj = JSON.parse(jsonMessage);
+        switch (String(obj.type).toLowerCase()) {
+        case 'action':
+          actionText = obj.text;
+          _outputActionText();
+          break;
+        case 'progress':
+          percent = (Math.min(100, Math.floor(100 * obj.completedItems/obj.totalItems))) + '%';
+          _outputProgress();
+          break;
+        case 'reload':
+          _doReload();
+          break;
+        case 'status':
+          if (debug) {
+            debugData.push({message: obj.text, timestamp: new Date()});
+            _outputDebugText();
+          }
+          break;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    window.addEventListener('load', onLoad, false);
+  })();
+  </script>
+</body>
+</html>
