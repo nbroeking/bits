@@ -2886,7 +2886,7 @@ vuvuzela@1.0.3:
   version "1.0.3"
   resolved vuvuzela/-/vuvuzela-1.0.3.tgz#3be145e58271c73ca55279dd851f12a682114b0b
 
-which@1, which@^1.2.4, which@^1.2.9:
+which@, which@1, which@^1.2.4, which@^1.2.9:
   version "1.3.0"
   resolved which/-/which-1.3.0.tgz#ff04bdfc010ee547d780bec38e1ac1c2777d253a
   dependencies:
