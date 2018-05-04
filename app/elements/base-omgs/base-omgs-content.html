@@ -19,40 +19,73 @@ limitations under the License.
 <link rel="import" href="../../bower_components/iron-resizable-behavior/iron-resizable-behavior.html">
 <link rel="import" href="../../bower_components/neon-animation/neon-animated-pages.html">
 <link rel="import" href="../../bower_components/neon-animation/neon-animations.html">
+<link rel="import" href="../base-layout/base-header-layout/base-header-layout.html">
 <link rel="import" href="../base-shared-styles/base-shared-styles.html">
 <link rel="import" href="./base-omgs-list.html">
 <link rel="import" href="./base-omgs-package.html">
 <link rel="import" href="./base-omgs.html">
+<link rel="import" href="./base-omgs-error.html">
 
 <dom-module id="base-omgs-content">
   <template>
-  <style include="base-shared-styles"></style>
-    <style>
+    <style include="base-shared-styles">
       :host {
+        @apply(--layout-flex);
+        @apply(--layout-vertical);
         display: block;
         position: relative;
         height: 100%;
       }
 
-      #content {
+      .header-toolbar {
+        @apply(--layout-horizontal);
+        @apply(--layout-center);
+      }
+
+      .omgs_content {
         height: 100%;
         position: relative;
+        @apply(--layout-flex);
       }
+
+      .error_icon {
+        color: var(--paper-red-300);
+      }
+
     </style>
 
     <app-location route="{{route}}"></app-location>
     <app-route route="{{route}}" pattern="/home/omgs/:id" data="{{routeData}}"></app-route>
-    <base-omgs id="omgs" items="{{omgs}}" current-info="{{currentInfo}}"></base-omgs>
+    <base-omgs id="omgs" items="{{omgs}}" current-info="{{currentInfo}}" error-data="{{errorData}}"></base-omgs>
+    <base-header-layout
+      x-back-href="/home/omgs/"
+      x-title="[[headerTitle]]"
+      no-back="[[headerNoBack]]">
+    <div class="header-toolbar">
+      <paper-spinner active="[[loading]]"></paper-spinner>
+      <a href="/home/omgs/errors">
+        <paper-icon-button
+          id="error_icon"
+          class="error_icon"
+          icon="icons:error"
+          hidden="[[hideErrorIcon]]">
+        </paper-icon-button>
+        <paper-tooltip for="error_icon">View Errors from previous Upgrade</paper-tooltip>
+      </a>
+      <base-omgs-current-info current-info="[[currentInfo]]"></base-omgs-current-info>
+    </div>
 
-    <neon-animated-pages
-        id="content"
-        selected="[[page]]"
-        attr-for-selected="data-route"
-        entry-animation="fade-in-animation"
-        exit-animation="fade-out-animation">
-      <base-omgs-list id="list" data-route="list" omgs="[[omgs]]" current-info="[[currentInfo]]"></base-omgs-list>
-      <base-omgs-package id="detail" data-route="detail" omg="[[omg]]" current-info="[[currentInfo]]"></base-omgs-package>
-    </neon-animated-pages>
+     <div class="omgs_content">
+      <neon-animated-pages
+          selected="[[page]]"
+          attr-for-selected="data-route"
+          entry-animation="fade-in-animation"
+          exit-animation="fade-out-animation">
+        <base-omgs-list id="list" data-route="list" omgs="[[omgs]]" current-info="[[currentInfo]]"></base-omgs-list>
+        <base-omgs-package id="detail" data-route="detail" omg="[[omg]]" current-info="[[currentInfo]]"></base-omgs-package>
+        <base-omgs-error id="errors" data-route="errors" error-data="[[errorData]]"></base-omgs-list>
+      </neon-animated-pages>
+    </div>
 
   </template>
   <script>
@@ -82,17 +115,38 @@ limitations under the License.
         },
         page: {
           type: String,
-          observer: '_pageChanged'
         },
         omg: {
           type: Object,
           notify: true,
+        },
+        errorData: {
+          type: String,
+          value: null
+        },
+        hasErrorData: {
+          type: Boolean,
+          computed: '_computeErrorData(errorData)'
+        },
+        headerTitle: {
+          type: String,
+          computed: '_computeHeaderTitle(page)'
+        },
+        headerNoBack: {
+          type: Boolean,
+          computed: '_computeHeaderNoBack(page)'
+        },
+        hideErrorIcon: {
+          type: Boolean,
+          computed: '_computeHideErrorIcon(page, hasErrorData)'
         }
       },
 
       _omgIdChanged: function(id) {
         this.omg = null;
-        if (id === '' || id === null || id === undefined) {
+        if (id === 'errors') {
+          this.page = id;
+        } else if (id === '' || id === null || id === undefined) {
           this.page = 'list';
         } else {
           return this.$.omgs.get(id)
@@ -109,7 +163,26 @@ limitations under the License.
         }
       },
 
-      _pageChanged: function(page) {
+      // get the title based on the page:
+      // list page: 'OMGs'
+      // detail page: OMG name
+      // errors page: 'Upgrade Errors'
+      // anything else: 'TITLE(page)' -- for debugging
+      _computeHeaderTitle: function(page) {
+        switch (page) {
+        case 'list':
+          return 'OMGs';
+        case 'detail':
+          return this.omg.data.name;
+        case 'errors':
+          return 'Upgrade Errors';
+        }
+        return 'TITLE(' + page + ')';
+      },
+
+      // no "back" button on the list page
+      _computeHeaderNoBack: function(page) {
+        return (page === 'list');
       },
 
       observers: [
@@ -125,7 +198,9 @@ limitations under the License.
         'base-crud-item-deleted': '_onItemDeleted',
         'base-omgs-upload-add': '_onAdd',
         'base-omgs-content-load': '_onLoadOmg',
-        'base-omgs-content-delete': '_onDeleteOmg'
+        'base-omgs-content-delete': '_onDeleteOmg',
+        'base-omgs-content#go-back': '_onGoBack',
+        'base-omgs-content#show-errors': '_onShowErrors'
       },
 
       _onItemUpdated: function(event, detail) {
@@ -172,7 +247,46 @@ limitations under the License.
         } else {
           console.warn('No OMG package given');
         }
-      }
+      },
+
+      _onGoBack: function() {
+        if (this.page === 'errors') {
+          this.page = this._prevPage || 'list';
+          if (this.page === 'list') {
+            this.omgId = null;
+          }
+        } else if (this.page === 'detail') {
+          window.history.back();
+          this.page = 'list';
+          this.omgId = null;
+        }
+      },
+
+      _onShowErrors: function(event) {
+        if (event.detail == 1) {
+          // switch to errors window
+          this._prevPage = this.page;
+          this.page = 'errors';
+        } else {
+          // switch away from errors window
+          this.page = this._prevPage || 'list';
+        }
+      },
+
+      _computeErrorData: function(data) {
+        const result = (typeof(data) === 'string') && (data.length > 0);
+        return result;
+      },
+
+      _computeHideErrorIcon: function(page, hasErrorData) {
+        const result = !hasErrorData || (page === 'errors');
+        return result;
+      },
+
+      _showErrors: function() {
+        this.fire('base-omgs-content#show-errors', 1);
+      },
+
     });
   })();
   </script>

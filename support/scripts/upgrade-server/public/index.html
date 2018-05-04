@@ -44,6 +44,7 @@ limitations under the License.
     let actionText = null;
     let statusEl = null;
     let percent = null;
+    let prevPercent = null;
     let progressBarEl = null;
     let progressBarTextEl = null;
     let debugEl = null;
@@ -92,6 +93,11 @@ limitations under the License.
 
     function _outputProgress() {
       if (percent !== null) {
+        let newPercent = parseInt(percent);
+        if ((prevPercent !== null) && (newPercent < prevPercent)) {
+          console.log('Progress went from ' + prevPercent + ' to ' + newPercent);
+        }
+        prevPercent = newPercent;
         if (progressBarEl !== null) {
           progressBarEl.style.width = percent;
         }

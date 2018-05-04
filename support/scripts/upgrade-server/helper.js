@@ -92,7 +92,7 @@ limitations under the License.
         return Promise.resolve()
         .then(() => {
           if (caption != null) {
-            Helper.appendToLog(caption);
+            return Helper.appendToLog(caption);
           }
         })
         .then(() => results.output.join('').split('\n')
