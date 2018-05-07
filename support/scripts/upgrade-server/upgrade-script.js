@@ -141,7 +141,7 @@ limitations under the License.
         logger.debug('YARN_INSTALL_ERROR = ' + Environment.get('YARN_INSTALL_ERROR'));
         if (Environment.get('YARN_INSTALL_ERROR') === '0') {
           return Promise.resolve()
-          .then(() => Helper.evalAsPromise('rm', ['-rf', Environment.get('BACKUP_DIR')]))
+          .then(() => this._rmrf(Environment.get('BACKUP_DIR')))
           .catch((err) => {
             Helper.appendToLog('Error removing backup dir: ' + err);
             throw Error('rm backupDir|' + err);
@@ -150,7 +150,7 @@ limitations under the License.
           return Promise.resolve();
         }
       })
-      .then(() => Helper.evalAsPromise('rm', ['-rf', Environment.get('BACKUP_DIR')]))
+      .then(() => this._rmrf(Environment.get('BACKUP_DIR')))
       .catch((err) => {
         Helper.appendToLog('* ERROR in finish(): ' + err);
         throw Error('finish|' + err);
@@ -638,19 +638,19 @@ limitations under the License.
       .then(() => this._actionStatus('_moveRomgModulesAndData'))
       .then(() => this._dirExists(baseDir))
       .then(() => {
-        const dataDir = path.join(Environment.get('DATA_DIR'), 'base/modules/modules');
+        const modulesDir = path.join(Environment.get('DATA_DIR'), 'base/modules/modules');
         return Promise.resolve()
         .then(() => Helper.appendToLog('* INFO copying omg modules'))
-        .then(() => this._mkdir(dataDir))
+        .then(() => this._mkdir(modulesDir))
         .catch((err) => Helper.appendToLog('Error in omg copy: ' + err))
         // clean up old modules
-        .then(() => Helper.evalAsPromise('rm', ['-rf', dataDir + '/*']))
-        .catch((err) => Helper.appendToLog('Error in rm(' + dataDir + '/*): ' + err))
+        .then(() => this._rmrf(path.join(modulesDir, '*')))
+        .catch((err) => Helper.appendToLog('Error in _rmrf(' + modulesDir + '/*): ' + err))
         .then(() => this._actionProgress(++this._startingRomgModulesAndData, this._totalProgressItems))
         // install new modules
         .then(() => this._move(
           baseDir,
-          dataDir,
+          modulesDir,
           false))
         .then((results) => Helper.appendIndentedResultsToLog(results, '_move results:'),
           (err) => Helper.appendToLog('Error in move (*): ' + err))
@@ -670,7 +670,7 @@ limitations under the License.
                 [
                   '-a',
                   path.join(baseDataDir, moduleDataDir),
-                  dataDir + '/'
+                  modulesDir + '/'
                 ]))
               .then((results) => Helper.appendIndentedResultsToLog(results, 'cp results:'),
                 (err) => Helper.appendToLog('Error in cp: ' + err))
@@ -692,7 +692,7 @@ limitations under the License.
       .then(() => this._actionStatus('_cleanupRomgDataDir'))
       .then(() => {
         if (baseDataDir != Environment.get('DATA_DIR')) {
-          return Helper.evalAsPromise('rm', ['-rf', baseDataDir])
+          return this._rmrf(baseDataDir)
           .catch((err) => {
             Helper.appendToLog('Error removing files from baseDataDir: ' + err);
             throw Error('_cleanupRomgDataDir|' + err);
@@ -969,18 +969,31 @@ limitations under the License.
     // returns a promise whose resolved value is the number of files in the
     // folder (not counting the exclusions)
     _countFiles(fromDir, exclusions) {
+      while (path.basename(fromDir) == '*') {
+        fromDir = path.dirname(fromDir);
+      }
       return Promise.resolve()
-      .then(() => Helper.evalAsPromise('ls', ['-a', fromDir]))
-      .then((lsResults) => {
-        if (lsResults.output.length > 0) {
-          const items = lsResults.output[0].split('\n')
-          .filter((entry) => (!exclusions.includes(entry)));
-          return items.length;
-        }
+      .then(() => this._dirExists(fromDir))
+      .then(() => {
+        // dir exists... check for files
+        return Promise.resolve()
+        .then(() => Helper.evalAsPromise('ls', ['-a', fromDir]))
+        .then((lsResults) => {
+          if (lsResults.output.length > 0) {
+            const items = lsResults.output[0].split('\n')
+            .filter((entry) => (!exclusions.includes(entry)));
+            return Promise.resolve()
+            .then(() => logger.debug('_countFiles(' + fromDir + ', ' + exclusions + '): ' + items))
+            .then(() => items.length);
+          }
+          return 0;
+        }, (err) => {
+          Helper.appendToLog('Error in _countFiles(' + fromDir + '): ' + err);
+          throw Error('_countFiles|' + err);
+        });
+      }, () => {
+        // dir does not exist: 0 files
         return 0;
-      }, (err) => {
-        Helper.appendToLog('Error in _countFiles(' + fromDir + '): ' + err);
-        throw Error('_countFiles|' + err);
       });
     }
 
@@ -1050,7 +1063,7 @@ limitations under the License.
       return Promise.resolve()
       .then(() => this._dirExists(path))
       .then(() => {
-        // dir exits... we don't need to create it
+        // dir exists... we don't need to create it
       }, () => {
         // dir does not exist: create it
         return new Promise((resolve, reject) => {
@@ -1125,6 +1138,33 @@ limitations under the License.
         Helper.appendToLog('Error in rm(' + path + '): ' + err);
         throw Error('rm('+path+')|' + err);
       });
+    }
+
+    _rmrf(rmPath) {
+      // watchdog is the maximum number of iterations allowed (5 is usually
+      // sufficient; 30 covers the outliers).
+      let watchdog = 30;
+      const filesRemaining = (rmPath) => {
+        return Promise.resolve()
+        .then(() => this._countFiles(rmPath, ['', '.', '..']))
+        .then((count) => {
+          if (watchdog-- < 0) {
+            throw Error('rmrf(' + rmPath + '): watchdog expired');
+          }
+          return Promise.resolve()
+          .then(() => logger.debug('[' + watchdog + '] filesRemaining(' + count + ')'))
+          .then(() => Promise.resolve(count > 0));
+        }, (err) => {
+          throw Error('_rmrf|' + err);
+        });
+      };
+      const deleteFiles = (rmPath) => {
+        return Promise.resolve()
+        .then(() => logger.debug('[' + watchdog + '] deleteFiles(' + rmPath + ')'))
+        .then(() => Helper.execAsPromise('rm', ['-rf', rmPath]))
+        .then(() => Promise.resolve(rmPath));
+      };
+      return Helper.promiseWhile(rmPath, filesRemaining, deleteFiles);
     }
   } // UpgradeScript class
 
