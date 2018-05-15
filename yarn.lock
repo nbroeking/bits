@@ -503,7 +503,7 @@ cookie@0.3.1:
 
 cookiejar@^2.1.0:
   version "2.1.1"
-  resolved "cookiejar/-/cookiejar-2.1.1.tgz#41ad57b1b555951ec171412a81942b1e8200d34a"
+  resolved cookiejar/-/cookiejar-2.1.1.tgz#41ad57b1b555951ec171412a81942b1e8200d34a
 
 core-util-is@~1.0.0:
   version "1.0.2"
@@ -579,7 +579,7 @@ debug@2.6.8, debug@^2.2.0, debug@^2.6.8:
 
 debug@^3.1.0:
   version "3.1.0"
-  resolved "debug/-/debug-3.1.0.tgz#5bb5a0672628b64149566ba16819e61518c67261"
+  resolved debug/-/debug-3.1.0.tgz#5bb5a0672628b64149566ba16819e61518c67261
   dependencies:
     ms "2.0.0"
 
@@ -1021,7 +1021,7 @@ forever-agent@~0.6.1:
 
 form-data@^2.3.1:
   version "2.3.1"
-  resolved "form-data/-/form-data-2.3.1.tgz#6fb94fbd71885306d73d15cc497fe4cc4ecd44bf"
+  resolved form-data/-/form-data-2.3.1.tgz#6fb94fbd71885306d73d15cc497fe4cc4ecd44bf
   dependencies:
     asynckit "^0.4.0"
     combined-stream "^1.0.5"
@@ -1037,7 +1037,7 @@ form-data@~2.1.1:
 
 formidable@^1.1.1:
   version "1.1.1"
-  resolved "formidable/-/formidable-1.1.1.tgz#96b8886f7c3c3508b932d6bd70c4d3a88f35f1a9"
+  resolved formidable/-/formidable-1.1.1.tgz#96b8886f7c3c3508b932d6bd70c4d3a88f35f1a9
 
 forwarded@~0.1.0:
   version "0.1.0"
@@ -1739,7 +1739,7 @@ mime@1.3.4:
 
 mime@^1.4.1:
   version "1.6.0"
-  resolved "mime/-/mime-1.6.0.tgz#32cd9e5c64553bd58d19a568af452acff04981b1"
+  resolved mime/-/mime-1.6.0.tgz#32cd9e5c64553bd58d19a568af452acff04981b1
 
 mimic-fn@^1.0.0:
   version "1.1.0"
@@ -2281,7 +2281,7 @@ qs@6.4.0, qs@~6.4.0:
 
 qs@^6.5.1:
   version "6.5.1"
-  resolved "qs/-/qs-6.5.1.tgz#349cdf6eef89ec45c12d7d5eb3fc0c870343a6d8"
+  resolved qs/-/qs-6.5.1.tgz#349cdf6eef89ec45c12d7d5eb3fc0c870343a6d8
 
 qs@~6.3.0:
   version "6.3.2"
@@ -2675,7 +2675,7 @@ strip-json-comments@~2.0.1:
 
 superagent@^3.0.0:
   version "3.8.2"
-  resolved "superagent/-/superagent-3.8.2.tgz#e4a11b9d047f7d3efeb3bbe536d9ec0021d16403"
+  resolved superagent/-/superagent-3.8.2.tgz#e4a11b9d047f7d3efeb3bbe536d9ec0021d16403
   dependencies:
     component-emitter "^1.2.0"
     cookiejar "^2.1.0"
@@ -2690,7 +2690,7 @@ superagent@^3.0.0:
 
 supertest@^3.0.0:
   version "3.0.0"
-  resolved "supertest/-/supertest-3.0.0.tgz#8d4bb68fd1830ee07033b1c5a5a9a4021c965296"
+  resolved supertest/-/supertest-3.0.0.tgz#8d4bb68fd1830ee07033b1c5a5a9a4021c965296
   dependencies:
     methods "~1.1.2"
     superagent "^3.0.0"
@@ -2886,7 +2886,7 @@ vuvuzela@1.0.3:
   version "1.0.3"
   resolved vuvuzela/-/vuvuzela-1.0.3.tgz#3be145e58271c73ca55279dd851f12a682114b0b
 
-which@, which@1, which@^1.2.4, which@^1.2.9:
+which@1, which@^1.2.4, which@^1.2.9:
   version "1.3.0"
   resolved which/-/which-1.3.0.tgz#ff04bdfc010ee547d780bec38e1ac1c2777d253a
   dependencies:
