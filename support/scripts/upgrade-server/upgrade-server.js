@@ -20,6 +20,7 @@ limitations under the License.
   const HTTPS_PORT = process.env.HTTPS_PORT || 443;
 
   const ClientCommunication = require('./client-communication');
+  const ErrorLog = require('./error-logger');
   const express = require('express');
   const fs = require('fs');
   const Helper = require('./helper');
@@ -58,7 +59,10 @@ limitations under the License.
       .catch((err) => logger.error('Error creating HTTP server: ', err))
       .then(() => logger.debug('_createHttpsServer'))
       .then(() => this._createHttpsServer({}))
-      .catch((err) => logger.error('Error creating HTTPS server: ', err))
+      .catch((err) => {
+        logger.error('Error creating HTTPS server: ', err);
+        return ErrorLog.append('Srvr.listen: Error creating HTTPS server: ' + err);
+      })
       .then(() => {
         this._clientCommunication = new ClientCommunication();
         this._clientCommunication.load(this._httpsServer);
@@ -75,7 +79,10 @@ limitations under the License.
         });
       })
       .catch((err) => {
-        throw Error('listen|' + err);
+        return ErrorLog.append('Srvr.listen: ' + err)
+        .then(() => {
+          throw Error('listen|' + err);
+        });
       });
     }
 
@@ -98,7 +105,10 @@ limitations under the License.
       })
       .catch((err) => {
         logger.error('ERROR: ' + err);
-        throw Error('_close|' + err);
+        return ErrorLog.append('Srvr.close: ' + err)
+        .then(() => {
+          throw Error('_close|' + err);
+        });
       });
     }
 
@@ -128,7 +138,10 @@ limitations under the License.
         logger.debug('HTTPS server running at ' + HTTPS_PORT);
       })
       .catch((err) => {
-        throw Error('_createHttpsServer|' + err);
+        return ErrorLog.append('Srvr._createHttpsServer: ' + err)
+        .then(() => {
+          throw Error('_createHttpsServer|' + err);
+        });
       });
     }
 
@@ -189,7 +202,6 @@ limitations under the License.
         return this._getMiddleware('/');
       }
       if (!(path in this._middlewares)) {
-        logger.debug('Promise Reject 1');
         return Promise.reject(function(req, res, next) {});
       }
 

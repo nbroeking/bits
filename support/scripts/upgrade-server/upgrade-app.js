@@ -18,6 +18,7 @@ limitations under the License.
   'use strict';
 
   const Environment = require('./environment');
+  const ErrorLog = require('./error-logger');
   const Helper = require('./helper');
   const logger = require('./simple-logger');
   const parseArgs = require('minimist');
@@ -82,13 +83,15 @@ limitations under the License.
   global.paths.base = args.rootBaseDir;
 
   // Initialize our "environment"
+  const logFileDate = Helper.date();
   Environment.set('BASE_DIR', args.rootBaseDir);
   Environment.set('DATA_DIR', args.rootDataDir);
   Environment.set('TARGET', args.target);
   Environment.set('LOG', args.outputFile);
-  Environment.set('DATE', Helper.date());
+  Environment.set('ERROR_LOG', '/tmp/upgrade-errors-' + logFileDate + '.log');
+  Environment.set('DATE', logFileDate);
   Environment.set('YARN_INSTALL_ERROR', 0);
-  Environment.setIfNotExist('BACKUP_DIR', path.join(Environment.get('BASE_DIR'), 'upgrade-' + Helper.date()));
+  Environment.setIfNotExist('BACKUP_DIR', path.join(Environment.get('BASE_DIR'), 'upgrade-' + logFileDate));
   Environment.setIfNotExist('TARGET_EXTRACT', path.join(Environment.get('BACKUP_DIR'), 'extract'));
 
   // create our message messageCenter
@@ -108,13 +111,13 @@ limitations under the License.
   .then(() => logger.debug('BITS Server Stopped'))
   .then(() => {
     // Create server instance
-    Helper.appendToLog('* Launching UpgradeServer(' + args.rootBaseDir + ', ' + args.rootDataDir + ')');
-    this._upgradeServer = new UpgradeServer(args.rootBaseDir, args.rootDataDir);
-    return this._upgradeServer.listen(this._messageCenter);
+    return Helper.appendToLog('* Launching UpgradeServer(' + args.rootBaseDir + ', ' + args.rootDataDir + ')')
+    .then(() => this._upgradeServer = new UpgradeServer(args.rootBaseDir, args.rootDataDir))
+    .then(() => this._upgradeServer.listen(this._messageCenter));
   })
   .then((result) => {
-    Helper.appendToLog('* Starting UpgradeScript(' + result + ')');
-    return this._upgradeScript.performUpgrade(
+    return Helper.appendToLog('* Starting UpgradeScript(' + result + ')')
+    .then(() => this._upgradeScript.performUpgrade(
       (name) => {
         this._upgradeServer.sendActionName(name);
       },
@@ -124,10 +127,11 @@ limitations under the License.
       (text) => {
         this._upgradeServer.sendActionStatus(text);
       }
-    );
+    ));
   })
   .catch((err) => {
     logger.error('Core process|' + Helper.objectToString(err));
+    return ErrorLog.append('App.core start: ' + err);
   })
   .then(() => this._upgradeScript.finish())
   .then(() => {
@@ -151,7 +155,10 @@ limitations under the License.
   })
   .catch((err) => {
     logger.debug('FAILURE in Core Process: ', err);
-    process.exit(-1);
+    return ErrorLog.append('App.core end: ' + err)
+    .then(() => {
+      process.exit(-1);
+    });
   });
 
   function printUsage() {
