@@ -157,10 +157,8 @@ limitations under the License.
         proc.stderr.setEncoding('utf8');
         proc.stderr.on('data', (data) => results.output.push(data));
         proc.once('close', (code, signal) => {
-          logger.debug('  Exec time (' + fullCommand + '): ' + (Date.now() - results.startTime) + ' ms');
+          logger.debug('  Eval time (' + fullCommand + '): ' + (Date.now() - results.startTime) + ' ms');
           if (_debug) {
-            logger.debug(Helper.objectToString(options, {depth: 15}));
-            logger.debug(Helper.objectToString(proc, {depth: 15}));
             logger.debug('evalAsPromise: SUCCESS: command "' + fullCommand + '" PASSED, code = ' + code);
             logger.debug('evalAsPromise:   output(' + fullCommand + ') is "' + results.output + '"');
           }
@@ -197,7 +195,7 @@ limitations under the License.
       })
       .then((results) => {
         if (_debug) {
-          logger.debug('evalAsPromise.Promise.then: results = ' + results);
+          logger.debug('evalAsPromise.Promise.then: results = ', results);
         }
         return results;
       }, (err) => {
@@ -265,8 +263,6 @@ limitations under the License.
         proc.once('close', (code, signal) => {
           logger.debug('  Exec time (' + fullCommand + '): ' + (Date.now() - results.startTime) + ' ms');
           if (_debug) {
-            logger.debug(Helper.objectToString(options, {depth: 15}));
-            logger.debug(Helper.objectToString(proc, {depth: 15}));
             logger.debug('execAsPromise: SUCCESS: command "' + fullCommand + '" PASSED, code = ' + code);
             logger.debug('execAsPromise:   output(' + fullCommand + ') is "' + results.output + '"');
           }
@@ -303,7 +299,7 @@ limitations under the License.
       })
       .then((results) => {
         if (_debug) {
-          logger.debug('execAsPromise.Promise.then: results = ' + results);
+          logger.debug('execAsPromise.Promise.then: results = ', results);
         }
         return results;
       }, (err) => {
@@ -332,6 +328,21 @@ limitations under the License.
           }
         });
       }
+    }
+
+    static promiseWhile(data, condition, action) {
+      let whilst = (data) => {
+        return Promise.resolve()
+        .then(() => condition(data))
+        .then((conditionResult) => {
+          if (conditionResult) {
+            action(data).then(whilst);
+          } else {
+            return Promise.resolve(data);
+          }
+        });
+      };
+      return whilst(data);
     }
   }
 
