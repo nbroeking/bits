@@ -940,7 +940,7 @@ limitations under the License.
     }
 
     _countRunYarnInstallOnModules() {
-      const moduleDir = path.join(Environment.get('DATA_DIR'), 'base/modules/modules');
+      const moduleDir = path.join(Environment.get('TARGET_EXTRACT'), 'data/base/modules/modules');
 
       this._startingRunYarnInstallOnModules = this._totalProgressItems;
       return Promise.resolve()
