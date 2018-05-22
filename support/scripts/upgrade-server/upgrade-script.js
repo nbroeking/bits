@@ -778,7 +778,7 @@ limitations under the License.
         const modulesDir = path.join(Environment.get('DATA_DIR'), 'base/modules/modules');
         return Promise.resolve()
         .then(() => Helper.appendToLog('* INFO copying omg modules'))
-        .then(() => this._mkdir(dataDir))
+        .then(() => this._mkdir(modulesDir))
         .catch((err) => {
           return Helper.appendToLog('Error in omg copy: ' + err)
           .then(() => ErrorLog.append('Upgrade._moveRomgModulesAndData: omg copy: ' + err));
