@@ -330,20 +330,6 @@ limitations under the License.
       }
     }
 
-    static promiseWhile(data, condition, action) {
-      let whilst = (data) => {
-        return Promise.resolve()
-        .then(() => condition(data))
-        .then((conditionResult) => {
-          if (conditionResult) {
-            action(data).then(whilst);
-          } else {
-            return Promise.resolve(data);
-          }
-        });
-      };
-      return whilst(data);
-    }
   }
 
   module.exports = Helper;

@@ -1170,7 +1170,7 @@ limitations under the License.
             const items = lsResults.output[0].split('\n')
             .filter((entry) => (!exclusions.includes(entry)));
             return Promise.resolve()
-            .then(() => logger.debug('_countFiles(' + fromDir + ', ' + exclusions + '): ' + items))
+            .then(() => logger.debug('_countFiles(' + fromDir + ', ' + exclusions + '): [' + items + ']'))
             .then(() => items.length);
           }
           return 0;
@@ -1347,30 +1347,9 @@ limitations under the License.
     }
 
     _rmrf(rmPath) {
-      // watchdog is the maximum number of iterations allowed (5 is usually
-      // sufficient; 30 covers the outliers).
-      let watchdog = 30;
-      const filesRemaining = (rmPath) => {
-        return Promise.resolve()
-        .then(() => this._countFiles(rmPath, ['', '.', '..']))
-        .then((count) => {
-          if (watchdog-- < 0) {
-            throw Error('rmrf(' + rmPath + '): watchdog expired');
-          }
-          return Promise.resolve()
-          .then(() => logger.debug('[' + watchdog + '] filesRemaining(' + count + ')'))
-          .then(() => Promise.resolve(count > 0));
-        }, (err) => {
-          throw Error('_rmrf|' + err);
-        });
-      };
-      const deleteFiles = (rmPath) => {
-        return Promise.resolve()
-        .then(() => logger.debug('[' + watchdog + '] deleteFiles(' + rmPath + ')'))
-        .then(() => Helper.execAsPromise('rm', ['-rf', rmPath]))
-        .then(() => Promise.resolve(rmPath));
-      };
-      return Helper.promiseWhile(rmPath, filesRemaining, deleteFiles);
+      return this._dirExists(rmPath)
+      .then(() => Helper.evalAsPromise('rm', ['-rf', rmPath]), () => Promise.resolve())
+      .then((results) => Helper.appendIndentedResultsToLog(results, 'rm rfv(' + rmPath + ')'));
     }
   } // UpgradeScript class
 
