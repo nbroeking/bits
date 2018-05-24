@@ -116,6 +116,10 @@ limitations under the License.
           isUploading: {
             type: Boolean,
             computed: '_computeIsUploading(omg)'
+          },
+          __timeout: {
+            type: Number,
+            value: 0
           }
         },
 
@@ -142,6 +146,7 @@ limitations under the License.
         loadOmg: function() {
           this.$.spinner.active = true;
           this.$.loadBtn.disabled = true;
+          this.__timeout = setTimeout(() => window.location.reload(), 5000);
 
           const cleanup = () => {
             this.$.spinner.active = false;
@@ -150,6 +155,7 @@ limitations under the License.
 
           const reject = (err) => {
             cleanup();
+            clearTimeout(this.__timeout);
 
             let message = err.message;
             if ('omg/incompatable-version' === message) {

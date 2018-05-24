@@ -11,3 +11,4 @@ app/bower_components
 support/
 test/fixtures/
 data/
+support/scripts/upgrade-server/public/socket.io.js
