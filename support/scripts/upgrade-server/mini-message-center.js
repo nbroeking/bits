@@ -17,6 +17,7 @@ limitations under the License.
   'use strict';
 
   const EventEmitter = require('events');
+  const ErrorLog = require('./error-logger');
   const logger = require('./simple-logger');
   const SocketIo = require('socket.io');
 
@@ -146,6 +147,7 @@ limitations under the License.
         this.addEventListener(event, eventInfo.listener)
         .catch((err) => {
           logger.error('Socket ' + socketId + ' failed to add ' + event + ' event listener: ' + err);
+          return ErrorLog.append('MMC._handleAddEventListener(' + event + '): ' + err);
         });
       }
       eventInfo.count++;
@@ -188,7 +190,8 @@ limitations under the License.
 
       if (!this._isValidEvent(event)) {
         logger.debug('[MMC] sendEvent: ERROR: event must be a non-empty string.');
-        return Promise.reject(new TypeError('event must be a non-empty string.'));
+        return ErrorLog.append('MMC.sendEvent(' + event + '): ' + 'Tried to send an invalid event')
+        .then(() => Promise.reject(new TypeError('event must be a non-empty string.')));
       }
       this._eventEmitter.emit(event, metadata, ...data);
       return Promise.resolve();
@@ -202,7 +205,8 @@ limitations under the License.
 
       if (!this._isValidEvent(event)) {
         logger.error('[MMC] sendRequest: ERROR: event must be a non-empty string.');
-        return Promise.reject(new TypeError('event must be a non-empty string.'));
+        return ErrorLog.append('MMC.sendRequest(' + event + '): ' + 'Tried to send an invalid event')
+        .then(() => Promise.reject(new TypeError('event must be a non-empty string.')));
       }
       return new Promise((resolve, reject) => {
         this._requestId++;
@@ -231,10 +235,12 @@ limitations under the License.
 
       if (!this._isValidEvent(event)) {
         logger.error('[MMC] addEventListener: ERROR: event must be a non-empty String');
-        return Promise.reject(new TypeError('event must be a non-empty String.'));
+        return ErrorLog.append('MMC.addEventListener(' + event + '): ' + 'Tried to add a listener for an invalid event')
+        .then(() => Promise.reject(new TypeError('event must be a non-empty String.')));
       } else if (!this._isValidListener(listener)) {
         logger.error('[MMC] addEventListener: ERROR: listener must be a function.');
-        return Promise.reject(new TypeError('listener must be a function.'));
+        return ErrorLog.append('MMC.addEventListener(' + event + '): ' + 'Tried to add an invalid listener')
+        .then(() => Promise.reject(new TypeError('listener must be a function.')));
       }
 
       // Fill in the metadata
@@ -257,10 +263,12 @@ limitations under the License.
       logger.silly('[MMC] removeEventListener(' + event + ')');
       if (!this._isValidEvent(event)) {
         logger.error('[MMC] removeEventListener: ERROR: event must be a non-empty string.');
-        return Promise.reject(new TypeError('event must be a non-empty string.'));
+        return ErrorLog.append('MMC.removeEventListener(' + event + '): ' + 'Tried to remove an invalid event')
+        .then(() => Promise.reject(new TypeError('event must be a non-empty string.')));
       } else if (!this._isValidListener(listener)) {
         logger.error('[MMC] removeEventListener: ERROR: listener must be a function.');
-        return Promise.reject(new TypeError('listener must be a function.'));
+        return ErrorLog.append('MMC.removeEventListener(' + event + '): ' + 'Tried to remove an invalid listener')
+        .then(() => Promise.reject(new TypeError('listener must be a function.')));
       }
       const size = this._handlers.length;
       this._handlers = this._handlers.filter((eventHandle) => {
@@ -274,7 +282,8 @@ limitations under the License.
 
       if (size === this._handlers.length) {
         logger.error('[MMC] removeEventListener: ERROR: Unable to remove event listener because it does not exist ' + event);
-        return Promise.reject(new Error('Unable to remove event listener because it does not exist ' + event));
+        return ErrorLog.append('MMC.removeEventListener(' + event + '): ' + 'Listener does not exist')
+        .then(() => Promise.reject(new Error('Unable to remove event listener because it does not exist ' + event)));
       }
       return Promise.resolve();
     }
@@ -284,10 +293,12 @@ limitations under the License.
 
       if (!this._isValidEvent(event)) {
         logger.error('[MMC] addRequestListener: ERROR: event must be a non-empty string.');
-        return Promise.reject(new TypeError('event must be a non-empty string.'));
+        return ErrorLog.append('MMC.addRequestListener(' + event + '): ' + 'Tried to add an invalid event')
+        .then(() => Promise.reject(new TypeError('event must be a non-empty string.')));
       } else if (!this._isValidListener(listener)) {
         logger.error('[MMC] addRequestListener: ERROR: listener must be a function.');
-        return Promise.reject(new TypeError('listener must be a function.'));
+        return ErrorLog.append('MMC.addRequestListener(' + event + '): ' + 'Tried to add an invalid listener')
+        .then(() => Promise.reject(new TypeError('listener must be a function.')));
       }
 
       const request = {};
@@ -296,7 +307,7 @@ limitations under the License.
       request.listener = (requestId, metadata, ...data) => {
         if ('string' !== typeof(requestId) || 0 >= requestId.length) {
           logger.error('[MMC] Request listener must be called with a requestId...bad developer!: ', event, requestId, data);
-          return;
+          return ErrorLog.append('MMC.addRequestListener(' + event + '): ' + 'Tried to add an invalid request');
         }
         // Provide the requestId in case the handler wants it
         metadata.requestId = requestId;
@@ -305,22 +316,25 @@ limitations under the License.
         .then(() => listener(metadata, ...data))
         .then((result) => this._sendResponse(event, requestId, null, result))
         .catch((err) => {
-          let errorObj = null;
-          if (err instanceof Error) {
-            errorObj = {
-              message: err.message,
-              stack: err.stack,
-              name: err.name
-            };
-          } else if (err) {
-            errorObj = err;
-          } else {
-            errorObj = {
-              message: 'Unknown Error',
-              name: 'Unknown Error'
-            };
-          }
-          this._sendResponse(event, requestId, errorObj, null);
+          return ErrorLog.append('MMC.addRequestListener(' + event + '): ' + err)
+          .then(() => {
+            let errorObj = null;
+            if (err instanceof Error) {
+              errorObj = {
+                message: err.message,
+                stack: err.stack,
+                name: err.name
+              };
+            } else if (err) {
+              errorObj = err;
+            } else {
+              errorObj = {
+                message: 'Unknown Error',
+                name: 'Unknown Error'
+              };
+            }
+            this._sendResponse(event, requestId, errorObj, null);
+          });
         });
       };
       this._addRequestEventListener(event, request.listener);

@@ -19,8 +19,7 @@ limitations under the License.
 
 <dom-module id="base-omgs-current-info">
   <template>
-    <style include="base-shared-styles"></style>
-    <style>
+    <style include="base-shared-styles">
       :host {
         display: block;
       }
@@ -39,7 +38,7 @@ limitations under the License.
     </div>
     <div class="line" hidden="[[!hasCurrentInfo]]">
       <span class="label">Current Version:</span>
-      <span>[[currentInfo.data.name]] - [[currentInfo.data.branch]] - [[currentInfo.data.version]]</span>
+      <span>[[currentInfo.data.name]] - [[currentInfo.data.version]]</span>
     </div>
 
   </template>

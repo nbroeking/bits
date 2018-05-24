@@ -17,6 +17,7 @@ limitations under the License.
   'use strict';
 
   const Environment = require('./environment');
+  const ErrorLog = require('./error-logger');
   const fs = require('fs');
   const Helper = require('./helper');
   const logger = require('./simple-logger');
@@ -38,18 +39,21 @@ limitations under the License.
     static configureEnvironment() {
       return Promise.resolve()
       .then(() => logger.verbose('FUNCTION: configureEnvironment'))
-      .then(() => Helper.evalAsPromise('lsb_release', ['-c', '-s']))
+      .then(() => Helper.spawnAsPromise('lsb_release', ['-c', '-s']))
       .then((rel) => {
         Environment.set('RELEASE', rel.output.join('\n').trim());
       })
-      .then(() => Helper.evalAsPromise('lsb_release', ['-i', '-s']))
+      .then(() => Helper.spawnAsPromise('lsb_release', ['-i', '-s']))
       .then((rel2) => Environment.set('DISTRIBUTOR', rel2.output.join('\n').trim().toLowerCase()))
-      .then(() => Helper.evalAsPromise('uname', ['-m']))
+      .then(() => Helper.spawnAsPromise('uname', ['-m']))
       .then((arch) => Environment.set('ARCH', arch.output.join('\n').trim()))
       .catch((err) => {
         logger.error('ERROR in configureEnvironment: ' + err);
-        Helper.appendToLog('ERROR in configureEnvironment: ' + err);
-        throw Error('configureEnvironment|' + err);
+        return Helper.appendToLog('ERROR in configureEnvironment: ' + err)
+        .then(() => ErrorLog.append('Upgrade.configureEnvironment: ' + err))
+        .then(() => {
+          throw Error('configureEnvironment|' + err);
+        });
       });
     }
 
@@ -98,8 +102,11 @@ limitations under the License.
       .catch((err) => {
         Environment.dump('Catch(err) in PerformUpgrade');
         logger.error('PerformUpgrade|' + err);
-        Helper.appendToLog(err);
-        throw Error('PerformUpgrade|' + err);
+        return Helper.appendToLog(err)
+        .then(() => ErrorLog.append('Upgrade.performUpgrade: ' + err))
+        .then(() => {
+          throw Error('PerformUpgrade|' + err);
+        });
       });
     }
 
@@ -112,24 +119,62 @@ limitations under the License.
     finish() {
       const upgradeDir = path.join(Environment.get('DATA_DIR'), 'upgrade');
       const latestLink = path.join(upgradeDir, 'latest');
-      const logBasename = path.basename(Environment.get('LOG'));
+      const logSource = Environment.get('LOG');
+      const logBasename = path.basename(logSource);
+      const logDest = path.join(upgradeDir, logBasename);
+      const errorsLink = path.join(upgradeDir, 'errors');
+      const errorLogSource = Environment.get('ERROR_LOG');
+      const errorLogBasename = path.basename(errorLogSource);
+      const errorLogDest = path.join(upgradeDir, errorLogBasename);
 
       return Promise.resolve()
       .then(() => logger.verbose('FUNCTION: finish'))
       .then(() => Helper.appendToLog('* INFO Finishing Script'))
-      .then(() => this._fileExists(Environment.get('LOG')))
+      .then(() => this._rm(errorsLink))
+      .catch((err) => logger.info('No ' + errorsLink + ' file to delete'))
+      .then(() => this._fileExists(errorLogSource))
+      .then(() => {
+        // we end up here if the ERROR_LOG file exists
+        return Promise.resolve()
+        .then(() => Helper.appendToLog('* INFO Copying Error Log to data directory as '
+          + errorLogBasename))
+        .then(() => this._mkdir(upgradeDir))
+        .then(() => this._cp(errorLogSource, errorLogDest))
+        .then(() => this._rm(errorLogSource))
+        .then(() => this._ln(errorLogDest, errorsLink, 'file'))
+        .then(() => {
+          Environment.set('ERROR_LOG', errorLogDest);
+        }) // update the ERROR_LOG file location
+        .catch((err) => {
+          return Helper.appendToLog('Error copying error log: ' + err)
+          .then(() => ErrorLog.append('Upgrade.finish: ' + err))
+          .then(() => {
+            throw Error('cp UpgradeLog(error)|' + err);
+          });
+        });
+      }, () => {
+        // we get here if the LOG file did not exist
+        // If needed, do whatever you need to do in order to handle a missing LOG file
+      })
+      .then(() => this._fileExists(logSource))
       .then(() => {
         // we end up here if the LOG file exists
         return Promise.resolve()
         .then(() => Helper.appendToLog('* INFO Copying Upgrade Log to data directory as '
           + logBasename))
         .then(() => this._mkdir(upgradeDir))
-        .then(() => this._cp(Environment.get('LOG'), path.join(upgradeDir, logBasename)))
+        .then(() => this._cp(logSource, logDest))
         .then(() => this._rm(latestLink))
-        .then(() => this._ln(path.join(upgradeDir, logBasename), latestLink, 'file'))
+        .then(() => this._ln(logDest, latestLink, 'file'))
+        .then(() => {
+          Environment.set('LOG', logDest);
+        }) // update the LOG file location
         .catch((err) => {
-          Helper.appendToLog('Error copying upgrade log: ' + err);
-          throw Error('cp UpgradeLog|' + err);
+          return Helper.appendToLog('Error copying upgrade log: ' + err)
+          .then(() => ErrorLog.append('Upgrade.finish: ' + err))
+          .then(() => {
+            throw Error('cp UpgradeLog(log)|' + err);
+          });
         });
       }, () => {
         // we get here if the LOG file did not exist
@@ -141,19 +186,25 @@ limitations under the License.
         logger.debug('YARN_INSTALL_ERROR = ' + Environment.get('YARN_INSTALL_ERROR'));
         if (Environment.get('YARN_INSTALL_ERROR') === '0') {
           return Promise.resolve()
-          .then(() => Helper.evalAsPromise('rm', ['-rf', Environment.get('BACKUP_DIR')]))
+          .then(() => this._rmrf(Environment.get('BACKUP_DIR')))
           .catch((err) => {
-            Helper.appendToLog('Error removing backup dir: ' + err);
-            throw Error('rm backupDir|' + err);
+            return Helper.appendToLog('Error removing backup dir: ' + err)
+            .then(() => ErrorLog.append('Upgrade.finish: Error removing backup dir: ' + err))
+            .then(() => {
+              throw Error('rm backupDir|' + err);
+            });
           });
         } else {
           return Promise.resolve();
         }
       })
-      .then(() => Helper.evalAsPromise('rm', ['-rf', Environment.get('BACKUP_DIR')]))
+      .then(() => this._rmrf(Environment.get('BACKUP_DIR')))
       .catch((err) => {
-        Helper.appendToLog('* ERROR in finish(): ' + err);
-        throw Error('finish|' + err);
+        return Helper.appendToLog('* ERROR in finish(): ' + err)
+        .then(() => ErrorLog.append('Upgrade.finish: ' + err))
+        .then(() => {
+          throw Error('finish|' + err);
+        });
       })
       .then(() => {
         logger.verbose('UpgradeScript: --finish');
@@ -168,11 +219,14 @@ limitations under the License.
       return Promise.resolve()
       .then(() => this._actionStatus('abort: ' + comment))
       .then(() => Helper.appendToLog('* INFO Aborting Script'))
-      .then(() => Helper.evalAsPromise('cp', ['-r', Environment.get('BACKUP_DIR') + '/backup', Environment.get('BASE_DIR')]))
+      .then(() => Helper.spawnAsPromise('cp', ['-r', Environment.get('BACKUP_DIR') + '/backup', Environment.get('BASE_DIR')]))
       .catch((err) => {
         logger.error('ERROR in abort(): ' + err);
-        Helper.appendToLog('* ERROR in abort(): ' + err);
-        throw Error('abort|' + err);
+        return Helper.appendToLog('* ERROR in abort(): ' + err)
+        .then(() => ErrorLog.append('Upgrade.abort: ' + err))
+        .then(() => {
+          throw Error('abort|' + err);
+        });
       })
       .then(() => Promise.reject(Error(comment + '|Abort, exit code 2')));
     }
@@ -200,7 +254,7 @@ limitations under the License.
       .then(() => {
         if (packageJsonExists) {
           return Promise.resolve()
-          .then(() => Helper.evalAsPromise('grep', ['-q', '"bits:install" *:', 'package.json'], options));
+          .then(() => Helper.spawnAsPromise('grep', ['-q', '"bits:install" *:', 'package.json'], options));
         }
         return Promise.reject();
       })
@@ -212,14 +266,17 @@ limitations under the License.
           logger.debug('grep ran but failed (no bits:install)');
         }
       }, (err) => {
-        logger.debug('grep failed to run: ' + err);
-        grepSucceded = false;
+        if (err) {
+          logger.debug('grep failed to run: ' + err);
+          grepSucceded = false;
+          return ErrorLog.append('Upgrade.runInstall: grep failed to run: ' + err);
+        }
       })
       .then(() => {
         if (packageJsonExists && grepSucceded) {
           return Promise.resolve()
           .then(() => logger.debug('npm run bits:install'))
-          .then(() => Helper.evalAsPromise(
+          .then(() => Helper.spawnAsPromise(
             'npm',
             ['run', 'bits:install'],
             options))
@@ -228,8 +285,11 @@ limitations under the License.
             .then(() => Helper.appendToLog('Install status = ' + results.code + ' in ' + path.basename(installDir)))
             .then(() => results);
           }, (err) => {
-            Helper.appendToLog('Error in bits:install: ' + err);
-            throw Error('bits:install|' + err);
+            return Helper.appendToLog('Error in bits:install: ' + err)
+            .then(() => ErrorLog.append('Upgrade.runInstall: ' + err))
+            .then(() => {
+              throw Error('bits:install|' + err);
+            });
           });
         } else {
           return Promise.resolve()
@@ -253,28 +313,37 @@ limitations under the License.
           // stop BITS as root user on xenial
           return Promise.resolve()
           .then(() => Helper.appendToLog('* Stopping the systemctl bits process'))
-          .then(() => Helper.evalAsPromise('systemctl', ['stop', 'bits'], {}))
+          .then(() => Helper.spawnAsPromise('systemctl', ['stop', 'bits'], {}))
           .then((results) => Helper.appendToLog('Report: ' + results.code),
             (err) => {
-              Helper.appendToLog('Error stopping bits: ' + err);
-              throw Error('bits stop|' + err);
+              return Helper.appendToLog('Error stopping bits: ' + err)
+              .then(() => ErrorLog.append('Upgrade.stopBitsServer: ' + err))
+              .then(() => {
+                throw Error('bits stop|' + err);
+              });
             });
         } else if (release === 'trusty') {
           // stop BITS as root user on trusty
           return Promise.resolve()
           .then(() => Helper.appendToLog('* Stopping the upstart bits process'))
-          .then(() => Helper.evalAsPromise('service', ['bits', 'stop']))
+          .then(() => Helper.spawnAsPromise('service', ['bits', 'stop']))
           .then((results) => Helper.appendToLog('Report: ' + results.code),
             (err) => {
-              Helper.appendToLog('Error stopping bits: ' + err);
-              throw Error('bits stop|' + err);
+              return Helper.appendToLog('Error stopping bits: ' + err)
+              .then(() => ErrorLog.append('Upgrade.stopBitsServer: ' + err))
+              .then(() => {
+                throw Error('bits stop|' + err);
+              });
             });
         } else {
           // unsupported platform
           return Promise.resolve()
           .then(() => Helper.appendToLog('* ' + release + ' not supported'))
           .then(() => {
-            throw Error('Platform "' + release + '" is not supported');
+            return ErrorLog.append('Upgrade.stopBitsServer: ' + 'Platform "' + release + '" is not supported')
+            .then(() => {
+              throw Error('Platform "' + release + '" is not supported');
+            });
           });
         }
       } else {
@@ -282,7 +351,10 @@ limitations under the License.
         return Promise.resolve()
         .then(() => Helper.appendToLog('* Not stopping the bits process: must be root user (currently "' + whoami + '")'))
         .then(() => {
-          throw Error('Must be root user (currently "' + whoami + '")');
+          return ErrorLog.append('Upgrade.stopBitsServer: ' + 'Must be root user (currently "' + whoami + '")')
+          .then(() => {
+            throw Error('Must be root user (currently "' + whoami + '")');
+          });
         });
       }
     }
@@ -299,62 +371,90 @@ limitations under the License.
         return Promise.resolve()
         .then(() => logger.verbose('FUNCTION: startBitsServer (xenial as root)'))
         // systemctl status bits >> "${LOG}" 2>&1
-        .then(() => Helper.evalAsPromise('systemctl', ['status', 'bits']))
+        .then(() => Helper.spawnAsPromise('systemctl', ['status', 'bits']))
         .then((results) => {
           return Helper.appendIndentedResultsToLog(results, 'BITS service status:');
-        }, (err) => logger.error('Error getting status: ', err))
+        }, (err) => {
+          logger.error('Error getting status: ', err);
+          return ErrorLog.append('Upgrade.startBitsServer: getting status: ' + err);
+        })
         // systemctl disable bits.service >> "${LOG}" 2>&1
-        .then(() => Helper.evalAsPromise('systemctl', ['disable', 'bits.service']))
+        .then(() => Helper.spawnAsPromise('systemctl', ['disable', 'bits.service']))
         .then((results) => {
           return Helper.appendIndentedResultsToLog(results, 'Disable BITS service:');
-        }, (err) => logger.error('Error disabling BITS: ', err))
+        }, (err) => {
+          logger.error('Error disabling BITS: ', err);
+          return ErrorLog.append('Upgrade.startBitsServer: disabling BITS: ' + err);
+        })
         // systemctl daemon-reload >> "${LOG}" 2>&1
-        .then(() => Helper.evalAsPromise('systemctl', ['daemon-reload']))
+        .then(() => Helper.spawnAsPromise('systemctl', ['daemon-reload']))
         .then((results) => {
           return Helper.appendIndentedResultsToLog(results, 'Reload daemons:');
-        }, (err) => logger.error('Error reloading: ', err))
+        }, (err) => {
+          logger.error('Error reloading: ', err);
+          return ErrorLog.append('Upgrade.startBitsServer: reloading: ' + err);
+        })
         // systemctl enable bits.service >> "${LOG}" 2>&1
-        .then(() => Helper.evalAsPromise('systemctl', ['enable', 'bits.service']))
+        .then(() => Helper.spawnAsPromise('systemctl', ['enable', 'bits.service']))
         .then((results) => {
           return Helper.appendIndentedResultsToLog(results, 'Enable BITS service:');
-        }, (err) => logger.error('Error enabling: ', err))
+        }, (err) => {
+          logger.error('Error enabling: ', err);
+          return ErrorLog.append('Upgrade.startBitsServer: enabling: ' + err);
+        })
         // systemctl daemon-reload >> "${LOG}" 2>&1
-        .then(() => Helper.evalAsPromise('systemctl', ['daemon-reload']))
+        .then(() => Helper.spawnAsPromise('systemctl', ['daemon-reload']))
         .then((results) => {
           return Helper.appendIndentedResultsToLog(results, 'Reload daemons:');
-        }, (err) => logger.error('Error reloading 2: ', err))
+        }, (err) => {
+          logger.error('Error reloading 2: ', err);
+          return ErrorLog.append('Upgrade.startBitsServer: reloading 2: ' + err);
+        })
         // systemctl start bits >> "${LOG}" 2>&1
-        .then(() => Helper.evalAsPromise('systemctl', ['start', 'bits']))
+        .then(() => Helper.spawnAsPromise('systemctl', ['start', 'bits']))
         .then((results) => {
           return Helper.appendIndentedResultsToLog(results, 'Start BITS service:');
-        }, (err) => logger.error('Error starting: ', err))
+        }, (err) => {
+          logger.error('Error starting: ', err);
+          return ErrorLog.append('Upgrade.startBitsServer: starting: ' + err);
+        })
         // systemctl status bits >> "${LOG}" 2>&1
-        .then(() => Helper.evalAsPromise('systemctl', ['status', 'bits']))
+        .then(() => Helper.spawnAsPromise('systemctl', ['status', 'bits']))
         .then((results) => {
           return Helper.appendIndentedResultsToLog(results, 'BITS service status:');
-        }, (err) => logger.error('Error getting status 2: ', err))
+        }, (err) => {
+          logger.error('Error getting status 2: ', err);
+          return ErrorLog.append('Upgrade.startBitsServer: getting status 2: ' + err);
+        })
         .then(() => {
           logger.debug('SUCCESS in startBitsServer');
         }, (err) => {
           logger.debug('FAILURE in startBitsServer');
+          return ErrorLog.append('Upgrade.startBitsServer: failure: ' + err);
           throw err;
         });
       } else if ((release === 'trusty') && (whoami === 'root')) {
         return Promise.resolve()
         .then(() => logger.verbose('FUNCTION: startBitsServer (trusty as root)'))
         // service bits start >> "${LOG}" 2>&1
-        .then(() => Helper.evalAsPromise('service', ['bits', 'start']))
+        .then(() => Helper.spawnAsPromise('service', ['bits', 'start']))
         .then((results) => {
           return Helper.appendIndentedResultsToLog(results, 'Start BITS service:');
         }, (err) => {
-          Helper.appendToLog('Error starting bits: ' + err);
-          throw Error('bits start|' + err);
+          return Helper.appendToLog('Error starting bits: ' + err)
+          .then(() => ErrorLog.append('Upgrade.startBitsServer: starting bits: ' + err))
+          .then(() => {
+            throw Error('bits start|' + err);
+          });
         })
         .then(() => {
           logger.debug('SUCCESS in startBitsServer');
         }, (err) => {
           logger.debug('FAILURE in startBitsServer');
-          throw err;
+          return ErrorLog.append('Upgrade.startBitsServer: ' + err)
+          .then(() => {
+            throw err;
+          });
         });
       }
     }
@@ -365,8 +465,11 @@ limitations under the License.
       .then(() => Helper.appendToLog('* Creating the backup directory'))
       .then(() => this._mkdir(Environment.get('BACKUP_DIR')),
         (err) => {
-          Helper.appendToLog('Error creating backup dir: ' + err);
-          throw Error('_createBackupDirectory|' + err);
+          return Helper.appendToLog('Error creating backup dir: ' + err)
+          .then(() => ErrorLog.append('Upgrade._createBackupDirectory: ' + err))
+          .then(() => {
+            throw Error('_createBackupDirectory|' + err);
+          });
         });
     }
 
@@ -376,11 +479,14 @@ limitations under the License.
       .then(() => Helper.appendToLog('* Unpacking the new base'))
       .then(() => this._mkdir(Environment.get('TARGET_EXTRACT')))
       .catch((err) => {
-        Helper.appendToLog('Error making extract dir: ' + err);
-        throw Error('_unpackTarball|' + err);
+        return Helper.appendToLog('Error making extract dir: ' + err)
+        .then(() => ErrorLog.append('Upgrade._unpackTarball: ' + err))
+        .then(() => {
+          throw Error('_unpackTarball|' + err);
+        });
       })
       .then(() => Helper.appendToLog(Environment.get('TARGET') + ' -C ' + Environment.get('TARGET_EXTRACT')))
-      .then(() => Helper.evalAsPromise('tar', ['-xzf', Environment.get('TARGET'), '-C', Environment.get('TARGET_EXTRACT')]))
+      .then(() => Helper.spawnAsPromise('tar', ['-xzf', Environment.get('TARGET'), '-C', Environment.get('TARGET_EXTRACT')]))
       .then((results) => {
         // results.output contains the TAR command output to go into the log file
         let p = Promise.resolve();
@@ -389,14 +495,21 @@ limitations under the License.
           p = p.then(() => Helper.appendToLog('* ERROR Failed to untar ' + Environment.get('TARGET')))
           .then(() => Helper.appendToLog('* Original Target: ' + Environment.get('TARGET')))
           .catch((err) => {
-            Helper.appendToLog('Error untarring: ' + err);
-            throw Error('_unpackTarball|' + err);
+            return Helper.appendToLog('Error untarring: ' + err)
+            .then(() => ErrorLog.append('Upgrade._unpackTarball: untar: ' + err))
+            .then(() => {
+              throw Error('_unpackTarball|' + err);
+            });
           })
           .then(() => {
             logger.error(Helper.objectToString(results));
             return Helper.appendIndentedResultsToLog(results, 'TAR OUTPUT:')
             .then(() => {
-              throw new ScriptError('untar failed');
+              return ErrorLog.append('Upgrade._unpackTarball: untar 2: ' + Helper.objectToString(results))
+              .then(() => ErrorLog.appendIndentedResults(results))
+              .then(() => {
+                throw new ScriptError('untar failed');
+              });
             });
           });
         }
@@ -406,6 +519,8 @@ limitations under the License.
         return Promise.resolve()
         .then(() => Helper.appendToLog('* ERROR Failed to untar ' + Environment.get('TARGET')))
         .then(() => Helper.appendToLog('* Original Target: ' + Environment.get('TARGET')))
+        .then(() => ErrorLog.append('Upgrade._unpackTarball: ERROR Failed to untar ' + Environment.get('TARGET')))
+        .then(() => ErrorLog.append('Upgrade._unpackTarball: Original Target: ' + Environment.get('TARGET')))
         .then(() => {
           throw new ScriptError('untar failed|' + err);
         });
@@ -430,8 +545,12 @@ limitations under the License.
         .filter((item) => (item.charAt(0) != '.'));
         return Promise.resolve();
       }, (err) => {
-        Helper.appendToLog('Error reading extract dir: ' + err);
-        throw Error('_enumeratePrehookScripts|' + err);
+        return Promise.resolve()
+        .then(() => Helper.appendToLog('Error reading extract dir: ' + err))
+        .then(() => ErrorLog.append('Upgrade._enumeratePrehookScripts: reading extract dir: ' + err))
+        .then(() => {
+          throw Error('_enumeratePrehookScripts|' + err);
+        });
       })
       .then(() => logger.debug('Prehook scripts: ' + this._prehookScripts));
     }
@@ -449,8 +568,12 @@ limitations under the License.
         .filter((item) => (item.charAt(0) != '.'));
         return Promise.resolve();
       }, (err) => {
-        Helper.appendToLog('Error reading extract dir: ' + err);
-        throw Error('_enumeratePosthookScripts|' + err);
+        return Promise.resolve()
+        .then(() => Helper.appendToLog('Error reading extract dir: ' + err))
+        .then(() => ErrorLog.append('Upgrade._enumeratePosthookScripts: reading extract dir: ' + err))
+        .then(() => {
+          throw Error('_enumeratePosthookScripts|' + err);
+        });
       })
       .then(() => logger.debug('Posthook scripts: ' + this._posthookScripts));
     }
@@ -473,7 +596,7 @@ limitations under the License.
             return Promise.resolve()
             .then(() => this._actionStatus('Prehook ' + file))
             .then(() => Helper.appendToLog('* INFO running Prehook script ' + file))
-            .then(() => Helper.evalAsPromise(path.join(scriptPath, file), [], options))
+            .then(() => Helper.spawnAsPromise(path.join(scriptPath, file), [], options))
             .then((results) => {
               if (results.code === 0) {
                 return Promise.resolve()
@@ -482,6 +605,8 @@ limitations under the License.
               } else {
                 return Promise.resolve()
                 .then(() => Helper.appendToLog('The script FAILED (exit code ' + results.code + ')'))
+                .then(() => ErrorLog.append('Upgrade._runPrehookScripts: Prehook script (' + file + ') failed (' + results.code + ')'))
+                .then(() => ErrorLog.appendIndentedResults(results))
                 .then(() => results);
               }
             })
@@ -510,7 +635,7 @@ limitations under the License.
             return Promise.resolve()
             .then(() => this._actionStatus('Posthook ' + file))
             .then(() => Helper.appendToLog('* INFO running Posthook script ' + file))
-            .then(() => Helper.evalAsPromise(path.join(scriptPath, file), [], options))
+            .then(() => Helper.spawnAsPromise(path.join(scriptPath, file), [], options))
             .then((results) => {
               if (results.code === 0) {
                 return Promise.resolve()
@@ -519,6 +644,8 @@ limitations under the License.
               } else {
                 return Promise.resolve()
                 .then(() => Helper.appendToLog('The script FAILED (exit code ' + results.code + ')'))
+                .then(() => ErrorLog.append('Upgrade._runPosthookScripts: Posthook script (' + file + ') failed (' + results.code + ')'))
+                .then(() => ErrorLog.appendIndentedResults(results))
                 .then(() => results);
               }
             })
@@ -553,13 +680,16 @@ limitations under the License.
         logger.error('ERROR in mkdir: ' + err);
       })
       .then(() => logger.debug('Move files from ' + Environment.get('BASE_DIR') + ' to ' + backupDir))
-      .then(() => this._move(
+      .then(() => this._moveContents(
         Environment.get('BASE_DIR'),
         backupDir,
         false))
       .catch((err) => {
-        Helper.appendToLog('Error moving files: ' + err);
-        throw Error('_clearBackupDirectory|' + err);
+        return Helper.appendToLog('Error moving files: ' + err)
+        .then(() => ErrorLog.append('Upgrade._clearBackupDirectory: moving files: ' + err))
+        .then(() => {
+          throw Error('_clearBackupDirectory|' + err);
+        });
       })
       .then(() => this._actionProgress(++this._startingClearBackupDir, this._totalProgressItems))
       .then(() => this._readDir(Environment.get('BASE_DIR')))
@@ -569,12 +699,17 @@ limitations under the License.
           return Promise.resolve()
           .then(() => Helper.appendToLog('* ERROR Failed to clear ' + Environment.get('BASE_DIR')))
           .then(() => Helper.appendToLog('FILES:\n' + files.sort().join('\n')))
+          .then(() => ErrorLog.append('Upgrade._clearBackupDirectory: Failed to clear ' + Environment.get('BASE_DIR')))
+          .then(() => ErrorLog.append('Upgrade._clearBackupDirectory: FILES:\n' + files.sort().join('\n')))
           .then(() => this.abort('_clearBackupDirectory'));
         }
         return Promise.resolve();
       }, (err) => {
-        Helper.appendToLog('Error reading baseDir: ' + err);
-        throw Error('_clearBackupDirectory|' + err);
+        return Helper.appendToLog('Error reading baseDir: ' + err)
+        .then(() => ErrorLog.append('Upgrade._clearBackupDirectory: reading baseDir: ' + err))
+        .then(() => {
+          throw Error('_clearBackupDirectory|' + err);
+        });
       });
     }
 
@@ -593,7 +728,7 @@ limitations under the License.
       return Promise.resolve()
       .then(() => this._actionStatus('_moveTargetFilesToBitsDirectory'))
       .then(() => Helper.appendToLog('* INFO moving the new bits'))
-      .then(() => this._move(
+      .then(() => this._moveContents(
         Environment.get('TARGET_EXTRACT'),
         Environment.get('BASE_DIR'),
         false))
@@ -602,6 +737,8 @@ limitations under the License.
       .catch((err) => {
         return Promise.resolve()
         .then(() => Helper.appendToLog('* ERROR Failed to install '
+                  + Environment.get('TARGET_EXTRACT') + ': ' + err))
+        .then(() => ErrorLog.append('Scirpt._moveTargetFilesToBitsDirectory: Failed to install '
                   + Environment.get('TARGET_EXTRACT') + ': ' + err))
         .then(() => this.abort('_moveTargetFilesToBitsDirectory'));
       });
@@ -638,22 +775,31 @@ limitations under the License.
       .then(() => this._actionStatus('_moveRomgModulesAndData'))
       .then(() => this._dirExists(baseDir))
       .then(() => {
-        const dataDir = path.join(Environment.get('DATA_DIR'), 'base/modules/modules');
+        const modulesDir = path.join(Environment.get('DATA_DIR'), 'base/modules/modules');
         return Promise.resolve()
         .then(() => Helper.appendToLog('* INFO copying omg modules'))
-        .then(() => this._mkdir(dataDir))
-        .catch((err) => Helper.appendToLog('Error in omg copy: ' + err))
+        .then(() => this._mkdir(modulesDir))
+        .catch((err) => {
+          return Helper.appendToLog('Error in omg copy: ' + err)
+          .then(() => ErrorLog.append('Upgrade._moveRomgModulesAndData: omg copy: ' + err));
+        })
         // clean up old modules
-        .then(() => Helper.evalAsPromise('rm', ['-rf', dataDir + '/*']))
-        .catch((err) => Helper.appendToLog('Error in rm(' + dataDir + '/*): ' + err))
+        .then(() => this._rmrf(modulesDir))
+        .catch((err) => {
+          return Helper.appendToLog('Error in rmrf(' + modulesDir + '/*): ' + err)
+          .then(() => ErrorLog.append('Upgrade._moveRomgModulesAndData: rmrf: ' + err));
+        })
         .then(() => this._actionProgress(++this._startingRomgModulesAndData, this._totalProgressItems))
         // install new modules
         .then(() => this._move(
           baseDir,
-          dataDir,
+          path.join(Environment.get('DATA_DIR'), 'base/modules'),
           false))
         .then((results) => Helper.appendIndentedResultsToLog(results, '_move results:'),
-          (err) => Helper.appendToLog('Error in move (*): ' + err))
+          (err) => {
+            return Helper.appendToLog('Error in move (*): ' + err)
+            .then(() => ErrorLog.append('Upgrade._moveRomgModulesAndData: mv: ' + err));
+          })
         .then(() => this._actionProgress(++this._startingRomgModulesAndData, this._totalProgressItems))
         .then(() => this._readDir(baseDataDir))
         .then((directories) => {
@@ -665,15 +811,18 @@ limitations under the License.
               .then(() => logger.verbose('MODULE_DATA_DIR: ' + path.join(baseDataDir, moduleDataDir)))
               .then(() => Helper.appendToLog('* INFO copying prepopulated module data for ' +
                     path.basename(moduleDataDir)))
-              .then(() => Helper.evalAsPromise(
+              .then(() => Helper.spawnAsPromise(
                 'cp',
                 [
                   '-a',
                   path.join(baseDataDir, moduleDataDir),
-                  dataDir + '/'
+                  modulesDir + '/'
                 ]))
               .then((results) => Helper.appendIndentedResultsToLog(results, 'cp results:'),
-                (err) => Helper.appendToLog('Error in cp: ' + err))
+                (err) => {
+                  return Helper.appendToLog('Error in cp: ' + err)
+                  .then(() => ErrorLog.append('Upgrade._moveRomgModulesAndData: cp: ' + err));
+                })
               .then(() => this._actionProgress(++this._startingRomgModulesAndData, this._totalProgressItems));
             });
           }, Promise.resolve());
@@ -692,10 +841,13 @@ limitations under the License.
       .then(() => this._actionStatus('_cleanupRomgDataDir'))
       .then(() => {
         if (baseDataDir != Environment.get('DATA_DIR')) {
-          return Helper.evalAsPromise('rm', ['-rf', baseDataDir])
+          return this._rmrf(baseDataDir)
           .catch((err) => {
-            Helper.appendToLog('Error removing files from baseDataDir: ' + err);
-            throw Error('_cleanupRomgDataDir|' + err);
+            return Helper.appendToLog('Error removing files from baseDataDir: ' + err)
+            .then(() => ErrorLog.append('Upgrade._cleanupRomgDataDir: ' + err))
+            .then(() => {
+              throw Error('_cleanupRomgDataDir|' + err);
+            });
           });
         } else {
           return Promise.resolve();
@@ -727,21 +879,27 @@ limitations under the License.
       return Promise.resolve()
       .then(() => this._actionStatus('_setYarnCacheFolder'))
       // yarn config set cache-folder "${YARN_CACHE_FOLDER}" >> "${LOG}" 2>&1
-      .then(() => Helper.evalAsPromise('yarn', ['config', 'set', 'cache-folder', yarnCacheFolder]))
+      .then(() => Helper.spawnAsPromise('yarn', ['config', 'set', 'cache-folder', yarnCacheFolder]))
       .then((results) => {
         return Helper.appendIndentedResultsToLog(results, 'yarn config set cache-folder results:');
       }, (err) => {
-        Helper.appendToLog('Error in yarn config set cache-folder: ' + err);
-        throw Error('_setYarnCacheFolder|' + err);
+        return Helper.appendToLog('Error in yarn config set cache-folder: ' + err)
+        .then(() => ErrorLog.append('Upgrade._setYarnCacheFolder: ' + err))
+        .then(() => {
+          throw Error('_setYarnCacheFolder|' + err);
+        });
       })
       .then(() => this._actionProgress(++this._startingSetYarnCacheFolder, this._totalProgressItems))
       // yarn config list >> "${LOG}" 2>&1
-      .then(() => Helper.evalAsPromise('yarn', ['config', 'list']))
+      .then(() => Helper.spawnAsPromise('yarn', ['config', 'list']))
       .then((results) => {
         return Helper.appendIndentedResultsToLog(results, 'yarn config list results:');
       }, (err) => {
-        Helper.appendToLog('Error in yarn config list: ' + err);
-        throw Error('_setYarnCacheFolder|' + err);
+        return Helper.appendToLog('Error in yarn config list: ' + err)
+        .then(() => ErrorLog.append('Upgrade._setYarnCacheFolder: ' + err))
+        .then(() => {
+          throw Error('_setYarnCacheFolder|' + err);
+        });
       });
     }
 
@@ -765,6 +923,7 @@ limitations under the License.
         if (results && (results.code != 0)) {
           return Promise.resolve()
           .then(() => Helper.appendToLog('* ERROR yarn install error (' + yarnDir + ')'))
+          .then(() => ErrorLog.append('Upgrade._runYarnInstallOnBase: ' + results.code))
           .then(() => {
             Environment.set('YARN_INSTALL_ERROR', 8);
           });
@@ -772,13 +931,16 @@ limitations under the License.
           return Promise.resolve();
         }
       }, (err) => {
-        Helper.appendToLog('Error in _runYarnInstallOnBase: ' + err);
-        throw Error('_runYarnInstallOnBase|' + err);
+        return Helper.appendToLog('Error in _runYarnInstallOnBase: ' + err)
+        .then(() => ErrorLog.append('Upgrade._runYarnInstallOnBase: ' + err))
+        .then(() => {
+          throw Error('_runYarnInstallOnBase|' + err);
+        });
       });
     }
 
     _countRunYarnInstallOnModules() {
-      const moduleDir = path.join(Environment.get('DATA_DIR'), 'base/modules/modules');
+      const moduleDir = path.join(Environment.get('TARGET_EXTRACT'), 'data/base/modules/modules');
 
       this._startingRunYarnInstallOnModules = this._totalProgressItems;
       return Promise.resolve()
@@ -813,6 +975,7 @@ limitations under the License.
               if (results && (results.code != 0)) {
                 return Promise.resolve()
                 .then(() => Helper.appendToLog('* ERROR yarn module install error (' + yarnDir + ')'))
+                .then(() => ErrorLog.append('Upgrade._runYarnInstallOnModules(' + yarnDir + '): ' + results.code))
                 .then(() => {
                   Environment.set('YARN_INSTALL_ERROR', 8);
                 });
@@ -823,14 +986,20 @@ limitations under the License.
                 });
               }
             }, (err) => {
-              Helper.appendToLog('Error in _runYarnInstallOnModules(' + yarnDir + '): ' + err);
-              throw Error('_runYarnInstallOnModules|' + err);
+              return Helper.appendToLog('Error in _runYarnInstallOnModules(' + yarnDir + '): ' + err)
+              .then(() => ErrorLog.append('Upgrade._runYarnInstallOnModules(' + yarnDir + '): ' + err))
+              .then(() => {
+                throw Error('_runYarnInstallOnModules|' + err);
+              });
             });
           });
         }, Promise.resolve());
       }, (err) => {
-        Helper.appendToLog('Error in _runYarnInstallOnModules(' + yarnDir + '): ' + err);
-        throw Error('_runYarnInstallOnModules|' + err);
+        return Helper.appendToLog('Error in _runYarnInstallOnModules(' + yarnDir + '): ' + err)
+        .then(() => ErrorLog.append('Upgrade._runYarnInstallOnModules(' + yarnDir + '): ' + err))
+        .then(() => {
+          throw Error('_runYarnInstallOnModules|' + err);
+        });
       });
     }
 
@@ -849,40 +1018,52 @@ limitations under the License.
       .then(() => Helper.appendToLog('* INFO updating bits and data dir permissions'))
       // #Secure /opt/bits OD
       // chown -R root:root "${BASE_DIR}" >> "${LOG}" 2>&1
-      .then(() => Helper.evalAsPromise('chown', ['-R', 'root:root', baseDir]))
+      .then(() => Helper.spawnAsPromise('chown', ['-R', 'root:root', baseDir]))
       .then((results) => {
         return Helper.appendIndentedResultsToLog(results, 'chown -R root:root ' + baseDir + ' results:');
       }, (err) => {
-        Helper.appendToLog('Error in chown baseDir: ' + err);
-        throw Error('_updatePermissions|' + err);
+        return Helper.appendToLog('Error in chown baseDir: ' + err)
+        .then(() => ErrorLog.append('Upgrade._updatePermissions(chown baseDir): ' + err))
+        .then(() => {
+          throw Error('_updatePermissions|' + err);
+        });
       })
       .then(() => this._actionProgress(++this._startingUpdatePermissions, this._totalProgressItems))
       // chmod -R g-w,g-x,g-r,o-w,o-x,o-r "${BASE_DIR}" >> "${LOG}" 2>&1
-      .then(() => Helper.evalAsPromise('chmod', ['-R', 'g-w,g-x,g-r,o-w,o-x,o-r', baseDir]))
+      .then(() => Helper.spawnAsPromise('chmod', ['-R', 'g-w,g-x,g-r,o-w,o-x,o-r', baseDir]))
       .then((results) => {
         return Helper.appendIndentedResultsToLog(results, 'chmod -R ... ' + baseDir + 'results:');
       }, (err) => {
-        Helper.appendToLog('Error in chmod baseDir: ' + err);
-        throw Error('_updatePermissions|' + err);
+        return Helper.appendToLog('Error in chmod baseDir: ' + err)
+        .then(() => ErrorLog.append('Upgrade._updatePermissions(chmod baseDir): ' + err))
+        .then(() => {
+          throw Error('_updatePermissions|' + err);
+        });
       })
       .then(() => this._actionProgress(++this._startingUpdatePermissions, this._totalProgressItems))
       // #Secure /var/bits OD
       // chown -R root:root "${DATA_DIR}" >> "${LOG}" 2>&1
-      .then(() => Helper.evalAsPromise('chown', ['-R', 'root:root', dataDir]))
+      .then(() => Helper.spawnAsPromise('chown', ['-R', 'root:root', dataDir]))
       .then((results) => {
         return Helper.appendIndentedResultsToLog(results, 'chown -R root:root ' + dataDir + ' results:');
       }, (err) => {
-        Helper.appendToLog('Error in chown dataDir: ' + err);
-        throw Error('_updatePermissions|' + err);
+        return Helper.appendToLog('Error in chown dataDir: ' + err)
+        .then(() => ErrorLog.append('Upgrade._updatePermissions(chown dataDir): ' + err))
+        .then(() => {
+          throw Error('_updatePermissions|' + err);
+        });
       })
       .then(() => this._actionProgress(++this._startingUpdatePermissions, this._totalProgressItems))
       // chmod -R g-w,g-x,g-r,o-w,o-x,o-r "${DATA_DIR}" >> "${LOG}" 2>&1
-      .then(() => Helper.evalAsPromise('chmod', ['-R', 'g-w,g-x,g-r,o-w,o-x,o-r', dataDir]))
+      .then(() => Helper.spawnAsPromise('chmod', ['-R', 'g-w,g-x,g-r,o-w,o-x,o-r', dataDir]))
       .then((results) => {
         return Helper.appendIndentedResultsToLog(results, 'chmod -R ... ' + dataDir + 'results:');
       }, (err) => {
-        Helper.appendToLog('Error in chmod dataDir: ' + err);
-        throw Error('_updatePermissions|' + err);
+        return Helper.appendToLog('Error in chmod dataDir: ' + err)
+        .then(() => ErrorLog.append('Upgrade._updatePermissions(chmod dataDir): ' + err))
+        .then(() => {
+          throw Error('_updatePermissions|' + err);
+        });
       });
     }
 
@@ -911,20 +1092,26 @@ limitations under the License.
       return Promise.resolve()
       .then(() => this._actionStatus('_installInitScripts'))
       .then(() => Helper.appendToLog(msg))
-      .then(() => Helper.evalAsPromise('cp', ['-v', src, dst]))
+      .then(() => Helper.spawnAsPromise('cp', ['-v', src, dst]))
       .then((results) => {
         return Helper.appendIndentedResultsToLog(results, 'cp -v ' + src + ' ' + dst + 'results:');
       }, (err) => {
-        Helper.appendToLog('Error copying files: ' + err);
-        throw Error('_installInitScripts|' + err);
+        return Helper.appendToLog('Error copying files: ' + err)
+        .then(() => ErrorLog.append('Upgrade._installInitScripts(copying files): ' + err))
+        .then(() => {
+          throw Error('_installInitScripts|' + err);
+        });
       })
       .then(() => this._actionProgress(++this._startingInstallInitScripts, this._totalProgressItems))
-      .then(() => Helper.evalAsPromise('chmod', ['644', dst]))
+      .then(() => Helper.spawnAsPromise('chmod', ['644', dst]))
       .then((results) => {
         return Helper.appendIndentedResultsToLog(results, 'chmod 644 ' + dst + 'results:');
       }, (err) => {
-        Helper.appendToLog('Error in chmod: ' + err);
-        throw Error('_installInitScripts|' + err);
+        return Helper.appendToLog('Error in chmod: ' + err)
+        .then(() => ErrorLog.append('Upgrade._installInitScripts(chmod): ' + err))
+        .then(() => {
+          throw Error('_installInitScripts|' + err);
+        });
       })
       .then(() => this._actionProgress(++this._startingInstallInitScripts, this._totalProgressItems));
     }
@@ -969,18 +1156,37 @@ limitations under the License.
     // returns a promise whose resolved value is the number of files in the
     // folder (not counting the exclusions)
     _countFiles(fromDir, exclusions) {
+      while (path.basename(fromDir) == '*') {
+        fromDir = path.dirname(fromDir);
+      }
       return Promise.resolve()
-      .then(() => Helper.evalAsPromise('ls', ['-a', fromDir]))
-      .then((lsResults) => {
-        if (lsResults.output.length > 0) {
-          const items = lsResults.output[0].split('\n')
-          .filter((entry) => (!exclusions.includes(entry)));
-          return items.length;
-        }
+      .then(() => this._dirExists(fromDir))
+      .then(() => {
+        // dir exists... check for files
+        return Promise.resolve()
+        .then(() => Helper.spawnAsPromise('ls', ['-a', fromDir]))
+        .then((lsResults) => {
+          if (lsResults.output.length > 0) {
+            const items = lsResults.output[0].split('\n')
+            .filter((entry) => (!exclusions.includes(entry)));
+            return Promise.resolve()
+            .then(() => logger.debug('_countFiles(' + fromDir + ', ' + exclusions + '): [' + items + ']'))
+            .then(() => items.length);
+          }
+          return 0;
+        }, (err) => {
+          Helper.appendToLog('Error in _countFiles(' + fromDir + '): ' + err);
+          throw Error('_countFiles|' + err);
+        });
+      }, () => {
+        // dir does not exist: 0 files
         return 0;
       }, (err) => {
-        Helper.appendToLog('Error in _countFiles(' + fromDir + '): ' + err);
-        throw Error('_countFiles|' + err);
+        return Helper.appendToLog('Error in _countFiles(' + fromDir + '): ' + err)
+        .then(() => ErrorLog.append('Upgrade._countFiles(' + fromDir + '): ' + err))
+        .then(() => {
+          throw Error('_countFiles|' + err);
+        });
       });
     }
 
@@ -995,8 +1201,11 @@ limitations under the License.
         rd.pipe(wr);
       })
       .catch((err) => {
-        Helper.appendToLog('Error in cp(' + src + '): ' + err);
-        throw Error('cp('+ src + ',' + dest + ')|' + err);
+        return Helper.appendToLog('Error in cp(' + src + '): ' + err)
+        .then(() => ErrorLog.append('Upgrade._cp(' + src + '): ' + err))
+        .then(() => {
+          throw Error('cp('+ src + ',' + dest + ')|' + err);
+        });
       });
     }
 
@@ -1041,8 +1250,11 @@ limitations under the License.
         });
       })
       .catch((err) => {
-        Helper.appendToLog('Error in ln(' + target + '): ' + err);
-        throw Error('ln('+target+','+path+','+type+')|' + err);
+        return Helper.appendToLog('Error in ln(' + target + '): ' + err)
+        .then(() => ErrorLog.append('Upgrade._ln(' + target + '): ' + err))
+        .then(() => {
+          throw Error('ln('+target+','+path+','+type+')|' + err);
+        });
       });
     }
 
@@ -1050,7 +1262,7 @@ limitations under the License.
       return Promise.resolve()
       .then(() => this._dirExists(path))
       .then(() => {
-        // dir exits... we don't need to create it
+        // dir exists... we don't need to create it
       }, () => {
         // dir does not exist: create it
         return new Promise((resolve, reject) => {
@@ -1065,33 +1277,42 @@ limitations under the License.
           });
         })
         .catch((err) => {
-          Helper.appendToLog('Error in mkdir(' + path + '): ' + err);
-          throw Error('_mkdir('+path+')|' + err);
+          return Helper.appendToLog('Error in mkdir(' + path + '): ' + err)
+          .then(() => ErrorLog.append('Upgrade.mkdir(' + path + '): ' + err))
+          .then(() => {
+            throw Error('_mkdir('+path+')|' + err);
+          });
         });
       });
     }
 
     _move(src, dst, isVerbose) {
+      const args = [src, dst];
+      if (isVerbose) {
+        args.unshift('-v');
+      }
       return Promise.resolve()
-      .then(() => this.__moveHelper(path.join(src, '.*'), dst, isVerbose))
-      .then((results) => {
-        return Promise.resolve()
-        .then(() => this.__moveHelper(path.join(src, '*'), dst, isVerbose))
-        .then((results2) => Object.assign(results, results2));
-      });
-    }
-
-    __moveHelper(src, dst, isVerbose) {
-      return Promise.resolve()
-      .then(() => Helper.execAsPromise('mv', [(isVerbose ? '-v' : ''), src, dst]))
-      .then((results) => {
-        return results;
-      })
+      .then(() => Helper.spawnAsPromise('mv', args))
       .catch((err) => {
         return Promise.resolve()
         .then(() => logger.error('_move error:' + Helper.objectToString(err)))
+        .then(() => ErrorLog.append('Upgrade._move(' + src + '): ' + err))
         .then(() => {
           throw Error('_move|' + err);
+        });
+      });
+    }
+
+    _moveContents(src, dst, isVerbose) {
+      const mvArg = isVerbose ? '-tv' : '-t';
+      return Promise.resolve()
+      .then(() => Helper.spawnAsPromise('find', [path.join(src, '/'), '-mindepth', '1', '-maxdepth', '1', '-exec', 'mv', mvArg, path.join(dst, '/'), '--', '{}', '+']))
+      .catch((err) => {
+        return Promise.resolve()
+        .then(() => logger.error('_moveContents error:' + Helper.objectToString(err)))
+        .then(() => ErrorLog.append('Upgrade._moveContents(' + src + '): ' + err))
+        .then(() => {
+          throw Error('_moveContents|' + err);
         });
       });
     }
@@ -1122,9 +1343,18 @@ limitations under the License.
         });
       })
       .catch((err) => {
-        Helper.appendToLog('Error in rm(' + path + '): ' + err);
-        throw Error('rm('+path+')|' + err);
+        return Helper.appendToLog('Error in rm(' + path + '): ' + err)
+        .then(() => ErrorLog.append('Upgrade.rm(' + path + '): ' + err))
+        .then(() => {
+          throw Error('rm('+path+')|' + err);
+        });
       });
+    }
+
+    _rmrf(rmPath) {
+      return this._dirExists(rmPath)
+      .then(() => Helper.spawnAsPromise('rm', ['-rf', rmPath]), () => Promise.resolve())
+      .then((results) => Helper.appendIndentedResultsToLog(results, 'rm rfv(' + rmPath + ')'));
     }
   } // UpgradeScript class
 

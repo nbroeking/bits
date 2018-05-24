@@ -14,13 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 <link rel="import" href="../../bower_components/polymer/polymer.html">
-<!-- bplint-disable no-unused-import -->
+<link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
 <!-- bplint-enable no-unused-import -->
 <link rel="import" href="../../bower_components/app-layout/app-toolbar/app-toolbar.html">
 <link rel="import" href="../../bower_components/iron-image/iron-image.html">
 <link rel="import" href="../../bower_components/iron-list/iron-list.html">
+<link rel="import" href="../../bower_components/neon-animation/neon-animated-pages.html">
 <link rel="import" href="../../bower_components/paper-fab/paper-fab.html">
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/paper-tooltip/paper-tooltip.html">
 <link rel="import" href="../base-shared-styles/base-shared-styles.html">
 <link rel="import" href="./base-omgs-current-info.html">
 <link rel="import" href="./base-omgs-list-item.html">
@@ -28,22 +31,11 @@ limitations under the License.
 
 <dom-module id="base-omgs-list">
   <template>
-    <!-- bplint-disable no-missing-import -->
-    <style is="custom-style" include="iron-flex iron-flex-alignment"></style>
-    <!-- bplint-enable no-missing-import -->
-    <style include="base-shared-styles"></style>
-    <style>
+    <style is="custom-style" include="iron-flex iron-flex-alignment base-shared-styles">
     :host {
       @apply(--layout-flex);
       @apply(--layout-vertical);
       height: 100%;
-    }
-
-    app-toolbar {
-      color: var(--primary-text-color);
-      box-sizing: border-box;
-      border-bottom: 1px solid;
-      border-bottom-color: var(--divider-color);
     }
 
     #list {
@@ -78,27 +70,24 @@ limitations under the License.
     }
     </style>
 
-    <app-toolbar class="toolbar">
-      <div main-title>OMGs</div>
-      <base-omgs-current-info current-info="[[currentInfo]]"></base-omgs-current-info>
-    </app-toolbar>
+    <div>
+      <iron-list id="list" items="[[omgs]]" as="omg" hidden$="[[!hasOmgs]]">
+        <template>
+          <a href="/home/omgs/[[omg.id]]" tabindex="-1">
+            <base-omgs-list-item class="item" omg="[[omg]]"></base-omgs-list-item>
+          </a>
+        </template>
+      </iron-list>
 
-    <iron-list id="list" items="[[omgs]]" as="omg" hidden$="[[!hasOmgs]]">
-      <template>
-        <a href="/home/omgs/[[omg.id]]" tabindex="-1">
-          <base-omgs-list-item class="item" omg="[[omg]]"></base-omgs-list-item>
-        </a>
-      </template>
-    </iron-list>
+      <div class="no-packages" hidden$="[[hasOmgs]]">
+        <div class="message">ZOMG! No OMG Packages...</div>
+        <iron-image style="width: 300px; height: 300px; background-color: lightgray;" sizing="cover" src="/images/zomg-cat-2.jpg"></iron-image>
+      </div>
 
-    <div class="no-packages" hidden$="[[hasOmgs]]">
-      <div class="message">ZOMG! No OMG Packages...</div>
-      <iron-image style="width: 300px; height: 300px; background-color: lightgray;" sizing="cover" src="/images/zomg-cat-2.jpg"></iron-image>
+      <paper-fab class="action" icon="add" on-tap="_openAddForm"></paper-fab>
+
+      <base-omgs-upload id="add-form"></base-omgs-upload>
     </div>
-
-    <paper-fab class="action" icon="add" on-tap="_openAddForm"></paper-fab>
-
-    <base-omgs-upload id="add-form"></base-omgs-upload>
 
   </template>
   <script>
@@ -142,9 +131,22 @@ limitations under the License.
           Polymer.IronResizableBehavior
         ],
 
+        listeners: {
+          'base-omgs-upload-success': '_onUploadSuccess',
+        },
+
+        reset: function() {
+          this.key = null;
+          this.data = this.zeroValue;
+        },
+
+        _onUploadSuccess: function(e, detail) {
+          this.$['get-list'].generateRequest();
+        },
+
         _openAddForm: function() {
           this.$['add-form'].open();
-        },
+        }
       });
     })();
   </script>

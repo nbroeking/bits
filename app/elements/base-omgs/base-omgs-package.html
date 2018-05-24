@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 <link rel="import" href="../../bower_components/polymer/polymer.html">
-<!-- bplint-disable no-unused-import -->
 <link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
 <!-- bplint-enable no-unused-import -->
 <link rel="import" href="../../bower_components/paper-button/paper-button.html">
@@ -28,18 +27,13 @@ limitations under the License.
 <link rel="import" href="../base-layout/base-header-layout/base-header-layout.html">
 <link rel="import" href="../base-shared-styles/base-shared-styles.html">
 <link rel="import" href="./base-omgs-current-info.html">
+<link rel="import" href="./base-omgs-toolbar.html">
 
 <dom-module id="base-omgs-package">
   <template>
-    <style include="base-shared-styles"></style>
-    <style>
+    <style include="base-shared-styles">
       :host {
         display: block;
-      }
-
-      .header-toolbar {
-        @apply(--layout-horizontal);
-        @apply(--layout-center);
       }
 
       paper-card {
@@ -61,47 +55,37 @@ limitations under the License.
       }
     </style>
 
-    <base-header-layout
-      x-back-href="/home/omgs/"
-      x-title="[[omg.data.name]]">
-      <div class="header-toolbar">
-        <paper-spinner active="[[loading]]"></paper-spinner>
-        <base-omgs-current-info current-info="[[currentInfo]]"></base-omgs-current-info>
-      </div>
-      <div class="header-content">
-        <div class="content">
-          <paper-card>
-            <div class="card-content">
-              <div class="line">
-                <div class="label">Name</div>
-                <div class="value">[[omg.data.name]]</div>
-              </div>
-              <div class="line">
-                <div class="label">Branch</div>
-                <div class="value">[[omg.data.branch]]</div>
-              </div>
-              <div class="line">
-                <div class="label">Version</div>
-                <div class="value">[[omg.data.version]]</div>
-              </div>
-              <div class="line">
-                <div class="label">State</div>
-                <div class="value">[[omg.state]]</div>
-              </div>
-              <div class="line" hidden="[[!isUploading]]">
-                <span class="label">[[_convertToMegaBytes(omg.data.curr)]]MB / [[_convertToMegaBytes(omg.data.size)]]MB ([[_computePercentage(omg.data.curr, omg.data.size)]])</span>
-                <paper-progress class="value" value="[[omg.data.curr]]" max="[[omg.data.size]]"></paper-progress>
-              </div>
-            </div>
-            <div class="card-actions">
-              <paper-spinner id="spinner"></paper-spinner>
-              <paper-button id="loadBtn" class="primary-btn" raised on-tap="loadOmg" disabled="[[_computeLoadDisabled(omg, currentInfo)]]">Load</paper-button>
-              <paper-button class="primary-btn-light" on-tap="deleteOmg">Delete</paper-button>
-            </div>
-          </paper-card>
+    <div>
+      <paper-card class="content">
+        <div class="card-content">
+          <div class="line">
+            <div class="label">Name</div>
+            <div class="value">[[omg.data.name]]</div>
+          </div>
+          <div class="line">
+            <div class="label">Branch</div>
+            <div class="value">[[omg.data.branch]]</div>
+          </div>
+          <div class="line">
+            <div class="label">Version</div>
+            <div class="value">[[omg.data.version]]</div>
+          </div>
+          <div class="line">
+            <div class="label">State</div>
+            <div class="value">[[omg.state]]</div>
+          </div>
+          <div class="line" hidden="[[!isUploading]]">
+            <span class="label">[[_convertToMegaBytes(omg.data.curr)]]MB / [[_convertToMegaBytes(omg.data.size)]]MB ([[_computePercentage(omg.data.curr, omg.data.size)]])</span>
+            <paper-progress class="value" value="[[omg.data.curr]]" max="[[omg.data.size]]"></paper-progress>
+          </div>
         </div>
-      </div>
-    </base-header-layout>
+        <div class="card-actions">
+          <paper-spinner id="spinner"></paper-spinner>
+          <paper-button id="loadBtn" class="primary-btn" raised on-tap="loadOmg" disabled="[[_computeLoadDisabled(omg, currentInfo)]]">Load</paper-button>
+          <paper-button class="primary-btn-light" on-tap="deleteOmg">Delete</paper-button>
+        </div>
+      </paper-card>
+    </div>
 
     <paper-toast id="toast"></paper-toast>
 

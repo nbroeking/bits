@@ -31,7 +31,8 @@ limitations under the License.
       static get REQUEST() {
         return {
           LOAD: `${OmgsMessenger.TAG} load`,
-          CURRENT_GET: `${OmgsMessenger.TAG} currentGet`
+          CURRENT_GET: `${OmgsMessenger.TAG} currentGet`,
+          ERROR_DATA_GET: `${OmgsMessenger.TAG} errorDataGet`
         };
       }
 
@@ -57,6 +58,12 @@ limitations under the License.
           type: Object,
           readOnly: true,
           notify: true
+        },
+
+        errorData: {
+          type: Object,
+          readOnly: true,
+          notify: true,
         }
       },
 
@@ -64,7 +71,12 @@ limitations under the License.
         this.addConnectRunnable(() => {
           this.getCurrentInfo()
           .then((info) => this._setCurrentInfo(info))
-          .catch((err) => console.warn('Could not get currentInfo', err));
+          .catch((err) => console.warn('Could not get currentInfo', err))
+          .then(() => this.getErrorData())
+          .then((errorData) => {
+            this._setErrorData(errorData);
+          })
+          .catch((err) => console.warn('Could not get errorData', err));
         });
       },
 
@@ -79,6 +91,10 @@ limitations under the License.
 
       getCurrentInfo: function() {
         return this.sendRequest(OmgsMessenger.REQUEST.CURRENT_GET);
+      },
+
+      getErrorData: function() {
+        return this.sendRequest(OmgsMessenger.REQUEST.ERROR_DATA_GET);
       }
     });
   })(this);
