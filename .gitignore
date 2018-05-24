@@ -12,6 +12,7 @@ app/bower_components/
 
 # polymer-cli
 build/
+support/scripts/upgrade-server/public/socket.io.js
 
 *.swp
 

@@ -16,13 +16,12 @@ limitations under the License.
 (() => {
   'use strict';
 
-  const Helper = require('./helper');
   const logger = require('./simple-logger');
-  const WebSocketServer = require('ws').Server;
+  const Io = require('socket.io');
 
   // We need this variable because of the static sendReloadCommand method;
   // otherwise we could have it as a class field.
-  let clientCommunicationWebsocket = null;
+  let socket = null;
 
   class ClientCommunication {
     constructor() {
@@ -33,59 +32,74 @@ limitations under the License.
       this._currentActivityStatus = null;
       this._prevProgress = 0;
       this._wss = null;
+      this._boundOnClose = this._onClose.bind(this);
+      this._boundOnConnect = this._onConnection.bind(this);
+      this._boundOnDisconnect = this._onDisconnect.bind(this);
+      this._boundOnUpdateActivity = this._onUpdateActivity.bind(this);
     }
 
     load(server) {
       // initialize web socket connection
-      this._wss = new WebSocketServer({server: server});
-      this._wss.on('connection', this._doConnection.bind(this));
+      this._wss = new Io();
+      this._wss.attach(server, {log: true, serveClient: false});
+      this._wss.on('connection', this._boundOnConnect);
+      this._wss.on('close', this._boundOnClose);
       return Promise.resolve();
     }
 
     unload() {
       if (this._wss != null) {
-        this._wss.removeEventListener('connection', this._doConnection.bind(this));
         this._wss.close();
         this._wss = null;
-      }
-      if (clientCommunicationWebsocket != null) {
-        clientCommunicationWebsocket.close();
       }
       return Promise.resolve();
     }
 
-    _doConnection(websocket) {
+    _addSocketListeners() {
+      socket.on('disconnect', this._boundOnDisconnect);
+      socket.on('update-activity', this._boundOnUpdateActivity);
+    }
+
+    _onClose() {
+      this._wss.removeListener('connection', this._boundOnConnect);
+      this._wss.removeListener('close', this._boundOnClose);
+    }
+
+    _onConnection(websocket) {
       logger.debug('ClientCommunication.load: CONNECTED');
-      clientCommunicationWebsocket = websocket;
-      clientCommunicationWebsocket.onmessage = this._processIncomingMessage.bind(this);
-      clientCommunicationWebsocket.on('close', this._doClose.bind(this));
+      socket = websocket;
+      this._addSocketListeners();
     }
 
-    _doClose() {
-      clientCommunicationWebsocket = null;
+    _onDisconnect() {
+      socket.removeListener('disconnect', this._boundOnDisconnect);
+      socket.removeListener('update-activity', this._boundOnUpdateActivity);
+      socket = null;
     }
 
-    _processIncomingMessage(event) {
-      logger.silly('ClientCommunication.load: WSS Received message: ' + Helper.objectToString(event));
-      if ((event.type === 'message') && (event.data === 'updateActivity')) {
-        this.sendActivityName(this._currentActivityName);
-        this.sendActivityProgress(this._currentActivityProgressCurrent, this._currentActivityProgressTotal);
-        this.sendActivityStatus(this._currentActivityStatus);
+    _onUpdateActivity() {
+      this.sendActivityName(this._currentActivityName);
+      this.sendActivityProgress(this._currentActivityProgressCurrent, this._currentActivityProgressTotal);
+      this.sendActivityStatus(this._currentActivityStatus);
+    }
+
+    _emitSocketEvent({event, data}) {
+      if (socket != null) {
+        socket.emit(event, data);
+      } else {
+        logger.debug('ClientCommunication._emitSocketEvent(' + event + '): WSS Socket is null');
       }
     }
 
     sendActivityName(name) {
       // announce action name
       this._currentActivityName = name;
-      if (clientCommunicationWebsocket != null) {
-        const obj = {
-          type: 'action',
-          text: name,
-        };
-        clientCommunicationWebsocket.send(JSON.stringify(obj));
-      } else {
-        logger.debug('ClientCommunication.sendActivityName(' + name + '): WSS Socket is null');
-      }
+      this._emitSocketEvent({
+        event: 'action',
+        data: {
+          text: name
+        }
+      });
     }
 
     sendActivityProgress(current, total) {
@@ -96,16 +110,13 @@ limitations under the License.
         logger.warn('WARNING: new progress < previous progress: ' + current + ' < ' + this._prevProgress);
       }
       this._prevProgress = current;
-      if (clientCommunicationWebsocket != null) {
-        const obj = {
-          type: 'progress',
+      this._emitSocketEvent({
+        event: 'progress',
+        data: {
           completedItems: current,
-          totalItems: total,
-        };
-        clientCommunicationWebsocket.send(JSON.stringify(obj));
-      } else {
-        logger.debug('ClientCommunication.sendActivityProgress(' + current + '/' + total + '): WSS Socket is null');
-      }
+          totalItems: total
+        }
+      });
     }
 
     sendActivityStatus(status) {
@@ -113,27 +124,19 @@ limitations under the License.
       logger.verbose('Activity status: ' + status);
       this._currentActivityStatus = status;
       // send output only if log level >= debug and we have some status to send
-      if (clientCommunicationWebsocket != null) {
-        const obj = {
-          type: 'status',
-          text: status,
-        };
-        clientCommunicationWebsocket.send(JSON.stringify(obj));
-      } else {
-        logger.debug('ClientCommunication.sendActivityStatus(' + status + '): WSS Socket is null');
-      }
+      this._emitSocketEvent({
+        event: 'status',
+        data: {
+          text: status
+        }
+      });
     }
 
-    static sendReloadCommand() {
-      // Force page reload
-      if (clientCommunicationWebsocket != null) {
-        const obj = {
-          type: 'reload',
-        };
-        clientCommunicationWebsocket.send(JSON.stringify(obj));
-      } else {
-        logger.debug('ClientCommunication.sendReloadCommand(): WSS Socket is null');
-      }
+    sendReloadCommand() {
+      this._emitSocketEvent({
+        event: 'reload',
+        data: {}
+      });
     }
   }
 

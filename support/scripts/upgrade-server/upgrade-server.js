@@ -39,19 +39,20 @@ limitations under the License.
       this.app = express();
       // routing
       logger.debug('Configure routing');
-      this.use(function(req, res, next) {
+      // this.app.use('/public', express.static(path.join(__dirname, 'public')));
+      this.app.use(express.static('public'));
+      this.app.use(function(req, res, next) {
+        if (req.method !== 'GET') {
+          return next();
+        }
         logger.silly('REQ:\n' + Helper.objectToString(req));
-        next();
-      });
-      this.use('/public', express.static(path.join(__dirname, 'public')));
-      this.use(function(req, res, next) {
         logger.debug('URL:' + req.url);
         res.sendFile(path.join(__dirname, 'public/index.html'));
       });
       logger.debug('Configure routing - DONE');
     }
 
-    listen(messageCenter) {
+    load() {
       logger.debug('Web Server Listen');
       return Promise.resolve()
       .then(() => logger.debug('_createHttpServer'))
@@ -67,7 +68,6 @@ limitations under the License.
         this._clientCommunication = new ClientCommunication();
         this._clientCommunication.load(this._httpsServer);
       })
-      .then(() => messageCenter.connect(this._httpsServer))
       .then(() => {
         // this promise resolves when our HTTPS server connects
         logger.debug('... waiting for Upgrade Server connection');
@@ -125,7 +125,7 @@ limitations under the License.
     }
 
     sendActionReload() {
-      ClientCommunication.sendReloadCommand();
+      this._clientCommunication.sendReloadCommand();
     }
 
     _createHttpsServer() {
@@ -175,25 +175,6 @@ limitations under the License.
         logger.debug('Closing HTTP server');
         this._httpServer.close(resolve);
         this._httpServer = undefined;
-      });
-    }
-
-    use(path, middleware) {
-      return Promise.resolve()
-      .then(() => {
-        if (typeof(path) === 'function') {
-          return this.use('/', path);
-        }
-        if (!(path in this._middlewares)) {
-          this._middlewares[path] = [];
-          if (path === '/') {
-            this.app.use(this._getMiddleware(path));
-          } else {
-            this.app.use(path, this._getMiddleware(path));
-          }
-        }
-        this._middlewares[path].push(middleware);
-        return this._middlewares;
       });
     }
 

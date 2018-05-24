@@ -18,7 +18,8 @@ limitations under the License.
 <head>
   <meta charset="utf-8">
   <title>Updating BITS Installation</title>
-  <link rel="stylesheet" href="/public/main.css">
+  <link rel="stylesheet" href="/main.css">
+  <script type="text/javascript" src="/socket.io.js"></script>
 </head>
 <body>
   <main>
@@ -41,10 +42,7 @@ limitations under the License.
     'use strict';
 
     let websocket = null;
-    let actionText = null;
     let statusEl = null;
-    let percent = null;
-    let prevPercent = null;
     let progressBarEl = null;
     let progressBarTextEl = null;
     let debugEl = null;
@@ -77,27 +75,59 @@ limitations under the License.
     }
 
     function _initiateWebSocket() {
-      const url = new URL(window.location.href);
-      let websocketUrl = 'wss://' + url.hostname;
-      if (url.port) {
-        websocketUrl += ':' + url.port;
-      }
-      websocket = new WebSocket(websocketUrl);
-      websocket.onopen = function(...args) {
-        websocket.send('updateActivity');
-      };
-      websocket.onmessage = function(evt) {
-        processJsonMessage(evt.data);
-      };
+      websocket = window.io.connect();
+      websocket.on('connect', _onConnect);
     }
 
-    function _outputProgress() {
-      if (percent !== null) {
-        let newPercent = parseInt(percent);
-        if ((prevPercent !== null) && (newPercent < prevPercent)) {
-          console.log('Progress went from ' + prevPercent + ' to ' + newPercent);
-        }
-        prevPercent = newPercent;
+    function _onConnect() {
+      websocket.emit('update-activity');
+      websocket.on('status', _onStatus);
+      websocket.on('progress', _onProgress);
+      websocket.on('action', _onAction);
+      websocket.on('reload', _onReload);
+      websocket.on('disconnect', _onDisconnect);
+    }
+
+    function _onStatus(data) {
+      const {text} = data;
+      if (debug) {
+        debugData.push({message: text, timestamp: new Date()});
+        _outputDebugText(text);
+      }
+    }
+
+    function _onProgress(data) {
+      const {completedItems, totalItems} = data;
+      if (!isNaN(completedItems) && !isNaN(totalItems)) {
+        const percent = (Math.min(100, Math.floor(100 * completedItems / (totalItems + 1)))) + '%';
+        _outputProgress(percent);
+      }
+    }
+
+    function _onAction(data) {
+      const {text} = data;
+      _outputActionText(text);
+    }
+
+    function _onReload(data) {
+      _doReload();
+    }
+
+    function _onDisconnect() {
+      websocket.off('connect', _onConnect);
+      websocket.off('status', _onStatus);
+      websocket.off('progress', _onProgress);
+      websocket.off('action', _onAction);
+      websocket.off('reload', _onReload);
+      websocket.off('disconnect', _onDisconnect);
+      websocket.open();
+      if (false) {
+        processJsonMessage();
+      }
+    }
+
+    function _outputProgress(percent) {
+      if (percent) {
         if (progressBarEl !== null) {
           progressBarEl.style.width = percent;
         }
@@ -107,16 +137,16 @@ limitations under the License.
       }
     }
 
-    function _outputActionText() {
-      if (statusEl != null && actionText != null) {
-        statusEl.innerHTML = actionText;
+    function _outputActionText(text) {
+      if (statusEl !== null && text !== undefined) {
+        statusEl.innerHTML = text;
       }
     }
 
-    function _outputDebugText() {
+    function _outputDebugText(text) {
       if (debug && debugData.length && debugEl) {
         debugEl.style.display = 'block';
-        debugEl.innerHTML = debugData[debugData.length - 1].message;
+        debugEl.innerHTML = text;
         console.table(debugData);
       }
     }
@@ -131,53 +161,22 @@ limitations under the License.
       if (request == null) {
         // wait 12 seconds for the server to restart, then
         // reload the page
-        console.log('12 second timeout before reload');
         window.setTimeout(() => {
-          console.log('reload now');
           location.reload(true);
         }, 12000);
       } else {
         let timer = window.setInterval(() => {
           try {
-            console.log('Requesting "/"');
             request.open('GET', '/', false);
             request.send(); // blocks until the response arrives
-            console.log('status: ' + request.status);
             if (request.status === 200) {
               window.clearInterval(timer);
               location.reload(true);
             }
           } catch (err) {
-            console.log('Not ready: ' + err);
+            console.warn('Not ready: ' + err);
           }
         }, 1000);
-      }
-    }
-
-    function processJsonMessage(jsonMessage) {
-      try {
-        const obj = JSON.parse(jsonMessage);
-        switch (String(obj.type).toLowerCase()) {
-        case 'action':
-          actionText = obj.text;
-          _outputActionText();
-          break;
-        case 'progress':
-          percent = (Math.min(100, Math.floor(100 * obj.completedItems/obj.totalItems))) + '%';
-          _outputProgress();
-          break;
-        case 'reload':
-          _doReload();
-          break;
-        case 'status':
-          if (debug) {
-            debugData.push({message: obj.text, timestamp: new Date()});
-            _outputDebugText();
-          }
-          break;
-        }
-      } catch (err) {
-        console.error(err);
       }
     }
 

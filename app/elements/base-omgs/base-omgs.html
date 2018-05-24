@@ -34,6 +34,12 @@ limitations under the License.
         };
       }
 
+      static get EVENT() {
+        return {
+          UPGRADE_STARTING: `${OmgsMessenger.TAG} upgrade-starting`,
+        };
+      }
+
       static get TAG() {
         return 'base#Omgs';
       }
@@ -65,6 +71,19 @@ limitations under the License.
         }
       },
 
+      attached() {
+        this._boundOnUpgradeStarting = this._onUpgradeStarting.bind(this);
+        this.async(() => {
+          this.addSocketEventListener(OmgsMessenger.EVENT.UPGRADE_STARTING, this._boundOnUpgradeStarting);
+        });
+      },
+
+      detached() {
+        this.async(() => {
+          this.removeSocketEventListener(OmgsMessenger.EVENT.UPGRADE_STARTING, this._boundOnUpgradeStarting);
+        });
+      },
+
       ready: function() {
         this.addConnectRunnable(() => {
           this.getCurrentInfo()
@@ -93,6 +112,11 @@ limitations under the License.
 
       getErrorData: function() {
         return this.sendRequest(OmgsMessenger.REQUEST.ERROR_DATA_GET);
+      },
+
+      _onUpgradeStarting: function() {
+        console.log('HERE');
+        this.fire('base-omgs-upgrade-starting');
       }
     });
   })(this);
