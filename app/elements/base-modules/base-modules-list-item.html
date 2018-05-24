@@ -172,11 +172,11 @@ limitations under the License.
         if (!mod) {
           return 'N/A';
         } else if (mod.isLoaded) {
-          return 'Loaded: ' + mod.installedVersion;
+          return 'Loaded: ' + mod.version;
         } else if (mod.loadError != null && typeof(mod.loadError.message) === 'string') {
           return mod.loadError.message;
         } else if (mod.isInstalled) {
-          return 'Installed: ' + mod.installedVersion;
+          return 'Installed: ' + mod.version;
         } else {
           return 'Available: ' + mod.packageVersions;
         }

@@ -646,6 +646,10 @@ diff@3.2.0:
   version "3.2.0"
   resolved diff/-/diff-3.2.0.tgz#c9ce393a4b7cbd0b058a725c93df299027868ff9
 
+digraph@^1.4.1:
+  version "1.4.1"
+  resolved "http://epic:8081/repository/npm-proxy/digraph/-/digraph-1.4.1.tgz#8b0e79acae40277476e37001eba24f47100b0a64"
+
 dns-prefetch-control@0.1.0:
   version "0.1.0"
   resolved dns-prefetch-control/-/dns-prefetch-control-0.1.0.tgz#60ddb457774e178f1f9415f0cabb0e85b0b300b2
@@ -1169,6 +1173,10 @@ graceful-fs@^4.1.2:
 "graceful-readlink@>= 1.0.0":
   version "1.0.1"
   resolved graceful-readlink/-/graceful-readlink-1.0.1.tgz#4cafad76bc62f02fa039b2f94e9a3dd3a391a725
+
+graph-js@^0.1.11:
+  version "0.1.11"
+  resolved "http://epic:8081/repository/npm-proxy/graph-js/-/graph-js-0.1.11.tgz#370746f7ebebf08ff9bc1f64df83cda2df39795e"
 
 growl@1.9.2:
   version "1.9.2"

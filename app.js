@@ -64,10 +64,9 @@ limitations under the License.
 
     return Promise.resolve()
     .then(() => base.initialize())
-    .then(() => {
-      logger.info('Application started');
-    })
+    .then(() => logger.info('Application started'))
     .then(() => base.load())
+    .then(() => logger.info('Base has completed loading'))
     .catch((err) => {
       logger.error('Error starting application: %s', err.toString(), {error: err});
       logger.error(err.stack);
