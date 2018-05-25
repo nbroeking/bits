@@ -20,6 +20,17 @@ limitations under the License.
 ((global) => {
   'use strict';
 
+  const MODULE_PREFIX = 'base#Modules ';
+  const MODULE = {
+    REQUEST: {
+      LOAD: MODULE_PREFIX + 'load',
+      UNLOAD: MODULE_PREFIX + 'unload',
+      GET_DATA_DIRECTORY: MODULE_PREFIX + 'getDataDirectory'
+    },
+    EVENT: {
+    }
+  };
+
   Polymer({
     is: 'base-modules',
 
@@ -31,6 +42,15 @@ limitations under the License.
       tag: {
         value: 'base#ModuleManager'
       }
+    },
+
+    loadModules() {
+      return this.sendRequest(MODULE.REQUEST.LOAD);
+    },
+
+    unloadModule(modules) {
+      console.log('Unloading modules', modules);
+      return this.sendRequest(MODULE.REQUEST.UNLOAD, modules);
     }
   });
 })(this);

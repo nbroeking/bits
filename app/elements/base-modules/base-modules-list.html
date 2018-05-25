@@ -215,7 +215,7 @@ limitations under the License.
       <div main-title>Modules</div>
 
 
-      <div class="module-progress" hidden="[[!loadingState]]">
+      <div class="module-progress" hidden="[[!loadingState || false]]">
         <paper-progress
           value="[[loadedModuleCount]]"
           indeterminate="[[_calculateIndeterminate(loadedModuleCount)]]"
@@ -230,17 +230,8 @@ limitations under the License.
         </div>
       </div>
 
-      <paper-icon-button id="modules-select-all" icon="select-all" on-tap="onSelectAll" disabled="[[_computeSelectAllDisabled(modules.*, selectedModules.*)]]"></paper-icon-button>
-      <paper-tooltip for="modules-select-all">Select All</paper-tooltip>
-
-      <paper-icon-button id="modules-select-clear" icon="clear" on-tap="onClearSelection" disabled="[[!hasSelectedModules]]"></paper-icon-button>
-      <paper-tooltip for="modules-select-clear">Clear</paper-tooltip>
-
-      <paper-icon-button id="modules-select-uninstall" icon="file-download" on-tap="onUninstallModules" disabled="[[!hasSelectedModules]]"></paper-icon-button>
-      <paper-tooltip for="modules-select-uninstall">Uninstall</paper-tooltip>
-
-      <paper-icon-button id="modules-select-load" icon="file-upload" on-tap="onInstallModules" disabled="[[!hasSelectedModules]]"></paper-icon-button>
-      <paper-tooltip for="modules-select-load">Load</paper-tooltip>
+      <paper-icon-button id="modules-select-load" icon="file-upload" on-tap="onLoadModules"></paper-icon-button>
+      <paper-tooltip for="modules-select-load">Load All Modules</paper-tooltip>
 
       <paper-icon-button id="modules-upload" icon="cloud-upload" on-tap="onImportModulePackage"></paper-icon-button>
       <paper-tooltip for="modules-upload">Upload</paper-tooltip>
@@ -253,11 +244,9 @@ limitations under the License.
       <span class="header">No Modules</span>
     </div>
 
-    <iron-selector id="list" attr-for-selected="module" multi selected-values="{{selectedModules}}">
-      <template is="dom-repeat" items="[[filteredModules]]" sort="_sortModules" as="module">
-        <base-modules-list-item class="item" module="[[module]]" on-module-info="onModuleInfo" selected$="[[selected]]"></base-modules-list-item>
-      </template>
-  </iron-selector>
+    <template is="dom-repeat" items="[[filteredModules]]" sort="_sortModules" as="module">
+      <base-modules-list-item class="item" module="[[module]]" on-module-info="onModuleInfo"></base-modules-list-item>
+    </template>
 
   <paper-dialog id="info-dialog" no-cancel-on-esc-key>
     <h2>Module Info</h2>
@@ -348,13 +337,13 @@ limitations under the License.
     </div>
     <div class="buttons">
       <paper-button dialog-dismiss>Cancel</paper-button>
-      <paper-button dialog-confirm on-tap="onLoadModule" disabled$="[[!moduleDependenciesSatisfied]]">Load</paper-button>
+      <paper-button dialog-confirm on-tap="onLoadModule">Load</paper-button>
     </div>
   </paper-dialog>
 
   <paper-dialog id="confirm-dialog" no-cancel-on-esc-key>
     <h2>[[confirmHeading]]</h2>
-    <div>Are you sure?</div>
+    <div>[[confirmBody]]</div>
     <div class="buttons">
       <paper-button dialog-dismiss>Cancel</paper-button>
       <paper-button dialog-confirm>Yes</paper-button>
@@ -404,7 +393,7 @@ limitations under the License.
 
           filteredModules: {
             type: Array,
-            computed: '_computeFilteredModules(modules)',
+            computed: '_computeFilteredModules(modules.*)',
             observer: '_observeFilteredModules',
           },
           baseModule: {
@@ -424,6 +413,9 @@ limitations under the License.
             type: String,
           },
           confirmHeading: {
+            type: String,
+          },
+          confirmBody: {
             type: String,
           },
           progressHeading: {
@@ -511,7 +503,6 @@ limitations under the License.
         ],
 
         observers: [
-          '_onSelectedModulesChanged(selectedModules.splices)',
           '_emptyStates(hasModules)',
           '_computeLoadingState(managerState)'
         ],
@@ -521,9 +512,9 @@ limitations under the License.
         },
 
         listeners: {
-          'module-package-version-remove': '_onRemoveModulePackageVersion',
           'base-upgrade': 'onBaseUpgrade',
           'iron-overlay-opened': 'onIronOverlayOpened',
+          'unload-module': '_onModuleUnload',
           'upload-before': '_onUploadBefore',
           'upload-request': '_onUploadRequest',
           'upload-response': '_onUploadResponse'
@@ -560,7 +551,21 @@ limitations under the License.
           });
         },
 
-        _computeFilteredModules: function(modules) {
+        _onModuleUnload: function(e, detail) {
+          console.log('Which module are we unloading', detail);
+
+          const name = detail.displayName ? detail.displayName : detail.name;
+          Promise.resolve()
+          .then(() => this._openConfirmDialog(`Unload ${name}`, `This will cause ${name} to be removed the system and all dependent modules to unload. Would you like to continue?`))
+          .then(() => this.$.modules.unloadModule(detail))
+          .catch((err) => {
+            console.error('Unable to unload module', err);
+          });
+        },
+
+        _computeFilteredModules: function(moduleChanges) {
+          const modules = this.modules;
+
           if (Array.isArray(modules)) {
             return modules.filter(function(mod) {
               if (!mod) {
@@ -662,49 +667,8 @@ limitations under the License.
           this.async(this.notifyResize, 3000);
         },
 
-        _onRemoveModulePackageVersion: function(e, detail) {
-          let _this = this;
-
-          let mod = detail.module;
-
-          return this._getModulePackageVersion(mod, {
-            multi: true
-          })
-          .then((packageVersions) => {
-            if (!Array.isArray(packageVersions) || 0 >= packageVersions.length) {
-              return Promise.reject(new Error('No package versions to remove'));
-            }
-
-            _this._openProgressDialog('Removing package versions');
-
-            return packageVersions.reduce((promise, packageVersion) => {
-              return promise.then(() => {
-                return _this.$.modules.remove(packageVersion.name, packageVersion.version);
-              });
-            }, Promise.resolve());
-          })
-          .then((result) => {
-            _this._closeProgressDialog();
-            return result;
-          }, (err) => {
-            console.warn(err.toString());
-            _this._closeProgressDialog();
-            return Promise.reject(err);
-          });
-        },
-
         onIronOverlayOpened: function(e) {
           e.target.notifyResize();
-        },
-
-        _onSelectedModulesChanged: function() {
-          let selectedLength = this.selectedModules.length;
-          let modulesLength = (this.filteredModules ? this.filteredModules.length : -1);
-
-          this.$['modules-select-clear'].hidden = (0 === selectedLength);
-          this.$['modules-select-all'].hidden = (modulesLength === selectedLength);
-          this.$['modules-select-load'].hidden = (0 === selectedLength);
-          this.$['modules-select-uninstall'].hidden = (0 === selectedLength);
         },
 
         onBaseUpgrade: function(e, detail) {
@@ -738,42 +702,11 @@ limitations under the License.
           this.$['info-dialog'].open();
         },
 
-        onClearSelection: function() {
-          this.selectedModules = [];
-        },
-
-        onSelectAll: function() {
-          this.onClearSelection();
-          this.filteredModules.forEach(function(mod, index) {
-            this.$.list.selectIndex(index);
-          }, this);
-        },
-
-        onInstallModules: function() {
-          return this.selectedModules.reduce((promise, selectedModule) => {
-            return promise.then((modules) => {
-              return this._installModuleDialog(selectedModule)
-              .then((mod) => modules.concat([mod]));
-            });
-          }, Promise.resolve([]))
-          .catch((err) => this.fire('bits-base-error', {
-            err: err
-          }))
-          .then((modules) => this.$.modules.installModules(modules))
+        onLoadModules: function() {
+          return Promise.resolve()
+          .then(() => this.$.modules.loadModules())
           .then(() => this._closeProgressDialog())
           .then(() => this.onClearSelection());
-        },
-
-        onUninstallModules: function(e, detail) {
-          this._openProgressDialog('Uninstalling modules.');
-          this.$.modules.uninstallModules(this.selectedModules.map((mod) => mod.name))
-          .catch((err) => this.fire('bits-base-error', {
-            err: err
-          }))
-          .then((result) => {
-            this._closeProgressDialog();
-            this.onClearSelection();
-          });
         },
 
         onLoadModule: function() {
@@ -789,8 +722,7 @@ limitations under the License.
             self._closeProgressDialog();
           }, function(err) {
             self._closeProgressDialog();
-          })
-          .then(() => this.onClearSelection());
+          });
         },
 
         onImportModulePackage: function(e, detail) {
@@ -803,11 +735,11 @@ limitations under the License.
           this.$['progress-dialog'].open();
         },
 
-        _openConfirmDialog: function(heading) {
+        _openConfirmDialog: function(heading, body) {
           let self = this;
           return new Promise(function(fulfill, reject) {
             self.confirmHeading = heading || 'Loading...';
-
+            self.confirmBody = body || 'Are you sure?';
             self._onIronOverlayClosed = function(e, detail) {
               let closingReason = self.$['confirm-dialog'].closingReason;
               self.unlisten(self.$['confirm-dialog'], 'iron-overlay-closed', '_onIronOverlayClosed');
@@ -898,57 +830,6 @@ limitations under the License.
           this.$['confirm-dialog'].close();
         },
 
-        _installModuleDialog: function(mod) {
-          return this._getModulePackageVersion(mod, {
-            multi: false
-          })
-          .then((packageVersion) => {
-            let name = packageVersion.name;
-            let version = packageVersion.version;
-
-            this._openProgressDialog('Installing ' + name + ' version ' + version);
-
-            return Promise.resolve({
-              name: name,
-              version: version
-            });
-          })
-          .then((result) => {
-            this._closeProgressDialog();
-            return result;
-          }, (err) => {
-            console.warn(err.toString());
-            this._closeProgressDialog();
-            return Promise.reject(err);
-          });
-        },
-
-        _uninstallModuleDialog: function(mod) {
-          let self = this;
-
-          return self._openConfirmDialog('Uninstall ' + mod.installedDisplayName)
-          .then(function() {
-            return self._uninstallModule(mod);
-          });
-        },
-
-        _uninstallModule: function(mod) {
-          let self = this;
-
-          // Open the progress dialog while unloading the module
-          self._openProgressDialog('Uninstalling Module');
-
-          // Unload the module
-          self.$.modules.uninstallModule(mod.name)
-          .then(function() {
-            // Close the progress dialog
-            self._closeProgressDialog();
-          }, function(err) {
-            // Close the progress dialog
-            self._closeProgressDialog();
-          });
-        },
-
         _loadModuleDialog: function(mod) {
           let self = this;
 
@@ -983,61 +864,6 @@ limitations under the License.
             // Close the progess dialog
             self._closeProgressDialog();
           });
-        },
-
-        _unloadModuleDialog: function(mod) {
-          let self = this;
-
-          // Show the progress dialog while getting the dependencies
-          self._openProgressDialog('Getting Dependents');
-
-          // Get the dependency list for this module
-          self.$.modules.getModuleDependentList(mod.name)
-          .then(function(dependencies) {
-            // Add any dependencies to the unload list
-            if (dependencies) {
-              self.dependentModules = dependencies;
-            } else {
-              self.dependentModules = [];
-            }
-
-            // Add the module itself to the list of unloads
-            self.dependentModules.push(mod);
-
-            // Close the progess dialog
-            self._closeProgressDialog();
-
-            // Show the unload confirm dialog
-            return self._openConfirmDialog('Unload ' + mod.installedDisplayName);
-          }, function(err) {
-            // Close the progess dialog
-            self._closeProgressDialog();
-          })
-          .then(function() {
-            return self._unloadModule(mod);
-          }, function(err) {
-            console.error(err);
-          });
-        },
-
-        _unloadModule: function(mod) {
-          // Close the unload confirm dialog
-          this._closeConfirmDialog();
-
-          // Open the progress dialog while unloading the module
-          this._openProgressDialog('Unloading Module');
-
-          // Unload the module
-          let self = this;
-          return self.$.modules.unloadModule(mod.name)
-          .then(function() {
-            // Close the progress dialog
-            self._closeProgressDialog();
-          }, function(err) {
-            // Close the progress dialog
-            self._closeProgressDialog();
-          })
-          .then(() => this.onClearSelection());
         },
 
         _getModulePackageVersion: function(mod, options) {
