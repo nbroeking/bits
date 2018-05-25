@@ -23,18 +23,16 @@ limitations under the License.
   global.paths = global.paths || {};
   global.paths = Object.assign(global.paths, {data: os.tmpdir()});
 
-  const ModuleManager = require('./../lib/modules/module-manager');
-
-  const expect = chai.expect;
+  // const ModuleManager = require('./../lib/modules/module-manager');
+  // const expect = chai.expect;
 
   chai.use(chaiAsPromised);
 
   describe('ModuleManager', () => {
-    let moduleManager = null;
+    // let moduleManager = null;
 
     beforeEach('Create ModuleManager', () => {
-      moduleManager = new ModuleManager();
+      // moduleManager = new ModuleManager();
     });
-
   });
 })();
