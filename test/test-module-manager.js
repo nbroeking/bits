@@ -36,48 +36,5 @@ limitations under the License.
       moduleManager = new ModuleManager();
     });
 
-    describe('checkModuleInfoRequiredParameters', () => {
-      it('should rejected if no module information is given', () => {
-        return expect(moduleManager.checkModuleInfoRequiredParameters()).to.be.rejectedWith('Module Info must not be null');
-      });
-
-      it('should rejected if there is no name property', () => {
-        const moduleInfo = {};
-        return expect(moduleManager.checkModuleInfoRequiredParameters(moduleInfo)).to.be.rejectedWith('name must be a non-empty string');
-      });
-
-      it('should rejected if name property is not a string', () => {
-        const moduleInfo = {
-          name: 1337
-        };
-        return expect(moduleManager.checkModuleInfoRequiredParameters(moduleInfo)).to.be.rejectedWith('name must be a non-empty string');
-      });
-
-      it('should rejected if name property is an empty string', () => {
-        const moduleInfo = {
-          name: ''
-        };
-        return expect(moduleManager.checkModuleInfoRequiredParameters(moduleInfo)).to.be.rejectedWith('name must be a non-empty string');
-      });
-
-      it('should rejected if the version property is not valid', () => {
-        const moduleInfo = {
-          name: 'a',
-          version: 'not a valid version'
-        };
-        return expect(moduleManager.checkModuleInfoRequiredParameters(moduleInfo)).to.be.rejectedWith('Module must have a valid semver version');
-      });
-
-      it('should return the moduleInfo given if a proper moduleInfo', () => {
-        const moduleInfo = {
-          name: 'a',
-          version: '1.0.0'
-        };
-        return moduleManager.checkModuleInfoRequiredParameters(moduleInfo)
-        .then((modInfo) => {
-          expect(modInfo).to.equal(moduleInfo);
-        });
-      });
-    });
   });
 })();
