@@ -80,16 +80,16 @@ limitations under the License.
       }
     </style>
 
-    <base-modules
-      manager-state="{{managerState}}"
-      modules="{{modules}}"
-      current-module="{{currentModule}}"></base-modules>
+    <base-key-value-document
+      tag="base#ModuleManager#Status"
+      key="load-status"
+      data="{{loadStatus}}">
+    </base-key-value-document>
 
-    <div hidden="[[!loading]]">
-    <div>
+    <div hidden="[[!isLoading]]">
       <a tabindex="-1" class="main" href="/home/modules">
-        <paper-spinner-lite active="[[loading]]"></paper-spinner-lite>
-        <paper-icon-button class="action-btn" icon="[[_calculateIcon(currentModule, modules.*)]]"></paper-icon-button>
+        <paper-spinner-lite active="[[isLoading]]"></paper-spinner-lite>
+        <paper-icon-button class="action-btn" icon="icons:view-module"></paper-icon-button>
       </a>
     </div>
   </template>
@@ -104,32 +104,22 @@ limitations under the License.
         managerState: {
           type: String,
         },
-        loading: {
+        loadStatus: {
+          type: Object
+        },
+        isLoading: {
           type: Boolean,
-          computed: '_computeLoading(managerState)'
+          computed: '_computeIsLoading(loadStatus)'
         }
       },
 
-      _computeLoading(managerState) {
-        return (managerState === 'Loading' || managerState === 'Unloading');
-      },
-
-      _calculateIcon: function(currentModule) {
-        let icon = 'icons:view-module';
-
-        if (currentModule.toUpperCase() !== 'NONE' && Array.isArray(this.modules)) {
-          const currentModuleData = this.modules.filter((module) => {
-            return module.name === currentModule;
-          }).shift();
-
-          if (currentModuleData.icon) {
-            icon = currentModuleData.icon;
-          }
+      _computeIsLoading: function() {
+        if (!this.loadStatus || this.loadStatus.status === 'idle') {
+          return false;
+        } {
+          return true;
         }
-
-        return icon;
       }
-
     });
   })();
   </script>

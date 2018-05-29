@@ -311,7 +311,7 @@ limitations under the License.
 
         _calculateModuleLoadedCount(moduleChanges) {
           return this.modules.reduce((acc, mod) => {
-            if( mod.isLoaded) {
+            if (mod.isLoaded) {
               return acc + 1;
             }
             return acc;
@@ -319,7 +319,7 @@ limitations under the License.
         },
 
         _computeIsLoading: function() {
-          if(!this.loadStatus || this.loadStatus.status === 'idle') {
+          if (!this.loadStatus || this.loadStatus.status === 'idle') {
             return false;
           } {
             return true;
@@ -327,7 +327,7 @@ limitations under the License.
         },
 
         _computeModulesHidden: function() {
-          if(!this.filteredModules || this.filteredModules.length === 0) {
+          if (!this.filteredModules || this.filteredModules.length === 0) {
             return false;
           } else {
             return true;
@@ -459,6 +459,6 @@ limitations under the License.
 
 
       });
-  })();
+})();
   </script>
 </dom-module>
