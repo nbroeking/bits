@@ -33,6 +33,12 @@ limitations under the License.
 <link rel="import" href="../../bower_components/paper-input/paper-input.html">
 <link rel="import" href="../../bower_components/paper-styles/typography.html">
 <link rel="import" href="../../bower_components/paper-spinner/paper-spinner.html">
+<link rel="import" href="../../bower_components/paper-item/paper-icon-item.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item-body.html">
+<link rel="import" href="../../bower_components/paper-progress/paper-progress.html">
+<link rel="import" href="../../bower_components/paper-tooltip/paper-tooltip.html">
+<link rel="import" href="../../bower_components/vaadin-upload/vaadin-upload.html">
 <link rel="import" href="../base-auth/base-auth.html">
 <link rel="import" href="../base-key-value/base-key-value-document.html">
 <link rel="import" href="../base-layout/base-header-layout/base-header-layout.html">
@@ -187,6 +193,8 @@ limitations under the License.
           </div>
         </div>
         <paper-button class="primary-btn-light" on-tap="onLoadModules" disabled="[[isLoading]]">Load All Modules</paper-button>
+        <paper-icon-button id="modules-upload" icon="cloud-upload" on-tap="onImportModulePackage" disabled="[[isLoading]]"></paper-icon-button>
+        <paper-tooltip for="modules-upload">Upload</paper-tooltip>
       </div>
       <div class="header-content">
         <base-modules-list-item class="base item" module="[[baseModule]]" on-module-info="onModuleInfo"></base-modules-list-item>
@@ -199,6 +207,19 @@ limitations under the License.
         </template>
       </div>
     </base-header-layout>
+
+    <paper-dialog id="upload-dialog">
+      <h2>Upload Module Package(s)</h2>
+
+      <div class="wrapper">
+        <vaadin-upload id="upload" method="POST" target="/api/base/modules" accept=".mod"></vaadin-upload>
+      </div>
+
+      <div class="buttons">
+        <paper-button dialog-dismiss>Cancel</paper-button>
+        <paper-button dialog-confirm>Done</paper-button>
+      </div>
+    </paper-dialog>
 
     <paper-dialog id="confirm-dialog" no-cancel-on-esc-key>
       <h2>[[confirmHeading]]</h2>
@@ -239,6 +260,7 @@ limitations under the License.
         <paper-button dialog-confirm>OK</paper-button>
       </div>
     </paper-dialog>
+
 
   </template>
   <script>
@@ -307,6 +329,11 @@ limitations under the License.
           .catch((err) => {
             console.error('Unable to unload module', err);
           });
+        },
+
+        onImportModulePackage: function(e, detail) {
+          this.$.upload.files = [];
+          this.$['upload-dialog'].open();
         },
 
         _calculateModuleLoadedCount(moduleChanges) {
