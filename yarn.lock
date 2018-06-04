@@ -648,7 +648,7 @@ diff@3.2.0:
 
 digraph@^1.4.1:
   version "1.4.1"
-  resolved "gdigraph/-/digraph-1.4.1.tgz#8b0e79acae40277476e37001eba24f47100b0a64"
+  resolved "digraph/-/digraph-1.4.1.tgz#8b0e79acae40277476e37001eba24f47100b0a64"
 
 dns-prefetch-control@0.1.0:
   version "0.1.0"
