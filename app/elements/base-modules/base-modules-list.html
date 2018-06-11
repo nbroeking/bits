@@ -212,7 +212,7 @@ limitations under the License.
       <h2>Upload Module Package(s)</h2>
 
       <div class="wrapper">
-        <vaadin-upload id="upload" method="POST" target="/api/base/modules/modules-packages" accept=".mod"></vaadin-upload>
+        <vaadin-upload id="upload" method="POST" target="/api/base/modules/module-packages" accept=".mod"></vaadin-upload>
       </div>
 
       <div class="buttons">
@@ -308,7 +308,6 @@ limitations under the License.
           'iron-overlay-opened': 'onIronOverlayOpened',
           'unload-module': 'onModuleUnload',
           'upload-before': '_onUploadBefore',
-          'upload-request': '_onUploadRequest',
           'upload-response': '_onUploadResponse'
         },
 
@@ -427,33 +426,29 @@ limitations under the License.
 
         _onUploadBefore: function() {
           this.$['upload-dialog'].notifyResize();
-
           this.$.upload.headers.Authorization = `Bearer ${this.$.auth.accessToken}`;
           this.$.upload.headers.Accept = 'application/json';
         },
 
-        _onUploadRequest: function(event, detail) {
-          const formData = detail.formData;
-          formData.delete('file');
-          formData.append('module-package', detail.file);
-        },
-
         _onUploadResponse: function(event, detail) {
           const xhr = detail.xhr;
-          const response = JSON.parse(xhr.response);
-
-          const filenames = Object.keys(response.operations);
-          filenames.forEach((filename) => {
-            const operation = response.operations[filename];
-            if (!operation.success) {
-              operation.errors.forEach((error) => {
-                error.name = filename;
-                this.fire('bits-base-error', {
-                  err: error
+          try {
+            const response = JSON.parse(xhr.response);
+            const filenames = Object.keys(response.operations);
+            filenames.forEach((filename) => {
+              const operation = response.operations[filename];
+              if (!operation.success) {
+                operation.errors.forEach((error) => {
+                  error.name = filename;
+                  this.fire('bits-base-error', {
+                    err: error
+                  });
                 });
-              });
-            }
-          });
+              }
+            });
+          } catch (exception) {
+            console.warn(xhr.response);
+          }
         },
 
         _openConfirmDialog: function(heading, body) {
