@@ -11,6 +11,7 @@
   "scripts": {
     "build": "yarn && npm run lint",
     "bits:install": "yarn --prod",
+    "postinstall": "cp ./node_modules/socket.io-client/dist/socket.io.min.js ./public/socket.io.js",
     "lint": "eslint --fix --ext js,html . && eslint --fix ../upgrade-base",
     "clean": "rm -rf node_modules/ app/bower_components/ data/ npm-error.log yarn-error.log",
     "dev": "HTTP_PORT=9000 HTTPS_PORT=9001 node app.js -v"

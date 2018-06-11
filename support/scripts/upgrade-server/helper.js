@@ -17,7 +17,6 @@ limitations under the License.
   'use strict';
 
   const Environment = require('./environment');
-  const exec = require('child_process').exec;
   const fs = require('fs');
   const logger = require('./simple-logger');
   const osenv = require('osenv');
@@ -103,7 +102,8 @@ limitations under the License.
       }
     }
 
-    static evalAsPromise(command, args, options, _debug=false) {
+    // Use SPAWN to execute the command
+    static spawnAsPromise(command, args, options, _debug=false) {
       // NB: that last parameter (_debug) makes it easier to debug these
       // calls on a case-by-case basis
       args = args || [];
@@ -138,19 +138,19 @@ limitations under the License.
         };
         addDump(results, 'results');
 
-        logger.verbose('evalAsPromise: ' + fullCommand);
+        logger.verbose('spawnAsPromise: ' + fullCommand);
         if (_debug) {
-          logger.debug('evalAsPromise: options:');
+          logger.debug('spawnAsPromise: options:');
           options.dump();
         }
         const proc = spawn(command, args, options);
         if (_debug) {
-          logger.debug('evalAsPromise: proc created');
+          logger.debug('spawnAsPromise: proc created');
         }
 
         proc.once('error', (err) => {
-          logger.error('evalAsPromise: ERROR: command "' + fullCommand + '" FAILED: ' + err);
-          reject(Object.assign(Error('evalAsPromise|' + err), results));
+          logger.error('spawnAsPromise: ERROR: command "' + fullCommand + '" FAILED: ' + err);
+          reject(Object.assign(Error('spawnAsPromise|' + err), results));
         });
         proc.stdout.setEncoding('utf8');
         proc.stdout.on('data', (data) => results.output.push(data));
@@ -159,8 +159,8 @@ limitations under the License.
         proc.once('close', (code, signal) => {
           logger.debug('  Eval time (' + fullCommand + '): ' + (Date.now() - results.startTime) + ' ms');
           if (_debug) {
-            logger.debug('evalAsPromise: SUCCESS: command "' + fullCommand + '" PASSED, code = ' + code);
-            logger.debug('evalAsPromise:   output(' + fullCommand + ') is "' + results.output + '"');
+            logger.debug('spawnAsPromise: SUCCESS: command "' + fullCommand + '" PASSED, code = ' + code);
+            logger.debug('spawnAsPromise:   output(' + fullCommand + ') is "' + results.output + '"');
           }
           results.code = code;
           results.signal = signal;
@@ -169,7 +169,7 @@ limitations under the License.
             if (command === 'npm') {
               logger.error('\n'
                 + 'v'.repeat(80) + '\n'
-                + 'evalAsPromise: ERROR ('
+                + 'spawnAsPromise: ERROR ('
                 + fullCommand
                 + '): Result code is non-zero ('
                 + code
@@ -181,132 +181,28 @@ limitations under the License.
             }
           }
           if (_debug) {
-            logger.debug('evalAsPromise: closing for ' + fullCommand);
+            logger.debug('spawnAsPromise: closing for ' + fullCommand);
           }
           resolve(results);
         });
         if (_debug) {
-          logger.debug('evalAsPromise: Promise created');
+          logger.debug('spawnAsPromise: Promise created');
         }
       })
       .catch((err) => {
-        logger.error('evalAsPromise: ERROR: command "' + fullCommand + '" FAILED: ' + err);
-        return Promise.reject(Error('evalAsPromise(' + fullCommand + ')|' + err));
+        logger.error('spawnAsPromise: ERROR: command "' + fullCommand + '" FAILED: ' + err);
+        return Promise.reject(Error('spawnAsPromise(' + fullCommand + ')|' + err));
       })
       .then((results) => {
         if (_debug) {
-          logger.debug('evalAsPromise.Promise.then: results = ', results);
+          logger.debug('spawnAsPromise.Promise.then: results = ', results);
         }
         return results;
       }, (err) => {
         if (_debug) {
-          logger.error('evalAsPromise.Promise.catch: ' + err);
+          logger.error('spawnAsPromise.Promise.catch: ' + err);
         }
-        throw Error('evalAsPromise | ' + err);
-      });
-    }
-
-    // Use EXEC to execute the command instead of SPAWN
-    static execAsPromise(command, args, options, _debug=true) {
-      // NB: that last parameter (_debug) makes it easier to debug these
-      // calls on a case-by-case basis
-      args = args || [];
-      options = options || {};
-      if (!('env' in options)) {
-        options['env'] = {};
-      }
-      const fullCommand = command + ' ' + args.join(' ');
-      return new Promise((resolve, reject) => {
-        function addDump(obj, name) {
-          if (!('dump' in obj)) {
-            obj['dump'] = function() {
-              for (let key in this) {
-                if (key === 'env') continue;
-                const value = this[key];
-                if (typeof(value) === 'function') continue;
-                logger.verbose('DUMP: ' + name + '[' + key + '] (' + typeof(value) + '): ' + value);
-              }
-            };
-          }
-        }
-        addDump(options, 'options');
-
-        options.env = Object.assign(process.env, options.env, Environment.all);
-
-        const results = {
-          startTime: Date.now(),
-          command: command,
-          args: args,
-          options: options,
-          output: [],
-        };
-        addDump(results, 'results');
-
-        logger.verbose('execAsPromise: ' + fullCommand);
-        if (_debug) {
-          logger.debug('execAsPromise: options:');
-          options.dump();
-        }
-        const proc = exec(fullCommand, options);
-        if (_debug) {
-          logger.debug('execAsPromise: proc created');
-        }
-
-        proc.once('error', (err) => {
-          logger.error('execAsPromise: ERROR: command "' + fullCommand + '" FAILED: ' + err);
-          reject(Object.assign(Error('execAsPromise|' + err), results));
-        });
-        proc.stdout.setEncoding('utf8');
-        proc.stdout.on('data', (data) => results.output.push(data));
-        proc.stderr.setEncoding('utf8');
-        proc.stderr.on('data', (data) => results.output.push(data));
-        proc.once('close', (code, signal) => {
-          logger.debug('  Exec time (' + fullCommand + '): ' + (Date.now() - results.startTime) + ' ms');
-          if (_debug) {
-            logger.debug('execAsPromise: SUCCESS: command "' + fullCommand + '" PASSED, code = ' + code);
-            logger.debug('execAsPromise:   output(' + fullCommand + ') is "' + results.output + '"');
-          }
-          results.code = code;
-          results.signal = signal;
-          if (code != 0) {
-            // output error info for 'npm' calls
-            if (command === 'npm') {
-              logger.error('\n'
-                + 'v'.repeat(80) + '\n'
-                + 'execAsPromise: ERROR ('
-                + fullCommand
-                + '): Result code is non-zero ('
-                + code
-                + ')');
-              options.dump();
-              results.dump();
-              logger.error('\n' + Helper.objectToString(options.env));
-              logger.error('\n' + '^'.repeat(80));
-            }
-          }
-          if (_debug) {
-            logger.debug('execAsPromise: closing for ' + fullCommand);
-          }
-          resolve(results);
-        });
-        if (_debug) {
-          logger.debug('execAsPromise: Promise created');
-        }
-      })
-      .catch((err) => {
-        logger.error('execAsPromise: ERROR: command "' + fullCommand + '" FAILED: ' + err);
-        return Promise.reject(Error('execAsPromise(' + fullCommand + ')|' + err));
-      })
-      .then((results) => {
-        if (_debug) {
-          logger.debug('execAsPromise.Promise.then: results = ', results);
-        }
-        return results;
-      }, (err) => {
-        if (_debug) {
-          logger.error('execAsPromise.Promise.catch: ' + err);
-        }
-        throw Error('execAsPromise | ' + err);
+        throw Error('spawnAsPromise | ' + err);
       });
     }
 
@@ -321,28 +217,13 @@ limitations under the License.
             return helperWhoAmI;
           } else {
             return Promise.resolve()
-            .then(() => Helper.evalAsPromise('whoami', []))
+            .then(() => Helper.spawnAsPromise('whoami', []))
             .then((results) => {
               helperWhoAmI = results.output.join('\n').trim();
             });
           }
         });
       }
-    }
-
-    static promiseWhile(data, condition, action) {
-      let whilst = (data) => {
-        return Promise.resolve()
-        .then(() => condition(data))
-        .then((conditionResult) => {
-          if (conditionResult) {
-            action(data).then(whilst);
-          } else {
-            return Promise.resolve(data);
-          }
-        });
-      };
-      return whilst(data);
     }
   }
 

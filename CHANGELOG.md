@@ -1,3 +1,33 @@
+<a name="2.20.0"></a>
+# 2.20.0 (2018-05-29)
+
+
+### Bug Fixes
+
+* **browser:** Check that object is defined before accessing properties   (eb4df49)
+* add null checks for process members   (7a158a2), closes BITS-115
+* **upgrade:** Ensure file removal is complete   (b720071), closes BITS-117
+* **upgrade:** Moving directory vs directory contents, delete modules   (96f3b33)
+* **upgrade:** Removes mini-message-center and base-load-url   (adf6d31)
+* **upgrade_rmrf:** Fix rm -rf to use spawn   (ce8f4f0)
+* Client reload on upgrade start event and socket null   (3e0fc82)
+* fix keys and values call for Persistent KV   (39f8d9f)
+* fix merge conflict resolution that copied wrong line   (c4e081c), closes BITS-109 BITS-117
+* Module count should be based on the extracted dir   (04d2f51)
+
+
+### Features
+
+* add utility method for mkdirp   (81a847c)
+* add utility method for mkdirp   (a7af61a)
+* add which to util-fs   (313f9ba)
+* Moved node module requires specific load methods   (8959298)
+* **upgrade:** Show upgrade errors in the OMGs UI   (5b165ba), closes BITS-109 BITS-110 BITS-111 BITS-112 BITS-113
+* **upgrade-server:** Initial commit of Upgrade Server   (fe235c6), closes BITS-93 BITS-94 BITS-95
+* remove the username from the bottom and always display it in toolbar   (ec4f555), closes BITS-27
+
+---
+
 <a name="2.19.0"></a>
 # 2.19.0 (2018-03-26)
 
