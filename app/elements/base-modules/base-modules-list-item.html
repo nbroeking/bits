@@ -1,5 +1,5 @@
 <!--
-Copyright 2017 LGS Innovations
+Copyright 2018 LGS Innovations
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -86,8 +86,10 @@ limitations under the License.
 
     <paper-icon-button id="info" class="action hover" icon="info-outline" on-tap="onModuleInfo"></paper-icon-button>
 
-    <paper-icon-button id="remove" class="action hover" icon="delete" on-tap="onUnload"></paper-icon-button>
-    <paper-tooltip for="remove" position="top" animation-delay="200" fit-to-visible-bounds>Remove Module Package</paper-tooltip>
+    <div hidden$="[[_isBase(module)]]">
+      <paper-icon-button id="remove" class="action hover" icon="delete" on-tap="onUnload" disabled$="[[_isBase(module)]]"></paper-icon-button>
+      <paper-tooltip for="remove" position="top" animation-delay="200" fit-to-visible-bounds>Remove Module Package</paper-tooltip>
+    </div>
 
   </template>
   <script>
@@ -106,6 +108,10 @@ limitations under the License.
       behaviors: [
         Polymer.IronResizableBehavior
       ],
+
+      _isBase: function(mod) {
+        return mod.name === 'bits-base';
+      },
 
       _calculateModuleIcon: function(mod) {
         if (!mod) {

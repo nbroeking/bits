@@ -24,10 +24,7 @@ limitations under the License.
   const MODULE = {
     REQUEST: {
       LOAD: MODULE_PREFIX + 'load',
-      UNLOAD: MODULE_PREFIX + 'unload',
-      GET_DATA_DIRECTORY: MODULE_PREFIX + 'getDataDirectory'
-    },
-    EVENT: {
+      UNLOAD: MODULE_PREFIX + 'unload'
     }
   };
 
@@ -49,7 +46,6 @@ limitations under the License.
     },
 
     unloadModule(modules) {
-      console.log('Unloading modules', modules);
       return this.sendRequest(MODULE.REQUEST.UNLOAD, modules);
     }
   });

@@ -1,5 +1,5 @@
 <!--
-Copyright 2017 LGS Innovations
+Copyright 2018 LGS Innovations
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -82,7 +82,7 @@ limitations under the License.
 
     <base-key-value-document
       tag="base#ModuleManager#Status"
-      key="load-status"
+      key="loadStatus"
       data="{{loadStatus}}">
     </base-key-value-document>
 
@@ -114,11 +114,7 @@ limitations under the License.
       },
 
       _computeIsLoading: function() {
-        if (!this.loadStatus || this.loadStatus.status === 'idle') {
-          return false;
-        } {
-          return true;
-        }
+        return this.loadStatus && this.loadStatus.status !== 'idle';
       }
     });
   })();

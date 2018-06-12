@@ -22,7 +22,7 @@ limitations under the License.
 <link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../../bower_components/iron-icons/image-icons.html">
 <link rel="import" href="../../bower_components/iron-resizable-behavior/iron-resizable-behavior.html">
-<!-- bplint-disable no-unused-import -->
+<!-- bplint-enable no-unused-import -->
 <link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
 <link rel="import" href="../../bower_components/paper-badge/paper-badge.html">
 <link rel="import" href="../../bower_components/paper-button/paper-button.html">
@@ -53,16 +53,17 @@ limitations under the License.
         height: 100%;
         width: 100%;
         --paper-dialog-background-color: #fff;
+        --paper-progress-active-color: var(--primary-color);
       }
       .header-content {
         height: 100%
       }
 
       .canvasCard {
-        @apply(--layout-horizontal);
-        @apply(--layout-center);
-        @apply(--layout-center-justified);
-        @apply(--shadow-elevation-2dp);
+        @apply --layout-horizontal;
+        @apply --layout-center;
+        @apply --layout-center-justified;
+        @apply --shadow-elevation-2dp;
 
         background-color: #fff;
         color: rgba(0, 0, 0, 0.54);
@@ -77,7 +78,7 @@ limitations under the License.
       }
 
       .canvasCard .header {
-        @apply(--paper-font-subhead);
+        @apply --paper-font-subhead;
         margin-left: 8px;
       }
 
@@ -87,12 +88,12 @@ limitations under the License.
       }
 
       .item, .item .icon, .info, .toolbar {
-        @apply(--layout-horizontal);
-        @apply(--layout-center);
+        @apply --layout-horizontal;
+        @apply --layout-center;
       }
 
       .item {
-        @apply(--paper-font-subhead);
+        @apply --paper-font-subhead;
         padding: 0px 16px;
         min-height: 48px;
         transition: background-color 0.3s ease;
@@ -118,12 +119,12 @@ limitations under the License.
       }
 
       .space {
-        @apply(--layout-flex);
+        @apply --layout-flex;
         min-width: 20px;
       }
 
       .fixed-space {
-        @apply(--layout-flex);
+        @apply --layout-flex;
         min-width: 20px;
       }
 
@@ -143,20 +144,20 @@ limitations under the License.
       }
 
       .module-progress .summary {
-        @apply(--layout-horizontal);
-        @apply(--paper-font-code1);
+        @apply --layout-horizontal;
+        @apply --paper-font-code1;
         color: var(--secondary-text-color);
         text-align: right;
       }
 
       .module-progress .status {
-        @apply(--layout-flex);
-        @apply(--paper-font-common-nowrap);
+        @apply --layout-flex;
+        @apply --paper-font-common-nowrap;
         text-align: left;
       }
 
       .vertical-center {
-        @apply(--layout-center-center);
+        @apply --layout-center-center;
       }
 
       @media (max-width: 720px) {
@@ -166,13 +167,13 @@ limitations under the License.
       }
 
       .horizontal {
-        @apply(--layout-horizontal);
+        @apply --layout-horizontal;
       }
     </style>
 
     <base-key-value-document
       tag="base#ModuleManager#Status"
-      key="load-status"
+      key="loadStatus"
       data="{{loadStatus}}">
     </base-key-value-document>
 
@@ -180,7 +181,7 @@ limitations under the License.
     <base-modules id="modules" items="{{modules}}"></base-modules>
     <base-header-layout x-title="Modules" no-back>
       <div class="header-toolbar horizontal">
-        <div class="module-progress horizontal vertical-center" hidden="[[!isLoading]]">
+        <div class="module-progress horizontal vertical-center" hidden$="[[!isLoading]]">
           <paper-progress
             value="[[_calculateModuleLoadedCount(modules.*)]]"
             min="0"
@@ -192,13 +193,13 @@ limitations under the License.
             <span class="status">[[_calculateModuleLoadedCount(modules.*)]]/[[modules.length]]</span>
           </div>
         </div>
-        <paper-button class="primary-btn-light" on-tap="onLoadModules" disabled="[[isLoading]]">Load All Modules</paper-button>
-        <paper-icon-button id="modules-upload" icon="cloud-upload" on-tap="onImportModulePackage" disabled="[[isLoading]]"></paper-icon-button>
+        <paper-button class="primary-btn-light" on-tap="onLoadModules" disabled$="[[isLoading]]">Load All Modules</paper-button>
+        <paper-icon-button id="modules-upload" icon="cloud-upload" on-tap="onImportModulePackage" disabled$="[[isLoading]]"></paper-icon-button>
         <paper-tooltip for="modules-upload">Upload</paper-tooltip>
       </div>
       <div class="header-content">
         <base-modules-list-item class="base item" module="[[baseModule]]" on-module-info="onModuleInfo"></base-modules-list-item>
-        <div id="noModules" class="canvasCard" hidden$="[[isNoModulesHidden]]">
+        <div id="noModules" class="canvasCard" hidden$="[[hasModules]]">
           <iron-icon icon="icons:pets"></iron-icon>
           <span class="header">No Modules</span>
         </div>
@@ -208,7 +209,7 @@ limitations under the License.
       </div>
     </base-header-layout>
 
-    <paper-dialog id="upload-dialog">
+    <paper-dialog id="uploadDialog">
       <h2>Upload Module Package(s)</h2>
 
       <div class="wrapper">
@@ -221,7 +222,7 @@ limitations under the License.
       </div>
     </paper-dialog>
 
-    <paper-dialog id="confirm-dialog" no-cancel-on-esc-key>
+    <paper-dialog id="confirmDialog" no-cancel-on-esc-key>
       <h2>[[confirmHeading]]</h2>
       <div>[[confirmBody]]</div>
       <div class="buttons">
@@ -230,29 +231,29 @@ limitations under the License.
       </div>
     </paper-dialog>
 
-    <paper-dialog id="info-dialog" no-cancel-on-esc-key>
+    <paper-dialog id="infoDialog" no-cancel-on-esc-key>
       <h2>Module Info</h2>
       <div class="dialog-content">
         <div class="layout vertical">
           <div class="info">
             <div class="label">Name</div>
             <div class="space"></div>
-            <div class="value">{{moduleInfo.name}}</div>
+            <div class="value">[[moduleInfo.name]]</div>
           </div>
           <div class="info">
             <div class="label">Installed</div>
             <div class="space"></div>
-            <div class="value">{{moduleInfo.isInstalled}}</div>
+            <div class="value">[[moduleInfo.isInstalled]]</div>
           </div>
-          <div class="info" hidden$="{{!moduleInfo.isInstalled}}">
+          <div class="info" hidden$="[[!moduleInfo.isInstalled]]">
             <div class="label">Display Name</div>
             <div class="space"></div>
-            <div class="value">{{moduleInfo.displayName}}</div>
+            <div class="value">[[moduleInfo.displayName]]</div>
           </div>
-          <div class="info" hidden$="{{!moduleInfo.isInstalled}}">
+          <div class="info" hidden$="[[!moduleInfo.isInstalled]]">
             <div class="label">Loaded</div>
             <div class="space"></div>
-            <div class="value">{{moduleInfo.isLoaded}}</div>
+            <div class="value">[[moduleInfo.isLoaded]]</div>
           </div>
         </div>
       </div>
@@ -281,18 +282,19 @@ limitations under the License.
           },
           filteredModules: {
             type: Array,
-            computed: '_computeFilteredModules(modules.*)',
-            observer: '_observeFilteredModules'
+            computed: '_computeFilteredModules(modules.*)'
           },
 
-          isNoModulesHidden: {
+          hasModules: {
             type: Boolean,
             computed: '_computeModulesHidden(filteredModules.*)'
           },
 
           moduleInfo: {
             type: Object,
-            value: {}
+            value: () => {
+              return {};
+            }
           },
 
           isLoading: {
@@ -321,7 +323,7 @@ limitations under the License.
         },
 
         onModuleUnload: function(e, detail) {
-          const name = detail.displayName ? detail.displayName : detail.name;
+          const name = this._calculateName(detail);
           Promise.resolve()
           .then(() => this._openConfirmDialog(`Unload ${name}`, `This will cause ${name} to be removed the system and all dependent modules to unload. Would you like to continue?`))
           .then(() => this.$.modules.unloadModule(detail))
@@ -332,10 +334,14 @@ limitations under the License.
 
         onImportModulePackage: function(e, detail) {
           this.$.upload.files = [];
-          this.$['upload-dialog'].open();
+          this.$.uploadDialog.open();
         },
 
-        _calculateModuleLoadedCount(moduleChanges) {
+        _calculateName({displayName, name} = {}) {
+          return displayName ? displayName : name;
+        },
+
+        _calculateModuleLoadedCount() {
           return this.modules.reduce((acc, mod) => {
             if (mod.isLoaded) {
               return acc + 1;
@@ -345,11 +351,7 @@ limitations under the License.
         },
 
         _computeIsLoading: function() {
-          if (!this.loadStatus || this.loadStatus.status === 'idle') {
-            return false;
-          } {
-            return true;
-          }
+          return this.loadStatus && this.loadStatus.status !== 'idle';
         },
 
         _computeModulesHidden: function() {
@@ -360,13 +362,7 @@ limitations under the License.
           }
         },
 
-        _observeFilteredModules: function(filteredModules) {
-          // Iron list is buggy and doesn't display items on initial load of page refresh
-          this.async(this.notifyResize, 3000);
-        },
-
-
-        _computeFilteredModules: function(moduleChanges) {
+        _computeFilteredModules: function() {
           const modules = this.modules;
           if (Array.isArray(modules)) {
             return modules.filter((mod) => {
@@ -384,35 +380,15 @@ limitations under the License.
         },
 
         _computeBaseModule: function(moduleChanges) {
-          const modules = this.modules;
-          if (Array.isArray(modules)) {
-            let matches = modules.filter(function(mod) {
-              if (mod) {
-                return mod.isBase;
-              } else {
-                return false;
-              }
-            });
-            if (0 < matches.length) {
-              let baseModule = matches[0];
-              return baseModule;
-            } else {
-              return null;
-            }
-          } else {
-            return null;
+          if (Array.isArray(this.modules)) {
+            return this.modules.find(({isBase}) => !!isBase);
           }
+          return null;
         },
 
         _sortModules: function(a, b) {
-          let aName = a.displayName;
-          let bName = b.displayName;
-          if (a.displayName === undefined || 'string' !== typeof(a.displayName)) {
-            aName = a.name;
-          }
-          if (b.displayName === undefined || 'string' !== typeof(b.displayName)) {
-            bName = b.name;
-          }
+          let aName = this._calculateName(a);
+          let bName = this._calculateName(b);
           if ('string' === typeof(aName)) {
             aName = aName.toUpperCase();
           }
@@ -425,7 +401,7 @@ limitations under the License.
         },
 
         _onUploadBefore: function() {
-          this.$['upload-dialog'].notifyResize();
+          this.$.uploadDialog.notifyResize();
           this.$.upload.headers.Authorization = `Bearer ${this.$.auth.accessToken}`;
           this.$.upload.headers.Accept = 'application/json';
         },
@@ -456,8 +432,8 @@ limitations under the License.
             this.confirmHeading = heading || 'Loading...';
             this.confirmBody = body || 'Are you sure?';
             this._onIronOverlayClosed = (e, detail) => {
-              let closingReason = this.$['confirm-dialog'].closingReason;
-              this.unlisten(this.$['confirm-dialog'], 'iron-overlay-closed', '_onIronOverlayClosed');
+              const closingReason = this.$.confirmDialog.closingReason;
+              this.unlisten(this.$.confirmDialog, 'iron-overlay-closed', '_onIronOverlayClosed');
               if (closingReason.confirmed) {
                 fulfill(closingReason);
               } else {
@@ -465,22 +441,20 @@ limitations under the License.
               }
             };
 
-            this.listen(this.$['confirm-dialog'], 'iron-overlay-closed', '_onIronOverlayClosed');
-            this.$['confirm-dialog'].open();
+            this.listen(this.$.confirmDialog, 'iron-overlay-closed', '_onIronOverlayClosed');
+            this.$.confirmDialog.open();
           });
         },
 
         onModuleInfo: function(e, detail) {
           this.moduleInfo = detail;
-          this.$['info-dialog'].open();
+          this.$.infoDialog.open();
         },
 
         onIronOverlayOpened: function(e) {
           e.target.notifyResize();
         },
-
-
       });
-})();
+    })();
   </script>
 </dom-module>
