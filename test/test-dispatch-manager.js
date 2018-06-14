@@ -23,8 +23,7 @@ limitations under the License.
   global.paths = global.paths || {};
   global.paths = Object.assign(global.paths, {data: os.tmpdir()});
 
-  const ModuleManager = require('./../lib/modules/module-manager');
-
+  const DispatchManager = require('./../lib/modules/module-manager');
   chai.use(chaiAsPromised);
 
   class MessageCenter {
@@ -55,39 +54,26 @@ limitations under the License.
     }
   }
 
-  describe('Module Manager creation', () => {
-    describe('construction', () => {
-      it('should construct', () => {
-        new ModuleManager();
-      });
+  describe('DispatchManager creation', () => {
+    it('Create DispatchManager', () => {
+      new DispatchManager({});
+    });
+  });
+
+  describe('DispatchManager', () => {
+    let dispatchManager = null;
+
+    beforeEach('Create DispatchManager', () => {
+      dispatchManager = new DispatchManager();
     });
 
-    describe('loading', () => {
-      let moduleManager = null;
-      beforeEach('Create ModuleManager', () => {
-        moduleManager = new ModuleManager();
-      });
-
-      it('should load', () => {
-        return moduleManager.load(new MessageCenter(), new BaseServer());
-      });
-
-      it('should unload', () => {
-        return moduleManager.load(new MessageCenter(), new BaseServer())
-        .then(() => moduleManager.unload());
-      });
+    it('should load', () => {
+      return dispatchManager.load(new MessageCenter(), new BaseServer());
     });
 
-    describe('operation', () => {
-      let moduleManager = null;
-      beforeEach('Create ModuleManager', () => {
-        moduleManager = new ModuleManager();
-        return moduleManager.load(new MessageCenter(), new BaseServer());
-      });
-
-      it('should load modules', () => {
-        return moduleManager.loadModules();
-      });
+    it('should unload', () => {
+      return dispatchManager.load(new MessageCenter(), new BaseServer())
+      .then(() => dispatchManager.unload());
     });
   });
 })();

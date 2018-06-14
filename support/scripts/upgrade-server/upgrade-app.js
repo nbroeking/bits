@@ -25,8 +25,6 @@ limitations under the License.
   const path = require('path');
   const UpgradeServer = require('./upgrade-server');
   const UpgradeScript = require('./upgrade-script');
-  const BaseLoadUrl = require('./base-load-url');
-  const MiniMessageCenter = require('./mini-message-center');
 
   const args = parseArgs(process.argv, {
     default: {
@@ -94,13 +92,7 @@ limitations under the License.
   Environment.setIfNotExist('BACKUP_DIR', path.join(Environment.get('BASE_DIR'), 'upgrade-' + logFileDate));
   Environment.setIfNotExist('TARGET_EXTRACT', path.join(Environment.get('BACKUP_DIR'), 'extract'));
 
-  // create our message messageCenter
-  this._messageCenter = new MiniMessageCenter(process);
-
   // here is the core process
-  this._baseLoadUrl = new BaseLoadUrl();
-  this._baseLoadUrl.load('UPGRADE', this._messageCenter);
-
   this._upgradeScript = new UpgradeScript();
   Promise.resolve()
   .then(() => Helper.appendToLog('* Initializing BITS Upgrade (v2)'))
@@ -113,7 +105,7 @@ limitations under the License.
     // Create server instance
     return Helper.appendToLog('* Launching UpgradeServer(' + args.rootBaseDir + ', ' + args.rootDataDir + ')')
     .then(() => this._upgradeServer = new UpgradeServer(args.rootBaseDir, args.rootDataDir))
-    .then(() => this._upgradeServer.listen(this._messageCenter));
+    .then(() => this._upgradeServer.load());
   })
   .then((result) => {
     return Helper.appendToLog('* Starting UpgradeScript(' + result + ')')

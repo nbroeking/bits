@@ -206,7 +206,8 @@ limitations under the License.
         'base-omgs-content-load': '_onLoadOmg',
         'base-omgs-content-delete': '_onDeleteOmg',
         'base-omgs-content#go-back': '_onGoBack',
-        'base-omgs-content#show-errors': '_onShowErrors'
+        'base-omgs-content#show-errors': '_onShowErrors',
+        'omgs.base-omgs-upgrade-starting': '_onBaseOmgsUpgradeStarting'
       },
 
       _onItemUpdated: function(event, detail) {
@@ -276,6 +277,14 @@ limitations under the License.
         } else {
           // switch away from errors window
           this.page = this._prevPage || 'list';
+        }
+      },
+
+      _onBaseOmgsUpgradeStarting: function() {
+        if (this.$.omgs.socket && this.$.omgs.socket.connected === true) {
+          setTimeout(() => this._onBaseOmgsUpgradeStarting(), 2500);
+        } else {
+          window.location.reload();
         }
       },
 

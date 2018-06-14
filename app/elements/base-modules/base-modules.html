@@ -1,5 +1,5 @@
 <!--
-Copyright 2017 LGS Innovations
+Copyright 2018 LGS Innovations
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,162 +15,41 @@ limitations under the License.
 -->
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 <!-- bplint-disable no-unused-import -->
-<link rel="import" href="../base-message-center/base-message-center-behavior.html">
+<link rel="import" href="../base-crud/base-crud-behavior.html">
 <!-- bplint-enable no-unused-import -->
 
 <script>
-  ((global) => {
-    'use strict';
+((global) => {
+  'use strict';
 
-    const MODULE_PREFIX = 'base#Modules ';
-    const MODULE = {
-      REQUEST: {
-        LIST: MODULE_PREFIX + 'list',
-        GET: MODULE_PREFIX + 'get',
-        LOAD: MODULE_PREFIX + 'load',
-        UNLOAD: MODULE_PREFIX + 'unload',
-        BASE_UPGRADE: MODULE_PREFIX + 'baseUpgrade',
-        DELETE: MODULE_PREFIX + 'delete',
-        GET_DATA_DIRECTORY: MODULE_PREFIX + 'getDataDirectory',
-        GET_MANAGER_STATE: MODULE_PREFIX + 'getManagerState',
-        GET_CURRENT_MODULE: MODULE_PREFIX + 'getCurrentModule',
-        GET_MODULE_STATUS: MODULE_PREFIX + 'getModuleStatus'
-      },
-      EVENT: {
-        LIST: MODULE_PREFIX + 'list',
-        MANAGER_STATE_CHANGED: MODULE_PREFIX + 'manager-state-changed',
-        CURRENT_MODULE_CHANGED: MODULE_PREFIX + 'current-module-changed',
-        MODULE_STATUS_CHANGED: MODULE_PREFIX + 'module-status-changed'
+  const MODULE_PREFIX = 'base#Modules ';
+  const MODULE = {
+    REQUEST: {
+      LOAD: MODULE_PREFIX + 'load',
+      UNLOAD: MODULE_PREFIX + 'unload'
+    }
+  };
+
+  Polymer({
+    is: 'base-modules',
+
+    behaviors: [
+      global.Bits.BaseCrudBehavior
+    ],
+
+    properties: {
+      tag: {
+        value: 'base#ModuleManager'
       }
-    };
+    },
 
-    Polymer({
-      is: 'base-modules',
+    loadModules() {
+      return this.sendRequest(MODULE.REQUEST.LOAD);
+    },
 
-      behaviors: [
-        /** @polymerBehavior BaseMessageCenterBehavior */
-        global.Bits.BaseMessageCenterBehavior
-      ],
-
-      properties: {
-        modules: {
-          type: Array,
-          readOnly: true,
-          notify: true,
-        },
-        managerState: {
-          type: String,
-          readOnly: true,
-          notify: true
-        },
-        moduleStatus: {
-          type: String,
-          readOnly: true,
-          notify: true
-        },
-        currentModule: {
-          type: String,
-          readOnly: true,
-          notify: true
-        }
-      },
-
-      ready: function() {
-        this.addSocketEventListener(MODULE.EVENT.LIST, this._onList.bind(this));
-        this.addSocketEventListener(MODULE.EVENT.MANAGER_STATE_CHANGED, this._onManagerState.bind(this));
-        this.addSocketEventListener(MODULE.EVENT.MODULE_STATUS_CHANGED, this._onModuleStatus.bind(this));
-        this.addSocketEventListener(MODULE.EVENT.CURRENT_MODULE_CHANGED, this._onCurrentModule.bind(this));
-
-        this.addConnectRunnable(() => {
-          this.list()
-          .then((modules) => this._setModules(modules))
-          .catch((err) => console.warn(err));
-
-          this._getManagerState();
-          this._getModuleStatus();
-          this._getCurrentModule();
-        });
-      },
-
-      _getManagerState() {
-        return this.sendRequest(MODULE.REQUEST.GET_MANAGER_STATE)
-        .then((state) => {
-          this._setManagerState(state);
-        })
-        .catch((err) => console.warn(err));
-      },
-
-      _getModuleStatus() {
-        return this.sendRequest(MODULE.REQUEST.GET_MODULE_STATUS)
-        .then((status) => {
-          this._setModuleStatus(status);
-        })
-        .catch((err) => console.warn(err));
-      },
-
-      _getCurrentModule() {
-        return this.sendRequest(MODULE.REQUEST.GET_CURRENT_MODULE)
-        .then((mod) => {
-          this._setCurrentModule(mod);
-        })
-        .catch((err) => console.warn(err));
-      },
-
-      _onManagerState(state) {
-        this._setManagerState(state);
-      },
-
-      _onModuleStatus(status) {
-        this._setModuleStatus(status);
-      },
-
-      _onCurrentModule(mod) {
-        this._setCurrentModule(mod);
-      },
-
-      _onList: function(modules, data) {
-        this._setModules(modules);
-      },
-
-      list: function() {
-        return this.sendRequest(MODULE.REQUEST.LIST)
-        .catch((err) => {
-          console.warn(err);
-          return Promise.reject(err);
-        });
-      },
-
-      installModules: function(...modules) {
-        return this.sendRequest(MODULE.REQUEST.LOAD, ...modules)
-        .catch((err) => {
-          console.warn(err);
-          return Promise.reject(err);
-        });
-      },
-
-      uninstallModules: function(modules) {
-        return this.sendRequest(MODULE.REQUEST.UNLOAD, modules)
-        .catch((err) => {
-          console.warn(err);
-          return Promise.reject(err);
-        });
-      },
-
-      remove: function(module, version) {
-        return this.sendRequest(MODULE.REQUEST.DELETE, module, version)
-        .catch((err) => {
-          console.warn(err);
-          return Promise.reject(err);
-        });
-      },
-
-      upgradeBase(module, version, other) {
-        return this.sendRequest(MODULE.REQUEST.BASE_UPGRADE, module, version)
-        .catch((err) => {
-          console.warn(err);
-          return Promise.reject(err);
-        });
-      }
-    });
-  })(this);
+    unloadModule(modules) {
+      return this.sendRequest(MODULE.REQUEST.UNLOAD, modules);
+    }
+  });
+})(this);
 </script>

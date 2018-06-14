@@ -1,5 +1,5 @@
 <!--
-Copyright 2017 LGS Innovations
+Copyright 2018 LGS Innovations
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -88,17 +88,10 @@ limitations under the License.
 
     <paper-icon-button id="info" class="action hover" icon="info-outline" on-tap="onModuleInfo"></paper-icon-button>
 
-    <paper-icon-button
-          id="upgrade"
-          class="action hover"
-          icon="swap-horiz"
-          on-tap="onBaseUpgrade"
-          disabled="[[!_calculatePackageAvailable(module)]]">
-    </paper-icon-button>
-    <paper-tooltip for="upgrade" position="left" animation-delay="200" offset="0">Upgrade: [[_calculateUpgradeString(module)]]</paper-tooltip>
-
-    <paper-icon-button id="remove" class="action hover" icon="delete" on-tap="onOpen"></paper-icon-button>
-    <paper-tooltip for="remove" position="top" animation-delay="200" fit-to-visible-bounds>Remove Module Package</paper-tooltip>
+    <div hidden$="[[_isBase(module)]]">
+      <paper-icon-button id="remove" class="action hover" icon="delete" on-tap="onUnload" disabled$="[[_isBase(module)]]"></paper-icon-button>
+      <paper-tooltip for="remove" position="top" animation-delay="200" fit-to-visible-bounds>Remove Module Package</paper-tooltip>
+    </div>
 
   </template>
   <script>
@@ -110,19 +103,17 @@ limitations under the License.
 
       properties: {
         module: {
-          type: Object,
-          observer: '_moduleChanged'
+          type: Object
         },
-      },
-
-      _moduleChanged: function(mod) {
-        Polymer.dom(this.$.upgrade).classList.toggle('hidden', !this._isBase(mod));
-        Polymer.dom(this.$.remove).classList.toggle('hidden', !this._calculatePackageAvailable(mod));
       },
 
       behaviors: [
         Polymer.IronResizableBehavior
       ],
+
+      _isBase: function(mod) {
+        return mod.name === 'bits-base';
+      },
 
       _calculateModuleIcon: function(mod) {
         if (!mod) {
@@ -174,11 +165,11 @@ limitations under the License.
         if (!mod) {
           return 'N/A';
         } else if (mod.isLoaded) {
-          return 'Loaded: ' + mod.installedVersion;
+          return 'Loaded: ' + mod.version;
         } else if (mod.loadError != null && typeof(mod.loadError.message) === 'string') {
           return mod.loadError.message;
         } else if (mod.isInstalled) {
-          return 'Installed: ' + mod.installedVersion;
+          return 'Installed: ' + mod.version;
         } else {
           return 'Available: ' + mod.packageVersions;
         }
@@ -192,10 +183,6 @@ limitations under the License.
         return mod && !mod.isLoaded;
       },
 
-      _calculatePackageAvailable: function(mod) {
-        return mod && Array.isArray(mod.packageVersions) && 0 < mod.packageVersions.length;
-      },
-
       _calculateUpgradeString: function(mod) {
         return (mod && Array.isArray(mod.packageVersions) && 0 < mod.packageVersions.length) ? 'Available' : 'Unavailable';
       },
@@ -204,9 +191,9 @@ limitations under the License.
         return mod && mod.isBase;
       },
 
-      onOpen: function(e) {
+      onUnload: function(e) {
         e.stopPropagation();
-        this.fire('module-package-version-remove', {module: this.module});
+        this.fire('unload-module', this.module);
       },
 
       onModuleInfo: function(e) {
