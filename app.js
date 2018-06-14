@@ -1,5 +1,5 @@
 /**
-Copyright 2017 LGS Innovations
+Copyright 2018 LGS Innovations
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -64,10 +64,9 @@ limitations under the License.
 
     return Promise.resolve()
     .then(() => base.initialize())
-    .then(() => {
-      logger.info('Application started');
-    })
+    .then(() => logger.info('Application started'))
     .then(() => base.load())
+    .then(() => logger.info('Base has completed loading'))
     .catch((err) => {
       logger.error('Error starting application: %s', err.toString(), {error: err});
       logger.error(err.stack);
