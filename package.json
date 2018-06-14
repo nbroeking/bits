@@ -9,23 +9,26 @@
   },
   "homepage": "https://github.com/LGSInnovations/bits#readme",
   "scripts": {
-    "build": "yarn && bower install && npm run lint && npm run test && npm run upgrade-build",
+    "build": "yarn && bower install && npm run lint && npm run test && npm run upgrade-build && npm run autoclean",
     "upgrade-build": "cd support/scripts/upgrade-server && npm run build",
-    "bits:install": "yarn --prod",
-    "lint": "eslint --fix --ext js,html .",
+    "autoclean": "yarn autoclean --force",
+    "bits:install": "yarn --prod && npm run autoclean",
+    "polymerLint": "polymer-lint --rules component-name-matches-filename,no-missing-import,no-unused-import,one-component,style-inside-template ./app/elements",
+    "lint": "eslint --ext js,html --fix ./ && npm run polymerLint",
     "test": "mocha --recursive",
     "clean": "rm -rf node_modules/ app/bower_components/ data/ npm-error.log yarn-error.log",
     "dev": "HTTP_PORT=9000 HTTPS_PORT=9001 node app.js -v"
   },
   "devDependencies": {
-    "bower": "^1.8.0",
-    "chai": "^3.5.0",
-    "chai-as-promised": "^6.0.0",
-    "eslint": "^4.4.1",
+    "bower": "^1.8.4",
+    "chai": "^4.1.2",
+    "chai-as-promised": "^7.1.1",
+    "eslint": "^4.19.1",
     "eslint-config-google": "^0.9.1",
-    "eslint-plugin-html": "^3.2.0",
-    "mocha": "^3.2.0",
-    "supertest": "^3.0.0"
+    "eslint-plugin-html": "^4.0.3",
+    "mocha": "^5.2.0",
+    "polymer-lint": "^0.8.3",
+    "supertest": "^3.1.0"
   },
   "dependencies": {
     "@skidder/bits-crypto": "^1.0.0",

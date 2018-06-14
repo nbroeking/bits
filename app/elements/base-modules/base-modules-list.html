@@ -15,40 +15,32 @@ limitations under the License.
 -->
 
 <link rel="import" href="../../bower_components/polymer/polymer.html">
-<link rel="import" href="../../bower_components/app-layout/app-toolbar/app-toolbar.html">
 <!-- bplint-disable no-unused-import -->
 <link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
-<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
-<link rel="import" href="../../bower_components/iron-icons/image-icons.html">
 <link rel="import" href="../../bower_components/iron-resizable-behavior/iron-resizable-behavior.html">
+<link rel="import" href="../base-shared-styles/base-shared-styles.html">
 <!-- bplint-enable no-unused-import -->
 <link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
-<link rel="import" href="../../bower_components/paper-badge/paper-badge.html">
 <link rel="import" href="../../bower_components/paper-button/paper-button.html">
-<link rel="import" href="../../bower_components/paper-card/paper-card.html">
-<link rel="import" href="../../bower_components/paper-checkbox/paper-checkbox.html">
 <link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
 <link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
-<link rel="import" href="../../bower_components/paper-input/paper-input.html">
 <link rel="import" href="../../bower_components/paper-styles/typography.html">
-<link rel="import" href="../../bower_components/paper-spinner/paper-spinner.html">
-<link rel="import" href="../../bower_components/paper-item/paper-icon-item.html">
-<link rel="import" href="../../bower_components/paper-item/paper-item.html">
-<link rel="import" href="../../bower_components/paper-item/paper-item-body.html">
 <link rel="import" href="../../bower_components/paper-progress/paper-progress.html">
 <link rel="import" href="../../bower_components/paper-tooltip/paper-tooltip.html">
 <link rel="import" href="../../bower_components/vaadin-upload/vaadin-upload.html">
 <link rel="import" href="../base-auth/base-auth.html">
 <link rel="import" href="../base-key-value/base-key-value-document.html">
 <link rel="import" href="../base-layout/base-header-layout/base-header-layout.html">
-<link rel="import" href="../base-shared-styles/base-shared-styles.html">
 <link rel="import" href="./base-modules-list-item.html">
 <link rel="import" href="./base-modules.html">
 
 <dom-module id="base-modules-list">
   <template>
-    <style include="base-shared-styles iron-flex iron-flex-alignment">
+    <!-- bplint-disable no-missing-import -->
+    <style include="base-shared-styles iron-flex iron-flex-alignment"></style>
+    <!-- bplint-enable no-missing-import -->
+    <style>
       :host {
         height: 100%;
         width: 100%;

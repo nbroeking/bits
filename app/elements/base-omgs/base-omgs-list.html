@@ -14,24 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 <link rel="import" href="../../bower_components/polymer/polymer.html">
-<link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
+<!-- bplint-disable no-unused-import -->
 <link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
-<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
-<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<!-- bplint-enable no-unused-import -->
 <link rel="import" href="../../bower_components/iron-image/iron-image.html">
 <link rel="import" href="../../bower_components/iron-list/iron-list.html">
-<link rel="import" href="../../bower_components/neon-animation/neon-animated-pages.html">
 <link rel="import" href="../../bower_components/paper-fab/paper-fab.html">
-<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
-<link rel="import" href="../../bower_components/paper-tooltip/paper-tooltip.html">
 <link rel="import" href="../base-shared-styles/base-shared-styles.html">
-<link rel="import" href="./base-omgs-current-info.html">
 <link rel="import" href="./base-omgs-list-item.html">
 <link rel="import" href="./base-omgs-upload.html">
 
 <dom-module id="base-omgs-list">
   <template>
-    <style is="custom-style" include="iron-flex iron-flex-alignment base-shared-styles">
+    <!-- bplint-disable no-missing-import -->
+    <style is="custom-style" include="iron-flex iron-flex-alignment"></style>
+    <!-- bplint-enable no-missing-import -->
+    <style include="base-shared-styles">
     :host {
       @apply(--layout-flex);
       @apply(--layout-vertical);
@@ -131,17 +129,9 @@ limitations under the License.
           Polymer.IronResizableBehavior
         ],
 
-        listeners: {
-          'base-omgs-upload-success': '_onUploadSuccess',
-        },
-
         reset: function() {
           this.key = null;
           this.data = this.zeroValue;
-        },
-
-        _onUploadSuccess: function(e, detail) {
-          this.$['get-list'].generateRequest();
         },
 
         _openAddForm: function() {
