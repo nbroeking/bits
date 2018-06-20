@@ -1,6 +1,9 @@
 (() => {
   'use strict';
 
+  global.helper = {
+    BaseLoggingApi: null
+  };
   const chai = require('chai');
   const OmgsManager = require('./../../lib/omgs/omgs-manager');
 
