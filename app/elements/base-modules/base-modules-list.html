@@ -317,7 +317,7 @@ limitations under the License.
         onModuleUnload: function(e, detail) {
           const name = this._calculateName(detail);
           Promise.resolve()
-          .then(() => this._openConfirmDialog(`Unload ${name}`, `This will cause ${name} to be removed the system and all dependent modules to unload. Would you like to continue?`))
+          .then(() => this._openConfirmDialog(`Unload ${name}`, `This will cause ${name} to be removed from the system and all dependent modules to unload. Would you like to continue?`))
           .then(() => this.$.modules.unloadModule(detail))
           .catch((err) => {
             console.error('Unable to unload module', err);
