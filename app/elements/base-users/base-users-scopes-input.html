@@ -139,7 +139,7 @@ limitations under the License.
 
       selectScope: function(event) {
         const scope = event.model.scope;
-        const checked = event.srcElement.checked;
+        const checked = Polymer.dom(event).localTarget.checked;
         const index = this.selectedScopes.findIndex((s) => s.name === scope.name);
         if (checked && 0 > index) {
           this.push('selectedScopes', scope);
