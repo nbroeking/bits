@@ -768,8 +768,8 @@ limitations under the License.
 
     _moveRomgModulesAndData() {
       const baseDataDir = path.join(Environment.get('BASE_DIR'), 'data');
-      const skipDir = path.join(Environment.get('BASE_DIR'), 'data/base');
       const baseDir = path.join(Environment.get('BASE_DIR'), 'data/base/modules/modules');
+      const skipDir = 'base'
 
       return Promise.resolve()
       .then(() => this._actionStatus('_moveRomgModulesAndData'))
@@ -816,7 +816,7 @@ limitations under the License.
                 [
                   '-a',
                   path.join(baseDataDir, moduleDataDir),
-                  modulesDir + '/'
+                  Environment.get('DATA_DIR') + '/'
                 ]))
               .then((results) => Helper.appendIndentedResultsToLog(results, 'cp results:'),
                 (err) => {
