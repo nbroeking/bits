@@ -99,7 +99,7 @@ limitations under the License.
 
     <div class="header" hidden$="[[!hasName]]">[[category.name]]</div>
 
-    <template is="dom-repeat" items="[[category.items]]" as="item">
+    <template is="dom-repeat" items="[[category.items]]" as="item" sort="_sortByItemTitle">
       <a href="[[item.href]]" class="item">
         <div class="highlight"></div>
         <div class="icon">
@@ -129,6 +129,15 @@ limitations under the License.
 
       _computeHasName: function(name) {
         return 'string' === typeof(name) && 0 < name.length;
+      },
+
+      _sortByItemTitle: function(itemA, itemB) {
+        const titleA = String(itemA.title).toLowerCase();
+        const titleB = String(itemB.title).toLowerCase();
+
+        if (titleA > titleB) return 1;
+        if (titleA < titleB) return -1;
+        return 0;
       }
     });
   })();
