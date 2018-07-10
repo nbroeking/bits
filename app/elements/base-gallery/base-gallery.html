@@ -94,7 +94,7 @@ limitations under the License.
 
       <div class="categories-wrapper">
         <div class="categories">
-          <template is="dom-repeat" items="[[categories]]" as="category">
+          <template is="dom-repeat" items="[[categories]]" as="category" sort="_sortByCategoryName">
             <base-gallery-category class="category" category="[[category]]"></base-gallery-category>
           </template>
         </div>
@@ -191,6 +191,18 @@ limitations under the License.
           } else {
             return user.username;
           }
+        },
+
+        _sortByCategoryName: function(categoryA, categoryB) {
+          const nameA = String(categoryA.name).toLowerCase();
+          const nameB = String(categoryB.name).toLowerCase();
+
+          if (nameA === 'home') return -1;
+          if (nameB === 'home') return -1;
+
+          if (nameA > nameB) return 1;
+          if (nameA < nameB) return -1;
+          return 0;
         }
       });
     })();
